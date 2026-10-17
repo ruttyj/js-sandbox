@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GE Tracker · Price Computation Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lz-string@1.5.0/libs/lz-string.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="app" class="app-shell">
+
+    <!-- Application Header -->
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M15 7h5v5"/></svg>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">GE Tracker <span class="brand-edition">PRO</span></span>
+                <span class="brand-sub">Grand Exchange Price Computation Suite</span>
+            </div>
+        </div>
+
+        <div class="header-metrics">
+            <div class="status-pill" :class="loading ? 'is-loading' : error ? 'is-error' : 'is-live'">
+                <span class="status-dot"></span>
+                {{ loading ? 'Syncing' : error ? 'Offline' : 'Live' }}
+            </div>
+            <div class="header-metric">
+                <span class="metric-label">Items</span>
+                <span class="metric-value">{{ Object.keys(items).length.toLocaleString() }}</span>
+            </div>
+            <div class="header-metric">
+                <span class="metric-label">Groups</span>
+                <span class="metric-value">{{ groups.length }}</span>
+            </div>
+            <div class="header-metric">
+                <span class="metric-label">Scopes</span>
+                <span class="metric-value">{{ scopes.length }}</span>
+            </div>
+            <button class="btn btn-primary" @click="refreshPrices" :disabled="loading" title="Re-fetch the latest GE prices">
+                <svg class="btn-icon" :class="{ spinning: loading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                Refresh Prices
+            </button>
+        </div>
+    </header>
+
+    <!-- Toast Container -->
+    <div class="toast-container">
+        <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type]">
+            {{ toast.message }}
+        </div>
+    </div>
+
+    <!-- Generic Confirmation Modal -->
+    <div v-if="isConfirmModalVisible" class="modal-backdrop">
+        <div class="modal-content">
+            <h2 v-html="confirmModalTitle"></h2>
+            <p v-html="confirmModalMessage"></p>
+            <div class="modal-actions">
+                <button @click="cancelConfirm" class="cancel-btn">Cancel</button>
+                <button @click="executeConfirm" class="overwrite-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Choice Modal -->
+    <div v-if="isImportModalVisible" class="modal-backdrop">
+        <div class="modal-content">
+            <h2>Import Option</h2>
+            <p>How would you like to import these groups?</p>
+            <div class="modal-actions">
+                <button @click="cancelImport" class="cancel-btn">Cancel</button>
+                <button @click="confirmImport('overwrite')" class="overwrite-btn">Overwrite</button>
+                <button @click="confirmImport('merge')" class="merge-btn">Merge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Modal -->
+    <div v-if="isInputModalVisible" class="modal-backdrop">
+        <div class="modal-content">
+            <h2>{{ inputModalTitle }}</h2>
+            <input ref="inputModalRef" v-model="inputModalValue" type="text" class="field modal-input" @keyup.enter="executeInput">
+            <div class="modal-actions">
+                <button @click="cancelInput" class="cancel-btn">Cancel</button>
+                <button @click="executeInput" class="merge-btn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="loading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Syncing with the Grand Exchange…</p>
+        <span class="loading-sub">Fetching item mapping and latest prices</span>
+    </div>
+
+    <div v-if="error" class="error-container">
+        <p>Error fetching items</p>
+        <span class="loading-sub">{{ error }}</span>
+    </div>
+
+    <main v-if="!loading && !error" class="main-layout">
+        <aside class="groups-panel">
+            <div class="groups-panel-content">
+                <div class="panel-heading">
+                    <h2>Item Groups</h2>
+                    <span class="count-badge">{{ groups.length }}</span>
+                </div>
+                <div class="group-actions">
+                    <input type="file" ref="importFile" @change="importGroups" style="display: none;" accept=".json">
+                    <button @click="triggerImport">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                        Import
+                    </button>
+                    <button @click="exportGroups">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>
+                        Export
+                    </button>
+                </div>
+
+                <div class="search-field">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    <input type="text" v-model="groupSearchText" placeholder="Filter groups…" class="group-search-input">
+                </div>
+
+                <div class="create-group-form">
+                    <input type="text" v-model="newGroupName" @keyup.enter="createGroup" placeholder="New group name…">
+                    <button @click="createGroup">+ Create</button>
+                </div>
+
+                <div class="group-list">
+                    <div v-for="(group, index) in filteredGroups" :key="group.id"
+                        class="group-card"
+                        :class="{ selected: selectedGroup && selectedGroup.id === group.id, 'dragging': draggedGroupIndex === index }"
+                        @click="selectGroup(group.id)"
+                        @dragover.prevent
+                        @dragenter.prevent
+                        @drop="onGroupDrop($event, index)">
+                        <div class="group-card-main">
+                            <span v-if="!groupSearchText" class="drag-handle" draggable="true" @dragstart="onGroupDragStart($event, index)" @dragend="draggedGroupIndex = null" title="Drag to reorder" @click.stop>⋮⋮</span>
+                            <span class="group-card-name">{{ group.name }}</span>
+                            <span class="count-badge">{{ group.items.length }}</span>
+                        </div>
+                        <div class="group-card-actions">
+                            <button @click.stop="renameGroup(group.id)" class="rename-group-btn" title="Rename">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                            </button>
+                            <button @click.stop="deleteGroup(group.id)" class="delete-group-btn" title="Delete">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="main-panel">
+            <nav class="tabs-header">
+                <button class="tab-btn" :class="{ active: activeTab === 'market' }" @click="activeTab = 'market'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    Market Search
+                </button>
+                <button class="tab-btn" :class="{ active: activeTab === 'group-items' }" @click="switchToGroupTab('group-items')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    Group Items
+                </button>
+                <button class="tab-btn" :class="{ active: activeTab === 'globals' }" @click="activeTab = 'globals'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
+                    Global Vars
+                </button>
+                <button class="tab-btn" :class="{ active: activeTab === 'scopes' }" @click="activeTab = 'scopes'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6"/><path d="M16 6l6 6-6 6"/></svg>
+                    Scopes
+                </button>
+                <button class="tab-btn" :class="{ active: activeTab === 'tags' }" @click="activeTab = 'tags'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                    Manage Tags
+                </button>
+                <button class="tab-btn" :class="{ active: activeTab === 'dashboard' }" @click="activeTab = 'dashboard'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v2"/><path d="M11 11v6"/><path d="M15 7v10"/><path d="M19 12v5"/></svg>
+                    Dashboard
+                </button>
+            </nav>
+
+            <!-- Tab: Market Search -->
+            <div v-if="activeTab === 'market'" class="items-panel market-layout">
+                <div>
+                    <div class="search-container">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                        <input id="search-input" type="text" v-model="searchText" placeholder="Search the Grand Exchange: click an item to add it to the selected group">
+                        <span class="search-count">{{ filteredItems.length.toLocaleString() }} results</span>
+                    </div>
+
+                    <div class="item-grid">
+                        <div class="item-card" v-for="item in filteredItems" :key="item.id" @click="addItemToSelectedGroup(item)">
+                            <div class="item-card-icon-wrap"><item-icon :item="item" class="item-icon"></item-icon></div>
+                            <span class="item-name"><a target="_blank" :href="'https://prices.osrs.cloud/item/' + item.id">{{ item.name }}</a><span class="item-id-badge">#{{ item.id }}</span></span>
+                            <div class="item-prices" v-if="item.highPrice || item.lowPrice">
+                                <div class="price-row" v-if="item.highPrice">
+                                    <span class="price-label">High</span>
+                                    <span class="price-val-high">{{ item.highPrice.toLocaleString() }}</span>
+                                </div>
+                                <div class="price-row" v-if="item.lowPrice">
+                                    <span class="price-label">Low</span>
+                                    <span class="price-val-low">{{ item.lowPrice.toLocaleString() }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side Group Items List -->
+                <div class="side-panel">
+                    <group-item-list
+                        :selected-group="selectedGroup"
+                        :hydrated-group-items="hydratedGroupItems"
+                        :dragged-item-index="draggedItemIndex"
+                        @remove-item="removeItemFromGroup"
+                        @drag-start="onDragStart"
+                        @drag-end="draggedItemIndex = null"
+                        @drop="onDrop">
+                        <template #placeholder>Select a group to see items here.</template>
+                    </group-item-list>
+                </div>
+            </div>
+
+            <!-- Tab: Group Items -->
+            <div v-if="activeTab === 'group-items'" class="card">
+                <group-item-list
+                    :selected-group="selectedGroup"
+                    :hydrated-group-items="hydratedGroupItems"
+                    :dragged-item-index="draggedItemIndex"
+                    @remove-item="removeItemFromGroup"
+                    @drag-start="onDragStart"
+                    @drag-end="draggedItemIndex = null"
+                    @drop="onDrop">
+                    <template #placeholder>Please select a group from the left sidebar to view its items.</template>
+                </group-item-list>
+            </div>
+
+            <!-- Tab: Global Vars -->
+            <div v-if="activeTab === 'globals'" class="tab-panel">
+                <div class="code-tab-layout">
+
+                    <!-- Globals Code Editor -->
+                    <div class="var-panel">
+                        <div class="section-header">
+                            <h3>Global Variables</h3>
+                            <p class="section-desc">
+                                Global variables can be used in any scope. A scope's own const with the same name overrides the global one.
+                            </p>
+                        </div>
+
+                        <div class="editor-toolbar">
+                            <span class="editor-toolbar-title">globals.js</span>
+                            <editor-view-toggles></editor-view-toggles>
+                        </div>
+                        <formula-input
+                            class="code-editor"
+                            v-model="globalsCode"
+                            :variables="globalVariables"
+                            placeholder="const GE_TAX = 0.02;"
+                            color-editable
+                            @set-color="setGlobalVariableColor"
+                            @input="onGlobalsCodeInput"
+                            @blur="onGlobalsCodeBlur"
+                        ></formula-input>
+                        <div v-if="globalsCodeErrors.length" class="code-errors">
+                            <div v-for="(err, i) in globalsCodeErrors" :key="i">{{ err }}</div>
+                            <div class="code-errors-note">Your code is saved, but values may be missing or out of date until the errors are fixed.</div>
+                        </div>
+                        <div class="tips">
+                            <p><strong>Tips</strong></p>
+                            <ul>
+                                <li>Written the same way as scopes: the code runs top to bottom, and each top-level <code>const</code> / <code>let</code> is one global. Declare a global before using it.</li>
+                                <li><code>//</code> comment lines directly above a declaration become its description. Use <code>// @tags: A, B</code> to tag it for the Dashboard.</li>
+                                <li><code>getOsrsItem('Oathplate helm').lowPrice</code> works here too.</li>
+                                <li>End with <code>return { A, B };</code> to make only <code>A</code> and <code>B</code> visible to scopes and the Dashboard; the rest stay private. Without a <code>return</code>, every global is public.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="code-sidebar">
+                    <div class="scope-panel">
+                        <h4>Values</h4>
+                        <div v-if="globalValues.length === 0" class="muted-note">No globals declared yet.</div>
+                        <details v-if="publicEntries(globalValues).length" class="scope-globals" open>
+                            <summary>Public ({{ publicEntries(globalValues).length }})</summary>
+                            <div v-for="entry in publicEntries(globalValues)" :key="'g-' + entry.key" class="scope-entry" :title="entry.name">
+                                <span class="scope-key" :style="{ backgroundColor: entry.color + '60', boxShadow: '0 0 2px ' + entry.color }">{{ entry.key }}</span>
+                                <pre class="scope-value" :class="{ error: isErrorValue(entry.value) }">{{ formatVarValue(entry.value) }}</pre>
+                            </div>
+                        </details>
+                        <details v-if="privateEntries(globalValues).length" class="scope-globals">
+                            <summary title="Not returned, so scopes and the Dashboard can't see them">Private ({{ privateEntries(globalValues).length }})</summary>
+                            <div v-for="entry in privateEntries(globalValues)" :key="'gp-' + entry.key" class="scope-entry" :title="entry.name">
+                                <span class="scope-key" :style="{ backgroundColor: entry.color + '60', boxShadow: '0 0 2px ' + entry.color }">{{ entry.key }}</span>
+                                <pre class="scope-value" :class="{ error: isErrorValue(entry.value) }">{{ formatVarValue(entry.value) }}</pre>
+                            </div>
+                        </details>
+                    </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Tab: Scopes -->
+            <div v-if="activeTab === 'scopes'" class="tab-panel">
+                <div v-if="!scopes.length" class="placeholder-message empty-state">
+                    <p>A scope is a block of code that works out values (profits, costs, ...) from live prices.</p>
+                    <button class="scope-new-btn" @click="createScope">+ Create your first scope</button>
+                </div>
+                <div v-else class="code-tab-layout">
+
+                    <!-- Scope Code Editor -->
+                    <div class="var-panel">
+                        <div class="scope-bar">
+                            <select v-model="selectedScopeId" class="scope-select" title="Scope">
+                                <option v-for="s in scopes" :key="s.id" :value="s.id">{{ s.name }}</option>
+                            </select>
+                            <button @click="renameScope" class="rename-group-btn" title="Rename scope">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                            </button>
+                            <button @click="deleteScope" class="delete-group-btn" title="Delete scope">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                            </button>
+                            <button @click="autoColorScopeVariables" class="scope-new-btn btn-secondary" title="Recolor each variable from the colors of the variables and items it's calculated from">Auto colors</button>
+                            <button @click="createScope" class="scope-new-btn">+ New Scope</button>
+                        </div>
+
+                        <template v-if="selectedScope">
+                            <div class="scope-groups">
+                                <span class="scope-groups-label">Item groups</span>
+                                <tag-multi-select v-model="scopeGroupIds" :options="scopeGroupOptions" placeholder="+ Item group" hide-keys></tag-multi-select>
+                            </div>
+
+                            <details v-for="entry in scopeItemGroups" :key="entry.group.id" class="implied-code" open>
+                                <summary>{{ entry.group.name }} ({{ entry.items.length }}): click a price to insert it, ⧉ to copy the lookup</summary>
+                                <item-ref-list
+                                    :items="entry.items"
+                                    @insert="insertPriceRef"
+                                    @copy="copyItemLookup"
+                                ></item-ref-list>
+                            </details>
+
+                            <details class="implied-code" open>
+                                <summary>Find an item by name or ID</summary>
+                                <input type="text" v-model="itemLookupText" class="item-lookup-input" placeholder="e.g. Ahrim's hood or 4708" spellcheck="false">
+                                <template v-if="itemLookupText.trim()">
+                                    <div v-if="loading" class="item-lookup-note">Loading items…</div>
+                                    <div v-else-if="!itemLookupTotal" class="item-lookup-note">No items found.</div>
+                                    <template v-else>
+                                        <item-ref-list
+                                            :items="itemLookupResults"
+                                            @insert="insertPriceRef"
+                                            @copy="copyItemLookup"
+                                        ></item-ref-list>
+                                        <div v-if="itemLookupTotal > itemLookupResults.length" class="item-lookup-note">
+                                            Showing {{ itemLookupResults.length }} of {{ itemLookupTotal }} matches; type more to narrow it down.
+                                        </div>
+                                    </template>
+                                </template>
+                            </details>
+
+                            <details v-if="impliedScopeCode" class="implied-code" open>
+                                <summary>Implied variables (read-only)</summary>
+                                <formula-input
+                                    readonly
+                                    class="implied-code-editor"
+                                    :model-value="impliedScopeCode"
+                                    :variables="visibleGlobalVariables"
+                                    :items="scopeItems"
+                                ></formula-input>
+                            </details>
+                            <div class="editor-toolbar">
+                                <span class="editor-toolbar-title">{{ selectedScope.name }}</span>
+                                <editor-view-toggles></editor-view-toggles>
+                            </div>
+                            <formula-input
+                                ref="scopeCodeEditorRef"
+                                class="code-editor"
+                                v-model="scopeCode"
+                                :variables="[...(selectedScope.variables || []), ...visibleGlobalVariables]"
+                                :items="scopeItems"
+                                placeholder="const Name = expression;"
+                                color-editable
+                                @set-color="setScopeVariableColor"
+                                @input="onScopeCodeInput"
+                                @blur="onScopeCodeBlur"
+                            ></formula-input>
+                            <div v-if="scopeCodeErrors.length" class="code-errors">
+                                <div v-for="(err, i) in scopeCodeErrors" :key="i">{{ err }}</div>
+                                <div class="code-errors-note">Your code is saved, but values may be missing or out of date until the errors are fixed.</div>
+                            </div>
+                            <div class="tips">
+                                <p><strong>Tips</strong></p>
+                                <ul>
+                                    <li>The code is real JavaScript and runs top to bottom like a script: loops, <code>if</code>, functions, counters and <code>let x = 1; x = 2;</code> all work, plus RS shorthand like <code>10k</code>.</li>
+                                    <li>Each top-level <code>const</code> / <code>let</code> / <code>var</code> is one variable, showing the value it holds once the code has finished. Declare a name before using it; globals in the "Implied variables" block are always available (read-only). Names are case-sensitive.</li>
+                                    <li><code>//</code> comment lines directly above a declaration become its description. Use <code>// @tags: A, B</code> to tag it for the Dashboard.</li>
+                                    <li>End with <code>return { Profit, Margin };</code> to make only those public; the rest are private helpers (dimmed in Values, never on the Dashboard). <code>return { Total: A + B }</code> adds a value without declaring it. Without a <code>return</code>, every variable is public.</li>
+                                    <li><code>const { Profit, Margin } = importScope('Other scope');</code> pulls in another scope's public values (by scope name, case-insensitive). <code>const other = importScope('Other scope'); other.Profit</code> works too. Scopes can't import each other in a circle.</li>
+                                    <li><code>getOsrsItem('Oathplate helm').lowPrice</code> (or <code>.highPrice</code>) reads any GE item's live price by name, case-insensitive. The item groups above are just a short list to pick from; any item works.</li>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="code-sidebar">
+                    <div class="scope-panel">
+                        <h4>Values</h4>
+                        <div v-if="scopeValues.locals.length === 0" class="muted-note">No variables declared yet.</div>
+                        <details v-if="publicEntries(scopeValues.locals).length" class="scope-globals" open>
+                            <summary>Public ({{ publicEntries(scopeValues.locals).length }})</summary>
+                            <div v-for="entry in publicEntries(scopeValues.locals)" :key="'l-' + entry.key" class="scope-entry" :title="entry.name">
+                                <span class="scope-key" :style="{ backgroundColor: entry.color + '60', boxShadow: '0 0 2px ' + entry.color }">{{ entry.key }}</span>
+                                <pre class="scope-value" :class="{ error: isErrorValue(entry.value) }">{{ formatVarValue(entry.value) }}</pre>
+                            </div>
+                        </details>
+                        <details v-if="privateEntries(scopeValues.locals).length" class="scope-globals">
+                            <summary title="Not returned, so the Dashboard doesn't list them">Private ({{ privateEntries(scopeValues.locals).length }})</summary>
+                            <div v-for="entry in privateEntries(scopeValues.locals)" :key="'lp-' + entry.key" class="scope-entry" :title="entry.name">
+                                <span class="scope-key" :style="{ backgroundColor: entry.color + '60', boxShadow: '0 0 2px ' + entry.color }">{{ entry.key }}</span>
+                                <pre class="scope-value" :class="{ error: isErrorValue(entry.value) }">{{ formatVarValue(entry.value) }}</pre>
+                            </div>
+                        </details>
+                        <details v-if="scopeValues.globals.length" class="scope-globals">
+                            <summary>Globals ({{ scopeValues.globals.length }})</summary>
+                            <div v-for="entry in scopeValues.globals" :key="'g-' + entry.key" class="scope-entry" :class="{ overridden: entry.overridden }"
+                                 :title="entry.overridden ? 'Overridden by a const in this scope with the same name' : entry.name">
+                                <span class="scope-key" :style="{ backgroundColor: entry.color + '60', boxShadow: '0 0 2px ' + entry.color }">{{ entry.key }}</span>
+                                <pre class="scope-value" :class="{ error: isErrorValue(entry.value) }">{{ formatVarValue(entry.value) }}</pre>
+                            </div>
+                        </details>
+                    </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Tab: Manage Tags -->
+            <div v-if="activeTab === 'tags'" class="tab-panel card">
+                <div class="section-header">
+                    <h3>Manage Tags</h3>
+                    <p class="section-desc">Define tags to categorize your variables. Keys must be unique.</p>
+                </div>
+
+                <div class="create-group-form tag-form">
+                    <input type="text" v-model="newTagKey" placeholder="Tag Key (e.g. TAX)" class="tag-key-input">
+                    <input type="text" v-model="newTagLabel" placeholder="Tag Label (e.g. Tax Expenses)">
+                    <button @click="addTag">+ Add Tag</button>
+                </div>
+
+                <div class="variable-list">
+                    <div v-if="tags.length === 0" class="empty-state">
+                        No tags defined. Add one to start organizing your variables!
+                    </div>
+                    <div v-for="(tag, index) in tags" :key="tag.key" class="variable-row">
+                        <div class="col">
+                            <span class="variable-key">{{ tag.key }}</span>
+                        </div>
+                        <div class="col flex-grow">
+                            <input type="text" v-model="tag.label" class="variable-input variable-name" @change="saveData" placeholder="Label">
+                        </div>
+                        <button @click="deleteTag(index)" class="delete-group-btn" title="Delete tag">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Dashboard -->
+            <div v-if="activeTab === 'dashboard'" class="profit-panel">
+                <div class="section-header">
+                    <h3>Dashboard</h3>
+                    <p class="section-desc">Tagged values from every scope and the globals, grouped by tag.</p>
+                </div>
+
+                <div class="dashboard-filter">
+                    <label class="field-label">Filter by tags</label>
+                    <tag-multi-select v-model="dashboardFilterTags" :options="dashboardTagOptions"></tag-multi-select>
+                </div>
+
+                <div v-if="dashboardFilterTags.length === 0" class="empty-state">
+                    Select tags above to view grouped variables.
+                </div>
+
+                <div v-else class="dashboard-groups">
+                    <div v-for="group in dashboardGroupedVariables" :key="group.tagKey" class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <h4>{{ group.tagLabel }}</h4>
+                            <span class="count-badge">{{ group.variables.length }}</span>
+                        </div>
+
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Scope</th>
+                                    <th>Variable</th>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(v, idx) in group.variables" :key="idx">
+                                    <td>{{ v.scopeName }}</td>
+                                    <td>{{ v.name }}</td>
+                                    <td class="cell-key">{{ v.key }}</td>
+                                    <td class="cell-value"><pre>{{ formatVarValue(v.value) }}</pre></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <details class="footer">
+            <summary>Diagnostics: raw state</summary>
+            <p>Groups:</p>
+            <pre>{{ groups }}</pre>
+
+            <hr/>
+            <p>Items:</p>
+            <pre>{{ items }}</pre>
+        </details>
+    </main>
+</div>
+
+<!-- Load order matters: classic scripts share one global scope, dependencies first. -->
+<script src="js/vue-globals.js"></script>
+<script src="js/utils/colors.js"></script>
+<script src="js/utils/format.js"></script>
+<script src="js/utils/data.js"></script>
+<script src="js/utils/iconCache.js"></script>
+<script src="js/formula/sourceScan.js"></script>
+<script src="js/formula/functions.js"></script>
+<script src="js/formula/itemRefs.js"></script>
+<script src="js/formula/engine.js"></script>
+<script src="js/formula/scopeCode.js"></script>
+<script src="js/composables/useEditorSettings.js"></script>
+
+<script src="js/components/useFindReplace.js"></script>
+<script src="js/components/EditorViewToggles.js"></script>
+<script src="js/components/FormulaInput.js"></script>
+<script src="js/components/TagMultiSelect.js"></script>
+<script src="js/components/ItemIcon.js"></script>
+<script src="js/components/GroupItemList.js"></script>
+<script src="js/components/ItemRefList.js"></script>
+
+<script src="js/composables/useToasts.js"></script>
+<script src="js/composables/useModals.js"></script>
+<script src="js/composables/useTrackerStore.js"></script>
+<script src="js/composables/useRunescapeItems.js"></script>
+<script src="js/composables/useItemGroups.js"></script>
+<script src="js/composables/useEvaluation.js"></script>
+<script src="js/composables/useScopes.js"></script>
+<script src="js/composables/useVariables.js"></script>
+<script src="js/composables/useTags.js"></script>
+<script src="js/composables/useDashboard.js"></script>
+<script src="js/composables/useImportExport.js"></script>
+<script src="js/composables/useUrlState.js"></script>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>
