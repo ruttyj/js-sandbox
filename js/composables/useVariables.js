@@ -16,6 +16,19 @@ const useVariables = ({ store, items, evaluation, selectedScope, scopesApi, show
         return variable ? evaluation.getGlobalValue(variable.key) : "";
     };
 
+    // Current values by key, for the code editors' hover tooltips. The scope editor also lists
+    // the globals, so a key that isn't one of the scope's own reads the global value.
+    const scopeCodeValueOf = (key) => {
+        const scope = selectedScope.value;
+        const isScopeKey = (scope?.variables || []).some(v => v.key === key);
+        if (isScopeKey) {
+            return evaluation.getScopeValue(scope, key);
+        }
+        return evaluation.getGlobalValue(key);
+    };
+
+    const globalsCodeValueOf = (key) => evaluation.getGlobalValue(key);
+
     // Global variables, as code
     const parsedGlobalsCode = computed(() => parseScopeCode(globalsCode.value));
     const globalsCodeErrors = computed(() => {
@@ -85,8 +98,7 @@ const useVariables = ({ store, items, evaluation, selectedScope, scopesApi, show
 
     const itemLookupTotal = computed(() => itemLookupMatches.value.length);
 
-    const copyItemLookup = async (item) => {
-        const text = buildItemLookup(item);
+    const copyToClipboard = async (text) => {
         try {
             await navigator.clipboard.writeText(text);
             showToast(`Copied ${text}`, 'success');
@@ -96,8 +108,8 @@ const useVariables = ({ store, items, evaluation, selectedScope, scopesApi, show
     };
 
     return {
-        getVariableValue, getGlobalVariableValue,
+        getVariableValue, getGlobalVariableValue, scopeCodeValueOf, globalsCodeValueOf,
         globalsCodeErrors, globalValues, onGlobalsCodeInput, onGlobalsCodeBlur,
-        insertPriceRef, copyItemLookup, itemLookupText, itemLookupResults, itemLookupTotal,
+        insertPriceRef, copyToClipboard, itemLookupText, itemLookupResults, itemLookupTotal,
     };
 };

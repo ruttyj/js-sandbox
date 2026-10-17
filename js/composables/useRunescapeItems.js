@@ -33,6 +33,8 @@ const buildItemIndex = (mapping, prices) => {
 const useRunescapeItems = ({ showToast }) => {
     const items = ref({}); // Map indexed by ID
     const itemsByName = ref(new Map()); // itemNameKey(name) -> item, for getOsrsItem('Name')
+    // Both indexes together, for components that look items up by name or ID (see findItem).
+    const itemCatalog = computed(() => ({ byId: items.value, byName: itemsByName.value }));
     const loading = ref(true);
     const error = ref(null);
 
@@ -77,5 +79,5 @@ const useRunescapeItems = ({ showToast }) => {
 
     watch(searchText, debouncedSetSearchQuery);
 
-    return { items, itemsByName, loading, error, filteredItems, searchText, searchQuery, loadItems, refreshPrices };
+    return { items, itemsByName, itemCatalog, loading, error, filteredItems, searchText, searchQuery, loadItems, refreshPrices };
 };

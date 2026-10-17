@@ -4,6 +4,7 @@
 // loops, counters and reassignment (let x = 1; x = 2;) work, and a name must be declared before
 // it's used. It runs in strict mode against a scope that holds:
 //   getOsrsItem('Name')  -> { id, name, highPrice, lowPrice } of any GE item (name is case-insensitive)
+//   getOsrsItem(id)      -> the same, by item ID (a number, or a string of digits)
 //   I_<id>_H / I_<id>_L  -> legacy refs to an item's high / low price, still evaluated
 //   global variable keys -> their values, read-only (a scope's own declarations override them)
 //   MIN, MAX, SUM, ...   -> the library in functions.js
@@ -14,7 +15,7 @@
 //   utils/format.js        convertRunescapeNumbers
 //   formula/sourceScan.js  scanLiteralOrComment, matchParen
 //   formula/functions.js   FORMULA_FUNCTIONS, isFormulaFunction
-//   formula/itemRefs.js    ITEM_LOOKUP_FN, itemNameKey
+//   formula/itemRefs.js    ITEM_LOOKUP_FN, isItemIdArg, findItem
 //
 // Sections: shared types -> loop guards -> error lines -> the code's environment -> result
 // values -> running a program -> reading a run's result -> public API.
@@ -29,7 +30,8 @@ const FormulaEngine = (() => {
     /**
      * What runScopeCode needs besides the code itself. Every field is optional.
      * @typedef {Object} RunContext
-     * @property {Object<string, Item>} [items] Items by id, for legacy I_<id>_H / I_<id>_L refs.
+     * @property {Object<string, Item>} [items] Items by id, for getOsrsItem(id) and legacy
+     *     I_<id>_H / I_<id>_L refs.
      * @property {Map<string, Item>} [itemsByName] Items by itemNameKey(name), for getOsrsItem.
      * @property {Map<string, *>} [globals] Global variable values the code can read.
      * @property {(function(string): Object<string, *>)|null} [importScope] Another scope's public
@@ -282,18 +284,31 @@ const FormulaEngine = (() => {
      * @property {Map<string, *>} globals
      * @property {(function(string): Object<string, *>)|null} importScope null for the globals' own
      *     code, which can't import scopes.
-     * @property {function(string): Object} getOsrsItem
+     * @property {function(string|number): Object} getOsrsItem
      */
 
     /**
-     * Creates getOsrsItem('Name'), an O(1) lookup by name.
-     * @param {Map<string, Item>} itemsByName Items by itemNameKey(name).
-     * @returns {function(string): { id: number|null, name: string, highPrice: number, lowPrice: number }}
-     *     Throws for an unknown name, except before the item list has loaded.
+     * The error for a getOsrsItem argument that matches no item.
+     * @param {string|number} nameOrId
+     * @returns {Error}
      */
-    const createItemLookup = (itemsByName) => {
-        return (name) => {
-            const item = itemsByName.get(itemNameKey(name));
+    const unknownItemError = (nameOrId) => {
+        if (isItemIdArg(nameOrId)) {
+            return new Error(`Unknown item ID ${String(nameOrId).trim()}`);
+        }
+        return new Error(`Unknown item "${nameOrId}"`);
+    };
+
+    /**
+     * Creates getOsrsItem('Name') / getOsrsItem(id), an O(1) lookup by name or item ID.
+     * @param {Object<string, Item>} itemsById
+     * @param {Map<string, Item>} itemsByName Items by itemNameKey(name).
+     * @returns {function(string|number): { id: number|null, name: string, highPrice: number, lowPrice: number }}
+     *     Throws for an unknown item, except before the item list has loaded.
+     */
+    const createItemLookup = (itemsById, itemsByName) => {
+        return (nameOrId) => {
+            const item = findItem(nameOrId, itemsById, itemsByName);
             if (item) {
                 return {
                     id: item.id,
@@ -305,10 +320,10 @@ const FormulaEngine = (() => {
 
             // Before the item list has loaded, every item reads as 0 rather than an error.
             if (itemsByName.size === 0) {
-                return { id: null, name, highPrice: 0, lowPrice: 0 };
+                return { id: null, name: String(nameOrId), highPrice: 0, lowPrice: 0 };
             }
 
-            throw new Error(`Unknown item "${name}"`);
+            throw unknownItemError(nameOrId);
         };
     };
 
@@ -392,7 +407,7 @@ const FormulaEngine = (() => {
      * @returns {Proxy}
      */
     const createScopeProxy = ({ items, itemsByName, globals, importScope }) => {
-        const env = { items, globals, importScope, getOsrsItem: createItemLookup(itemsByName) };
+        const env = { items, globals, importScope, getOsrsItem: createItemLookup(items, itemsByName) };
 
         return new Proxy({}, {
             has: (_, name) => {

@@ -22,7 +22,6 @@ createApp({
         const groupsApi = useItemGroups({
             store,
             items: itemsApi.items,
-            activeTab,
             showToast,
             showConfirmModal: modalApi.showConfirmModal,
             showInputModal: modalApi.showInputModal,

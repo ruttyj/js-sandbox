@@ -1,0 +1,59 @@
+const geTools = importScope('geTools');
+
+const PlantPot = getOsrsItem('Filled plant pot');
+const AstralRune = getOsrsItem('Astral rune');
+
+const MagicSeed = getOsrsItem('Magic seed');
+const MagicSapling = getOsrsItem('Magic sapling');
+
+const YewSeed = getOsrsItem('Yew seed');
+const YewSapling = getOsrsItem('Yew sapling');
+
+const IronwoodSeed = getOsrsItem('Ironwood seed');
+const IronwoodSapling = getOsrsItem('Ironwood sapling');
+
+const RosewoodSeed = getOsrsItem('Rosewood seed');
+const RosewoodSapling = getOsrsItem('Rosewood sapling');
+
+const CamphorSeed = getOsrsItem('Camphor seed')
+const CamphorSapling = getOsrsItem('Camphor sapling');
+
+const PalmSeed = getOsrsItem('Palm tree seed')
+const PalmSapling = getOsrsItem('Palm sapling');
+
+// Build sapling pair list
+const registerPair = (seed, sapling) => ({seed, sapling});
+const seedSaplingPairs = {
+  Magic: registerPair(MagicSeed, MagicSapling),
+  Yew: registerPair(YewSeed, YewSapling),
+  Ironwood: registerPair(IronwoodSeed, IronwoodSapling),
+  Rosewood: registerPair(RosewoodSeed, RosewoodSapling),
+  Camphor: registerPair(CamphorSeed, CamphorSapling),
+  Palm: registerPair(PalmSeed, PalmSapling),
+};
+
+// Sapling Base Cost
+const SaplingBaseCost = PlantPot.highPrice + ( AstralRune.highPrice / 27 );
+
+const saplingsPerHour = 1700;
+
+const computePairProfit = ({seed, sapling}) => {
+  const revenu = geTools.afterTax(geTools.getAvgPrice(sapling));
+  const cost = geTools.getAvgPrice(seed) + SaplingBaseCost;
+  return revenu - cost;
+}
+
+// Magic Sapling Profit
+// @tags: PROFIT
+const saplingProfit = {};
+Object.keys(seedSaplingPairs).forEach(treeType => {
+  saplingProfit [treeType] = computePairProfit(seedSaplingPairs[treeType]);
+});
+
+// @tags: PROFIT/HR
+const saplingProfitPerHour = MUL(saplingProfit, saplingsPerHour);
+
+return {
+  saplingProfit,
+  saplingProfitPerHour,
+}getOsrsItem('Magic seed').highPrice

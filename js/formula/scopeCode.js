@@ -17,7 +17,7 @@
 //   utils/data.js          normalizeTags, normalizeVariable
 //   formula/sourceScan.js  scanLiteralOrComment, matchParen, OPENING_BRACKETS, CLOSING_BRACKETS
 //   formula/functions.js   FORMULA_FUNCTIONS
-//   formula/itemRefs.js    ITEM_LOOKUP_FN, itemNameKey, buildItemLookup, buildItemRef
+//   formula/itemRefs.js    ITEM_LOOKUP_FN, itemNameKey, findItem, buildItemLookup, buildItemRef
 //   formula/engine.js      SCOPE_IMPORT_FN
 //
 // Sections: formulas <-> expressions -> generating code -> legacy item refs -> variable colors ->
@@ -182,10 +182,35 @@ const ScopeCode = (() => {
         });
     };
 
-    const ITEM_LOOKUP_CALL = /getOsrsItem\(\s*(['"])((?:\\.|(?!\1).)*?)\1\s*\)/g;
+    // getOsrsItem('Name') or getOsrsItem(5316). Groups: 1 the quote, 2 the (still escaped) name,
+    // 3 the item ID.
+    const ITEM_LOOKUP_CALL = /getOsrsItem\(\s*(?:(['"])((?:\\.|(?!\1).)*?)\1|(\d+))\s*\)/g;
+
+    // A variable whose initial value is exactly one lookup, e.g. "=getOsrsItem('Magic seed');".
+    const WHOLE_ITEM_LOOKUP = new RegExp(`^=\\s*${ITEM_LOOKUP_CALL.source}\\s*;?\\s*$`);
 
     // The text inside quotes, with backslash escapes removed: Ahrim\'s hood -> Ahrim's hood
     const unescapeQuoted = (text) => text.replace(/\\(.)/g, '$1');
+
+    // The argument of an ITEM_LOOKUP_CALL match: the item ID as text, or the unescaped name.
+    const itemLookupArg = (match) => {
+        if (match[3] !== undefined) {
+            return match[3];
+        }
+        return unescapeQuoted(match[2]);
+    };
+
+    // The item a variable holds, when its initial value is a single getOsrsItem(...) call.
+    // "=getOsrsItem('Magic seed')" -> 'Magic seed'; "=getOsrsItem(5316);" -> '5316'.
+    // Returns the call's argument (a name or an ID), or null for any other value.
+    const formulaItemArg = (formula) => {
+        const raw = (formula ?? '').toString();
+        const call = WHOLE_ITEM_LOOKUP.exec(raw);
+        if (!call) {
+            return null;
+        }
+        return itemLookupArg(call);
+    };
 
     // code with every string, template literal and comment replaced by a single space.
     const maskLiteralsAndComments = (code) => {
@@ -202,26 +227,46 @@ const ScopeCode = (() => {
         return masked;
     };
 
-    // What an initial value reads: { keys, itemNames }. keys are every identifier outside strings,
-    // comments and property accesses (callers keep the ones that are variables). Literal values read nothing.
+    // What an initial value reads: { keys, itemArgs }. keys are every identifier outside strings,
+    // comments and property accesses (callers keep the ones that are variables); itemArgs are its
+    // getOsrsItem arguments (names or IDs). Literal values read nothing.
     const formulaInputs = (formula) => {
         const raw = (formula ?? '').toString();
-        if (!raw.startsWith('=')) return { keys: [], itemNames: [] };
+        if (!raw.startsWith('=')) return { keys: [], itemArgs: [] };
         const expression = raw.substring(1);
-        const itemNames = [...expression.matchAll(ITEM_LOOKUP_CALL)].map(m => unescapeQuoted(m[2]));
+        const itemArgs = [...expression.matchAll(ITEM_LOOKUP_CALL)].map(itemLookupArg);
         const identifiers = maskLiteralsAndComments(expression).matchAll(/(?<![\w$.])[A-Za-z_$][\w$]*/g);
-        return { keys: [...new Set([...identifiers].map(m => m[0]))], itemNames };
+        return { keys: [...new Set([...identifiers].map(m => m[0]))], itemArgs };
     };
 
     // Hue offsets for variables derived from the same inputs, so they stay distinguishable.
     const AUTO_COLOR_HUE_STEPS = [0, 14, -14, 28, -28, 42, -42];
 
+    // { byId, byName } indexes over a list of items, in the shapes findItem takes.
+    const indexItems = (items) => {
+        const byId = {};
+        const byName = new Map();
+        for (const item of items) {
+            if (item.id !== undefined) {
+                byId[item.id] = item;
+            }
+            if (item.name) {
+                byName.set(itemNameKey(item.name), item);
+            }
+        }
+        return { byId, byName };
+    };
+
     // The colors of what a variable reads: earlier variables (colorOf) and items.
-    const inputColors = (variable, colorOf, itemColors) => {
-        const { keys, itemNames } = formulaInputs(variable.formula);
+    // coloredItems: indexItems() over the items that have a color.
+    const inputColors = (variable, colorOf, coloredItems) => {
+        const { keys, itemArgs } = formulaInputs(variable.formula);
+        const itemColors = itemArgs
+            .map(arg => findItem(arg, coloredItems.byId, coloredItems.byName)?.color)
+            .filter(Boolean);
         return [
             ...keys.filter(k => k !== variable.key && colorOf.get(k)).map(k => colorOf.get(k)),
-            ...itemNames.map(name => itemColors.get(itemNameKey(name))).filter(Boolean),
+            ...itemColors,
         ];
     };
 
@@ -236,16 +281,16 @@ const ScopeCode = (() => {
     // Recolors a scope's variables from their inputs (the variables declared before them and the
     // items their initial value reads), so derived values look related to what they're made from.
     // Variables that read nothing keep their color, as do lockedKeys (ones with a "// @color:" line).
-    // globals: [{ key, color }]; items: [{ name, color }].
+    // globals: [{ key, color }]; items: [{ id, name, color }].
     // Returns { [key]: color } for the variables whose color changes.
     const autoVariableColors = (variables, { globals = [], items = [], lockedKeys = new Set() } = {}) => {
         const colorOf = new Map(globals.map(v => [v.key, v.color])); // key -> color, as variables are colored
-        const itemColors = new Map(items.map(item => [itemNameKey(item.name), item.color]));
+        const coloredItems = indexItems(items);
         const siblingCounts = new Map(); // inputs signature -> variables colored from it so far
         const changes = {};
 
         variables.forEach(v => {
-            const inputs = inputColors(v, colorOf, itemColors);
+            const inputs = inputColors(v, colorOf, coloredItems);
             let color = v.color;
             if (inputs.length && !lockedKeys.has(v.key)) {
                 const signature = [...new Set(inputs)].sort().join();
@@ -509,6 +554,7 @@ const ScopeCode = (() => {
         mergeParsedVariables,
         migrateLegacyItemRefs,
         autoVariableColors,
+        formulaItemArg,
         unescapeQuoted,
     });
 })();
@@ -522,5 +568,6 @@ const {
     mergeParsedVariables,
     migrateLegacyItemRefs,
     autoVariableColors,
+    formulaItemArg,
     unescapeQuoted,
 } = ScopeCode;

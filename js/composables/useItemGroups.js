@@ -1,6 +1,6 @@
 // Item group CRUD, item membership, and drag-reordering of groups and their items.
 // A group is just a list of items; scopes reference groups as short lists to draw from.
-const useItemGroups = ({ store, items, activeTab, showToast, showConfirmModal, showInputModal }) => {
+const useItemGroups = ({ store, items, showToast, showConfirmModal, showInputModal }) => {
     const { groups, scopes, saveData } = store;
 
     const groupSearchText = ref('');
@@ -72,16 +72,6 @@ const useItemGroups = ({ store, items, activeTab, showToast, showConfirmModal, s
 
     const selectGroup = (groupId) => {
         selectedGroupId.value = groupId;
-        // Jump from the market to the group so the click has a visible effect.
-        if (activeTab.value === 'market') activeTab.value = 'group-items';
-    };
-
-    const switchToGroupTab = (tab) => {
-        if (!selectedGroup.value) {
-            showToast("Please select a group first.", "info");
-            return;
-        }
-        activeTab.value = tab;
     };
 
     const addItemToSelectedGroup = (item) => {
@@ -155,7 +145,7 @@ const useItemGroups = ({ store, items, activeTab, showToast, showConfirmModal, s
     return {
         groupSearchText, selectedGroupId, newGroupName,
         selectedGroup, filteredGroups, hydratedGroupItems,
-        createGroup, renameGroup, deleteGroup, selectGroup, switchToGroupTab,
+        createGroup, renameGroup, deleteGroup, selectGroup,
         addItemToSelectedGroup, removeItemFromGroup, setItemColor,
         draggedItemIndex, onDragStart, onDrop,
         draggedGroupIndex, onGroupDragStart, onGroupDrop,

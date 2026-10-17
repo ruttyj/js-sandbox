@@ -289,8 +289,6 @@ input[type="text"]:focus, select:focus, .field:focus {
    Layout
    ========================================================================== */
 .main-layout {
-    display: grid;
-    grid-template-columns: 320px minmax(0, 1fr);
     gap: 1.25rem;
     padding: 1.25rem 1.5rem 2rem;
     max-width: 1920px;
@@ -349,8 +347,15 @@ input[type="text"]:focus, select:focus, .field:focus {
 }
 
 /* ==========================================================================
-   Groups sidebar
+   Groups sidebar (Group Items tab)
    ========================================================================== */
+.group-items-layout {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+    animation: fadeUp 0.25s var(--ease);
+}
 .groups-panel {
     background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
     border: 1px solid var(--line);
@@ -695,6 +700,7 @@ input[type="text"]:focus, select:focus, .field:focus {
     font-variant-numeric: tabular-nums;
 }
 
+.side-group-select { width: 100%; margin-bottom: 0.75rem; }
 .side-panel {
     position: sticky;
     top: calc(var(--header-h) + 1.25rem);
@@ -1018,33 +1024,47 @@ input[type="text"]:focus, select:focus, .field:focus {
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    cursor: copy;
+    transition: filter 0.12s;
 }
+.item-ref-code:hover { filter: brightness(1.25); }
+.item-ref-code:active { filter: brightness(0.9); }
 .code-fn { color: #7cc4ff; }
 .code-string { color: #f2d674; }
-.code-string:hover { text-decoration: underline; color: #ffe596; }
-.code-prop { color: var(--text-2); }
-.item-ref-copy {
-    background: none;
-    border: 1px solid var(--line-strong);
-    color: var(--text-2);
-    border-radius: var(--r-sm);
-    cursor: pointer;
-    padding: 0 0.3rem;
-    line-height: 1.5;
-    flex-shrink: 0;
-    transition: all 0.12s;
-}
-.item-ref-copy:hover { color: var(--text-0); border-color: var(--accent); background: var(--accent-soft); }
-.item-ref-graph { text-decoration: none; font-size: 12px; }
-.item-ref-prices { margin-left: auto; display: flex; gap: 0.75rem; flex-shrink: 0; }
-.item-ref-price { white-space: nowrap; }
 .item-ref-id {
     color: var(--text-3);
     font-size: 11.5px;
     white-space: nowrap;
     flex-shrink: 0;
-    user-select: all; /* one click selects the ID for copying */
+    cursor: copy;
+    padding: 0 0.2rem;
+    border-radius: var(--r-sm);
+    transition: color 0.12s, background 0.12s;
 }
+.item-ref-id:hover { color: var(--text-0); background: var(--accent-soft); }
+.item-ref-graph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    transition: color 0.12s, background 0.12s;
+}
+.item-ref-graph svg { width: 15px; height: 15px; }
+.item-ref-graph:hover { color: var(--accent-hi); background: var(--accent-soft); }
+.item-ref-prices {
+    margin-left: auto;
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+.item-ref-price { white-space: nowrap; }
+.item-ref-price-sep { color: var(--text-3); }
 .item-ref-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
 /* Item lookup (Scopes tab) */
@@ -1317,29 +1337,219 @@ input[type="text"]:focus, select:focus, .field:focus {
 .find-count { min-width: 70px; padding: 0 6px; color: var(--text-1); white-space: nowrap; }
 .find-count.empty { color: var(--down); }
 
-/* Hover color picker for a variable in a FormulaInput (teleported to body) */
-.formula-color-tip {
+/* Code editor hover card (FormulaTooltip): a variable's value, or a GE item's details */
+.formula-tip {
     position: fixed;
     z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px 4px 4px;
+    width: max-content;
+    min-width: 220px;
+    max-width: min(340px, calc(100vw - 16px));
     background-color: var(--bg-3);
     border: 1px solid var(--line-strong);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-2);
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: 12px;
     color: var(--text-1);
+    overflow: hidden;
 }
-.formula-color-tip-enter-active { transition: opacity 0.12s ease; }
-.formula-color-tip-leave-active {
+.formula-tip > * + * { border-top: 1px solid var(--line); }
+.formula-tip code,
+.formula-tip pre { font-family: var(--font-mono); }
+
+.formula-tip-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+}
+.formula-tip-swatch { width: 18px; height: 18px; flex-shrink: 0; }
+.formula-tip-swatch-static { border-radius: var(--r-sm); }
+.formula-tip-title {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+}
+.formula-tip-key {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-0);
+    overflow-wrap: anywhere;
+}
+.formula-tip-name { color: var(--text-2); font-size: 11.5px; }
+.formula-tip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 3px;
+    max-width: 45%;
+}
+.formula-tip-tag {
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-hi);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+/* Value */
+.formula-tip-value { padding: 8px 10px; }
+.formula-tip-value pre {
+    margin: 2px 0 0;
+    max-height: 180px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--text-0);
+    font-size: 12.5px;
+}
+.formula-tip-value.error pre { color: var(--down); }
+
+.formula-tip-label {
+    display: block;
+    color: var(--text-3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.formula-tip-hint { font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+/* Item */
+.formula-tip-item { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.formula-tip-item-head { display: flex; align-items: center; gap: 10px; }
+.formula-tip-icon {
+    width: 36px;
+    height: 32px;
+    flex-shrink: 0;
+    object-fit: scale-down;
+    image-rendering: pixelated;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+}
+.formula-tip-item-name {
+    color: var(--text-0);
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.formula-tip-badge {
+    padding: 0 5px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--accent-lo);
+    color: var(--accent);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+.formula-tip-id {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 6px;
+    margin-left: -6px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    cursor: copy;
+    transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.formula-tip-id svg { width: 12px; height: 12px; opacity: 0.7; }
+.formula-tip-id:hover { color: var(--text-0); background: var(--accent-soft); border-color: var(--accent-ring); }
+.formula-tip-id.copied { color: var(--up); background: var(--up-soft); border-color: transparent; }
+.formula-tip-id.copied svg { opacity: 1; }
+.formula-tip-graph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong);
+    color: var(--text-2);
+    transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.formula-tip-graph svg { width: 16px; height: 16px; }
+.formula-tip-graph:hover { color: var(--accent-hi); background: var(--accent-soft); border-color: var(--accent-ring); }
+
+.formula-tip-prices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.formula-tip-price {
+    padding: 6px 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.formula-tip-price-value { font-size: 15px; }
+.formula-tip-exact { color: var(--text-3); font-family: var(--font-mono); font-size: 10.5px; }
+
+.formula-tip-details {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 3px 12px;
+    margin: 0;
+}
+.formula-tip-details dt { color: var(--text-2); }
+.formula-tip-details dd {
+    margin: 0;
+    text-align: right;
+    color: var(--text-0);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+.formula-tip-examine {
+    margin: 0;
+    color: var(--text-2);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.formula-tip-copy-lookup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    font-size: 11px;
+    cursor: copy;
+    transition: color 0.12s, border-color 0.12s;
+}
+.formula-tip-copy-lookup code { color: #7cc4ff; font-size: 11.5px; }
+.formula-tip-copy-lookup:hover { color: var(--text-0); border-color: var(--accent-ring); }
+.formula-tip-copy-lookup.copied { color: var(--up); border-color: var(--up); }
+.formula-tip-replace-lookup { cursor: pointer; border-color: var(--accent-ring); color: var(--accent); }
+.formula-tip-replace-lookup:hover { background: var(--accent-soft); color: var(--accent-hi); border-color: var(--accent); }
+
+.formula-tip-note { padding: 8px 10px; color: var(--text-2); }
+.formula-tip-warning { color: var(--down); }
+.formula-tip-warning code { color: var(--text-0); }
+
+.formula-tip-enter-active { transition: opacity 0.12s ease; }
+.formula-tip-leave-active {
     transition: opacity 0.4s ease;
     pointer-events: none; /* don't catch the pointer while fading out */
 }
-.formula-color-tip-enter-from,
-.formula-color-tip-leave-to { opacity: 0; }
+.formula-tip-enter-from,
+.formula-tip-leave-to { opacity: 0; }
 
 /* Color Picker */
 .color-picker-input {
@@ -1666,7 +1876,8 @@ input[type="text"]:focus, select:focus, .field:focus {
     .side-panel, .code-sidebar { position: static; max-height: none; }
 }
 @media (max-width: 900px) {
-    .main-layout { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+    .main-layout { padding: 1rem; }
+    .group-items-layout { grid-template-columns: minmax(0, 1fr); }
     .groups-panel { position: static; max-height: none; }
     .brand-sub { display: none; }
     .app-header { padding: 0 1rem; }

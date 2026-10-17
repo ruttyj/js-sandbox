@@ -309,7 +309,7 @@ const useFindReplace = ({ getText, textareaRef, isReadonly, syncLayers }) => {
         findOpen, findShowReplace, findQuery, findReplacement, findCaseSensitive, findWholeWord, findUseRegex,
         findError: computed(() => search.value.error), findMatches, findCountLabel, findLayerHTML,
         findInputRef, replaceInputRef, findLayerRef, findProbeRef,
-        findStep, openFind, closeFind, toggleReplace, replaceOne, replaceAll,
+        findStep, openFind, closeFind, toggleReplace, replaceOne, replaceAll, insertText,
         handleFindKeydown, handleEditorFindKeys,
     };
 };

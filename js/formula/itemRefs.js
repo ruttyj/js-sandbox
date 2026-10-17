@@ -1,6 +1,6 @@
-// How user code refers to GE items: the getOsrsItem('Name') lookup, the code that's generated
-// for it (when an item is inserted into the editor or legacy refs are migrated), and the key the
-// name -> item index uses. The lookup itself runs in the engine (see createItemLookup).
+// How user code refers to GE items: the getOsrsItem('Name') / getOsrsItem(id) lookup, the code
+// that's generated for it (when an item is inserted into the editor or legacy refs are migrated),
+// and how an argument finds its item. The lookup itself runs in the engine (see createItemLookup).
 //
 // Everything is private to the ItemRefs closure except the names in its returned object, which
 // are also exposed as globals for the other scripts.
@@ -17,7 +17,7 @@
 
 const ItemRefs = (() => {
 
-    /** getOsrsItem('Name') in the code: an item's prices. */
+    /** getOsrsItem('Name') or getOsrsItem(id) in the code: an item's prices. */
     const ITEM_LOOKUP_FN = 'getOsrsItem';
 
     /**
@@ -28,6 +28,39 @@ const ItemRefs = (() => {
      */
     const itemNameKey = (name) => {
         return String(name).trim().toLowerCase();
+    };
+
+    // An item ID written as text: "5316" or " 5316 ". No item name is only digits.
+    const ITEM_ID_TEXT = /^\s*\d+\s*$/;
+
+    /**
+     * Whether a getOsrsItem argument is an item ID rather than a name.
+     * @example isItemIdArg(5316)         // -> true
+     * @example isItemIdArg('5316')       // -> true
+     * @example isItemIdArg('Magic seed') // -> false
+     * @param {*} nameOrId
+     * @returns {boolean}
+     */
+    const isItemIdArg = (nameOrId) => {
+        if (typeof nameOrId === 'number') {
+            return true;
+        }
+        return typeof nameOrId === 'string' && ITEM_ID_TEXT.test(nameOrId);
+    };
+
+    /**
+     * The item a getOsrsItem argument refers to: an item ID (a number or a string of digits) or
+     * an item name (case and surrounding spaces ignored).
+     * @param {string|number} nameOrId
+     * @param {Object<string, Item>} itemsById
+     * @param {Map<string, Item>} itemsByName Items by itemNameKey(name).
+     * @returns {Item|null} null for an unknown item.
+     */
+    const findItem = (nameOrId, itemsById, itemsByName) => {
+        if (isItemIdArg(nameOrId)) {
+            return itemsById[String(nameOrId).trim()] || null;
+        }
+        return itemsByName.get(itemNameKey(nameOrId)) || null;
     };
 
     /**
@@ -72,6 +105,8 @@ const ItemRefs = (() => {
     return Object.freeze({
         ITEM_LOOKUP_FN,
         itemNameKey,
+        isItemIdArg,
+        findItem,
         quoteItemName,
         buildItemLookup,
         buildItemRef,
@@ -83,6 +118,8 @@ const ItemRefs = (() => {
 const {
     ITEM_LOOKUP_FN,
     itemNameKey,
+    isItemIdArg,
+    findItem,
     quoteItemName,
     buildItemLookup,
     buildItemRef,

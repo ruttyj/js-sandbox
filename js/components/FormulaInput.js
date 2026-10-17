@@ -1,6 +1,7 @@
 // Textarea with a syntax-highlighted backdrop: variable keys and item refs (getOsrsItem('Name')
 // and legacy I_<id>_H/L) are tinted with their color, and optionally the code is colored like an
 // IDE (see editorSettings). The backdrop must mirror the textarea's size and scroll exactly.
+// Hovering a variable or an item ref shows a FormulaTooltip with its value or item details.
 //
 // The pure parts (editing keys, highlighting) are plain functions above the component; the
 // component wires them to the DOM.
@@ -88,7 +89,8 @@ const isCutShortcut = (e) => (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKe
 
 // --- Highlighting -----------------------------------------------------------------------------
 
-const ITEM_LOOKUP_PATTERN = /(?<itemLookup>getOsrsItem\(\s*(?<quote>['"])(?<itemName>(?:\\.|(?!\k<quote>).)*?)\k<quote>\s*\)(?:\.(?<itemField>highPrice|lowPrice))?)/.source;
+// getOsrsItem('Name') or getOsrsItem(5316), optionally followed by .highPrice / .lowPrice.
+const ITEM_LOOKUP_PATTERN = /(?<itemLookup>getOsrsItem\(\s*(?:(?<quote>['"])(?<itemName>(?:\\.|(?!\k<quote>).)*?)\k<quote>|(?<lookupId>\d+))\s*\)(?:\.(?<itemField>highPrice|lowPrice))?)/.source;
 const LEGACY_ITEM_REF_PATTERN = /(?<itemRef>I_(?<itemId>\d+)_(?<itemType>H|L))/.source;
 
 // Syntax highlighting tokens. Unterminated comments and strings run to the end so typing one
@@ -130,11 +132,24 @@ const buildHighlightRegex = (variableKeys, syntax) => {
 const syntaxToken = (cls, text) => `<span class="tok-${cls}">${escapeHtml(text)}</span>`;
 
 // hl (the highlight context): { text, tint, syntax, variables, itemsById, itemsByName }.
+// itemsById is a plain object and itemsByName a Map, the shapes findItem takes.
 
-// The tint around an item ref wraps its own (possibly syntax-colored) parts.
-const tintItemRef = (hl, color, borderColor, innerHtml) => (hl.tint
-    ? `<span style="background-color: ${color}60; ${TINT_BASE_STYLE} box-shadow: 0 0 0 2px ${borderColor};">${innerHtml}</span>`
-    : innerHtml);
+// An item ref is always wrapped in a span carrying its getOsrsItem argument (a name or an ID),
+// so the hover tooltip can find it; tinting adds the colored background around its own
+// (possibly syntax-colored) parts. The argument is URI-encoded so any name is a safe attribute.
+// sourceStart: where a getOsrsItem(...) call starts in the code, so the tooltip can replace it;
+// null for legacy refs.
+const tintItemRef = (hl, itemArg, sourceStart, color, borderColor, innerHtml) => {
+    let argAttr = ` data-item-arg="${encodeURIComponent(itemArg)}"`;
+    if (sourceStart !== null) {
+        argAttr += ` data-item-start="${sourceStart}"`;
+    }
+    if (!hl.tint) {
+        return `<span${argAttr}>${innerHtml}</span>`;
+    }
+    const style = `background-color: ${color}60; ${TINT_BASE_STYLE} box-shadow: 0 0 0 2px ${borderColor};`;
+    return `<span${argAttr} style="${style}">${innerHtml}</span>`;
+};
 
 // Variable spans always keep data-var-key, even untinted, so the color picker can find them.
 const renderVariable = (hl, varKey) => {
@@ -147,28 +162,31 @@ const renderVariable = (hl, varKey) => {
 };
 
 // getOsrsItem ( 'Name' ) .field, each part colored; the name may itself contain parentheses.
+// An ID argument is colored as a number.
 const syntaxColoredItemLookup = (lookup) => {
     const parts = lookup.match(/^(getOsrsItem)(\(\s*)([\s\S]*?)(\s*\))(?:(\.)(\w+))?$/i);
     if (!parts) return escapeHtml(lookup);
-    const [, fn, open, name, close, dot, field] = parts;
-    return syntaxToken('fn', fn) + syntaxToken('punct', open) + syntaxToken('string', name) + syntaxToken('punct', close)
+    const [, fn, open, arg, close, dot, field] = parts;
+    const argClass = /^\d+$/.test(arg) ? 'number' : 'string';
+    return syntaxToken('fn', fn) + syntaxToken('punct', open) + syntaxToken(argClass, arg) + syntaxToken('punct', close)
         + (dot ? syntaxToken('punct', dot) + syntaxToken('prop', field) : '');
 };
 
-const renderItemLookup = (hl, { itemLookup, itemName, itemField }) => {
-    const item = hl.itemsByName.get(itemNameKey(unescapeQuoted(itemName)));
+const renderItemLookup = (hl, { itemLookup, itemName, lookupId, itemField }, start) => {
+    const itemArg = lookupId ?? unescapeQuoted(itemName);
+    const item = findItem(itemArg, hl.itemsById, hl.itemsByName);
     const color = item?.color || UNDECLARED_COLOR;
     const field = (itemField || '').toLowerCase();
     const borderColor = field === 'highprice' ? HIGH_PRICE_BORDER : field === 'lowprice' ? LOW_PRICE_BORDER : color;
     const inner = hl.syntax ? syntaxColoredItemLookup(itemLookup) : escapeHtml(itemLookup);
-    return tintItemRef(hl, color, borderColor, inner);
+    return tintItemRef(hl, itemArg, start, color, borderColor, inner);
 };
 
 const renderLegacyItemRef = (hl, { itemRef, itemId, itemType }) => {
-    const item = hl.itemsById.get(itemId);
+    const item = hl.itemsById[itemId];
     const color = item?.color || UNDECLARED_COLOR;
     const borderColor = itemType.toUpperCase() === 'H' ? HIGH_PRICE_BORDER : LOW_PRICE_BORDER;
-    return tintItemRef(hl, color, borderColor, hl.syntax ? syntaxToken('var', itemRef) : escapeHtml(itemRef));
+    return tintItemRef(hl, itemId, null, color, borderColor, hl.syntax ? syntaxToken('var', itemRef) : escapeHtml(itemRef));
 };
 
 // An identifier followed by "(" is a call; one after "." is a property.
@@ -183,7 +201,7 @@ const identifierClass = (ident, text, start, end) => {
 const renderHighlightMatch = (hl, match) => {
     const groups = match.groups;
     if (groups.varKey) return renderVariable(hl, groups.varKey);
-    if (groups.itemLookup) return renderItemLookup(hl, groups);
+    if (groups.itemLookup) return renderItemLookup(hl, groups, match.index);
     if (groups.itemRef) return renderLegacyItemRef(hl, groups);
     if (groups.ident) {
         const end = match.index + match[0].length;
@@ -209,13 +227,154 @@ const highlightCode = (hl) => {
 };
 
 
+// --- Item calls in the code -------------------------------------------------------------------
+// Where a getOsrsItem(...) call sits in the code, so the tooltip can rewrite it to look the item
+// up by ID. A call is { start, end, text }: text is code.slice(start, end).
+
+// Just the call (no .highPrice / .lowPrice), matched exactly at lastIndex.
+const ITEM_CALL_AT = /getOsrsItem\(\s*(?:(['"])(?:\\.|(?!\1).)*?\1|\d+)\s*\)/y;
+
+// The getOsrsItem(...) call starting at code[start], or null.
+const itemCallAt = (code, start) => {
+    ITEM_CALL_AT.lastIndex = start;
+    const match = ITEM_CALL_AT.exec(code);
+    if (!match) {
+        return null;
+    }
+    return { start, end: start + match[0].length, text: match[0] };
+};
+
+// The getOsrsItem(...) call a variable is declared with, e.g. the call in
+// `const MagicSeed = getOsrsItem('Magic seed');`, or null when it isn't declared that way.
+const declaredItemCall = (code, key) => {
+    const declaration = new RegExp(`\\b(?:const|let|var)\\s+${escapeRegex(key)}\\s*=\\s*`, 'g');
+    for (const match of code.matchAll(declaration)) {
+        const call = itemCallAt(code, match.index + match[0].length);
+        if (call) {
+            return call;
+        }
+    }
+    return null;
+};
+
+
+// --- Hover tooltip content --------------------------------------------------------------------
+// tc (the tooltip context): { text, editable, variables, valueForKey, catalog }. text: the code;
+// editable: whether the tooltip may rewrite it. catalog: { byId, byName } over every GE item (or
+// null); valueForKey: key -> the variable's current value (or null when not provided).
+
+// The backdrop spans a tooltip can be about (see renderVariable and tintItemRef).
+const TIP_TARGET_SELECTOR = '[data-var-key], [data-item-arg]';
+
+// The tooltip target under a point: { span, rect }, or null.
+const tipTargetAt = (backdrop, x, y) => {
+    const spans = backdrop ? backdrop.querySelectorAll(TIP_TARGET_SELECTOR) : [];
+    for (const span of spans) {
+        for (const rect of span.getClientRects()) {
+            const isInside = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+            if (isInside) {
+                return { span, rect };
+            }
+        }
+    }
+    return null;
+};
+
+// What a target span is: 'var:<key>' or 'item:<argument>'. Used to tell targets apart.
+const tipTargetId = (span) => {
+    if (span.dataset.varKey) {
+        return `var:${span.dataset.varKey}`;
+    }
+    return `item:${span.dataset.itemArg}`;
+};
+
+const catalogItem = (catalog, itemArg) => {
+    if (!catalog) {
+        return null;
+    }
+    return findItem(itemArg, catalog.byId, catalog.byName);
+};
+
+const isCatalogLoaded = (catalog) => Boolean(catalog && catalog.byName.size);
+
+// The item a variable holds: one assigned a getOsrsItem(...) call directly, or failing that one
+// whose value is an item object (e.g. `const Seed = pairs.Magic.seed`). Returns the item's
+// getOsrsItem argument, or null when the variable isn't an item.
+const variableItemArg = (tc, variable, value) => {
+    const fromFormula = formulaItemArg(variable?.formula);
+    if (fromFormula !== null) {
+        return fromFormula;
+    }
+
+    const looksLikeItem = value !== null
+        && typeof value === 'object'
+        && Number.isInteger(value.id)
+        && 'highPrice' in value;
+    if (looksLikeItem && tc.catalog?.byId[value.id]) {
+        return String(value.id);
+    }
+    return null;
+};
+
+// call: the getOsrsItem(...) call the tip is about, or null. It's only offered for rewriting
+// (replaceCall) when the code is editable and the call looks the item up by name.
+const itemTipContent = (tc, itemArg, call) => {
+    const item = catalogItem(tc.catalog, itemArg);
+    const canReplace = tc.editable && call !== null && item !== null && !isItemIdArg(itemArg);
+    return {
+        itemArg,
+        item,
+        itemsLoaded: isCatalogLoaded(tc.catalog),
+        replaceCall: canReplace ? call : null,
+    };
+};
+
+const variableTipContent = (tc, key) => {
+    const variable = tc.variables.find(v => v.key === key);
+    const hasValue = Boolean(tc.valueForKey);
+    const value = hasValue ? tc.valueForKey(key) : undefined;
+    const itemArg = variableItemArg(tc, variable, value);
+    const noItem = { itemArg: null, item: null, replaceCall: null };
+
+    return {
+        variable: {
+            key,
+            name: variable?.name || '',
+            tags: variable?.tags || [],
+            color: variable?.color || UNDECLARED_COLOR,
+            value,
+            hasValue,
+        },
+        ...(itemArg === null ? noItem : itemTipContent(tc, itemArg, declaredItemCall(tc.text, key))),
+    };
+};
+
+// The tip FormulaTooltip renders for a target span; see the tip shape described there.
+const buildTip = (tc, span, rect) => {
+    const anchor = { top: rect.top, bottom: rect.bottom, left: rect.left };
+    const target = tipTargetId(span);
+    if (span.dataset.varKey) {
+        return { target, anchor, ...variableTipContent(tc, span.dataset.varKey) };
+    }
+    const itemArg = decodeURIComponent(span.dataset.itemArg);
+    const hasStart = span.dataset.itemStart !== undefined;
+    const call = hasStart ? itemCallAt(tc.text, Number(span.dataset.itemStart)) : null;
+    return { target, anchor, variable: null, ...itemTipContent(tc, itemArg, call) };
+};
+
+
 // --- Component --------------------------------------------------------------------------------
 
-// colorEditable: hovering a variable shows a small color picker, which emits set-color(key, color).
+// colorEditable: the hover tooltip's swatch is a color picker, which emits set-color(key, color).
+// items: the scope's colored items, for tinting item refs. itemCatalog: { byId, byName } over
+// every GE item, for item tooltips. valueForKey: key -> the variable's current value, for tooltips.
 const FormulaInput = {
+    components: { 'formula-tooltip': FormulaTooltip },
     // Flags are typed as Boolean so a bare attribute (`readonly`, `color-editable`) is true (untyped, it would be "").
     props: {
         modelValue: null, variables: null, placeholder: null, items: null,
+        itemCatalog: Object,
+        valueForKey: Function,
         readonly: Boolean,
         colorEditable: Boolean,
     },
@@ -226,20 +385,21 @@ const FormulaInput = {
         const containerRef = ref(null);
         let resizeObserver = null;
 
-        // Color tooltip. The textarea sits over the backdrop, so the hovered variable is found by
-        // hit-testing the backdrop's variable spans. { key, color, top, left } or null.
-        // It fades out on its own unless the pointer is on it, and stays away for that variable
+        // Hover tooltip. The textarea sits over the backdrop, so the hovered variable or item ref
+        // is found by hit-testing the backdrop's spans. tip: see FormulaTooltip, or null.
+        // It fades out on its own unless the pointer is on it, and stays away for that target
         // until the pointer leaves it, so it doesn't keep covering the code being read.
         const TIP_SHOW_DELAY = 350;
+        const TIP_SWITCH_DELAY = 300;
         const TIP_LEAVE_DELAY = 250;
-        const TIP_IDLE_TIMEOUT = 1000;
-        const colorTip = ref(null);
+        const TIP_IDLE_TIMEOUT = 2500;
+        const tip = ref(null);
         let showTimer = null;
         let hideTimer = null;
         let idleTimer = null;
         let pickerOpen = false; // the native color dialog is open; keep the tooltip up
         let tipHovered = false;
-        let dismissedKey = null;
+        let dismissedTarget = null;
 
         const clearTimers = () => {
             clearTimeout(showTimer);
@@ -247,88 +407,123 @@ const FormulaInput = {
             clearTimeout(idleTimer);
         };
 
-        // dismiss: don't show it again for this variable until the pointer leaves it.
-        const hideColorTip = (dismiss = false) => {
+        // dismiss: don't show it again for this target until the pointer leaves it.
+        const hideTip = (dismiss = false) => {
             clearTimers();
-            if (dismiss && colorTip.value) dismissedKey = colorTip.value.key;
+            if (dismiss && tip.value) {
+                dismissedTarget = tip.value.target;
+            }
             pickerOpen = false;
             tipHovered = false;
-            colorTip.value = null;
+            tip.value = null;
         };
 
-        const dismissColorTip = () => hideColorTip(true);
+        const dismissTip = () => hideTip(true);
 
-        const hideColorTipSoon = () => {
+        const hideTipSoon = () => {
             clearTimeout(showTimer);
             clearTimeout(hideTimer);
             hideTimer = setTimeout(() => {
-                if (!pickerOpen && !tipHovered) hideColorTip();
+                if (!pickerOpen && !tipHovered) {
+                    hideTip();
+                }
             }, TIP_LEAVE_DELAY);
         };
 
         const startIdleTimer = () => {
             clearTimeout(idleTimer);
             idleTimer = setTimeout(() => {
-                if (!pickerOpen && !tipHovered) hideColorTip(true);
+                if (!pickerOpen && !tipHovered) {
+                    hideTip(true);
+                }
             }, TIP_IDLE_TIMEOUT);
         };
 
         const handleTipEnter = () => {
             tipHovered = true;
+            clearTimeout(showTimer);
             clearTimeout(hideTimer);
             clearTimeout(idleTimer);
         };
 
         const handleTipLeave = () => {
             tipHovered = false;
-            hideColorTipSoon();
+            hideTipSoon();
             startIdleTimer();
         };
 
-        const variableSpanAt = (x, y) => {
-            const spans = backdropRef.value ? backdropRef.value.querySelectorAll('[data-var-key]') : [];
-            for (const span of spans) {
-                for (const rect of span.getClientRects()) {
-                    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return { span, rect };
-                }
-            }
-            return null;
-        };
+        const tooltipContext = () => ({
+            text: props.modelValue || '',
+            editable: !props.readonly,
+            variables: props.variables || [],
+            valueForKey: props.valueForKey || null,
+            catalog: props.itemCatalog || null,
+        });
 
-        const showColorTip = (key, rect) => {
-            const variable = (props.variables || []).find(v => v.key === key);
-            colorTip.value = { key, color: variable?.color || UNDECLARED_COLOR, top: rect.bottom + 4, left: rect.left };
+        const showTip = (hit) => {
+            tip.value = buildTip(tooltipContext(), hit.span, hit.rect);
             startIdleTimer();
         };
 
         const handleMouseMove = (e) => {
-            if (!props.colorEditable) return;
-            const hit = variableSpanAt(e.clientX, e.clientY);
-            const key = hit ? hit.span.dataset.varKey : null;
-            if (key !== dismissedKey) dismissedKey = null;
-            if (!key) {
-                if (colorTip.value) hideColorTipSoon();
-                else clearTimeout(showTimer);
+            const hit = tipTargetAt(backdropRef.value, e.clientX, e.clientY);
+            const target = hit ? tipTargetId(hit.span) : null;
+            if (target !== dismissedTarget) {
+                dismissedTarget = null;
+            }
+
+            if (!target) {
+                if (tip.value) {
+                    hideTipSoon();
+                } else {
+                    clearTimeout(showTimer);
+                }
                 return;
             }
-            if (key === dismissedKey) return;
+            if (target === dismissedTarget) {
+                return;
+            }
+
             clearTimeout(hideTimer);
-            if (colorTip.value?.key === key) return;
+            if (tip.value?.target === target) {
+                return;
+            }
             clearTimeout(showTimer);
-            // A short delay so passing over a variable while moving the mouse doesn't flash a
-            // tooltip; once one is showing, moving to another variable switches at once.
-            showTimer = setTimeout(() => showColorTip(key, hit.rect), colorTip.value ? 0 : TIP_SHOW_DELAY);
+            // A short delay so passing over a target while moving the mouse doesn't flash a
+            // tooltip. Once one is showing, the pointer often crosses other targets on its way
+            // into the card, so switching waits until it rests on the new target; reaching the
+            // card cancels the switch (see handleTipEnter). Each move restarts the wait.
+            const delay = tip.value ? TIP_SWITCH_DELAY : TIP_SHOW_DELAY;
+            showTimer = setTimeout(() => showTip(hit), delay);
         };
 
-        const handleColorInput = (e) => {
-            if (!colorTip.value) return;
-            colorTip.value.color = e.target.value;
-            emit('set-color', colorTip.value.key, e.target.value);
+        const handleColorInput = (color) => {
+            const variable = tip.value?.variable;
+            if (!variable) {
+                return;
+            }
+            variable.color = color;
+            emit('set-color', variable.key, color);
         };
 
         const handlePickerClosed = () => {
             pickerOpen = false;
             startIdleTimer();
+        };
+
+        // Rewrites the tooltip's getOsrsItem('Name') call as `replacement` (the lookup by ID).
+        // The code is checked first, in case it changed since the tooltip opened.
+        const handleReplaceCall = (replacement) => {
+            const call = tip.value?.replaceCall;
+            hideTip();
+            if (!call) {
+                return;
+            }
+            const code = props.modelValue || '';
+            if (code.slice(call.start, call.end) !== call.text) {
+                return;
+            }
+            find.insertText(call.start, call.end, replacement);
         };
 
         const autoResize = () => {
@@ -382,7 +577,7 @@ const FormulaInput = {
         };
 
         const handleInput = (e) => {
-            hideColorTip();
+            hideTip();
             emitEdit(e.target.value, e);
             syncAll();
         };
@@ -407,7 +602,7 @@ const FormulaInput = {
         };
 
         const handleKeydown = (e) => {
-            if (colorTip.value) dismissColorTip();
+            if (tip.value) dismissTip();
             if (find.handleEditorFindKeys(e)) return;
             if (isCutShortcut(e)) selectLineForCut(e.target);
             else if (e.key === 'Tab' && !props.readonly) handleTab(e);
@@ -432,10 +627,10 @@ const FormulaInput = {
         });
 
         const itemLookup = computed(() => {
-            const byId = new Map();
+            const byId = {};
             const byName = new Map();
             (props.items || []).forEach(item => {
-                byId.set(String(item.id), item);
+                byId[item.id] = item;
                 if (item.name) byName.set(itemNameKey(item.name), item);
             });
             return { byId, byName };
@@ -458,15 +653,15 @@ const FormulaInput = {
 
         const handleScroll = () => {
             syncScroll();
-            if (colorTip.value && !pickerOpen) hideColorTip();
+            if (tip.value && !pickerOpen) hideTip();
         };
 
         return {
             ...find,
             editorSettings,
             textareaRef, backdropRef, containerRef, handleInput, handleKeydown, handleScroll, highlightedHTML,
-            colorTip, handleMouseMove, hideColorTipSoon, dismissColorTip, handleTipEnter, handleTipLeave,
-            handleColorInput, handlePickerClosed,
+            tip, handleMouseMove, hideTipSoon, dismissTip, handleTipEnter, handleTipLeave,
+            handleColorInput, handlePickerClosed, handleReplaceCall,
             openPicker: () => { pickerOpen = true; },
         };
     },
@@ -483,8 +678,8 @@ const FormulaInput = {
                 @keydown="handleKeydown"
                 @scroll="handleScroll"
                 @mousemove="handleMouseMove"
-                @mouseleave="hideColorTipSoon"
-                @mousedown="dismissColorTip"
+                @mouseleave="hideTipSoon"
+                @mousedown="dismissTip"
                 @focus="$emit('focus')"
                 @blur="$emit('blur')"
                 :placeholder="placeholder"
@@ -521,26 +716,18 @@ const FormulaInput = {
                 </div>
             </div>
             <teleport to="body">
-                <transition name="formula-color-tip">
-                <div
-                    v-if="colorTip"
-                    class="formula-color-tip"
-                    :style="{ top: colorTip.top + 'px', left: colorTip.left + 'px' }"
-                    @mouseenter="handleTipEnter"
-                    @mouseleave="handleTipLeave"
-                >
-                    <input
-                        type="color"
-                        class="color-picker-input"
-                        :value="colorTip.color"
-                        :title="'Color of ' + colorTip.key"
-                        @click="openPicker"
-                        @input="handleColorInput"
-                        @change="handlePickerClosed"
-                        @blur="handlePickerClosed"
-                    >
-                    <span class="formula-color-tip-key">{{ colorTip.key }}</span>
-                </div>
+                <transition name="formula-tip">
+                    <formula-tooltip
+                        v-if="tip"
+                        :tip="tip"
+                        :color-editable="colorEditable"
+                        @enter="handleTipEnter"
+                        @leave="handleTipLeave"
+                        @color-input="handleColorInput"
+                        @picker-open="openPicker"
+                        @picker-closed="handlePickerClosed"
+                        @replace-call="handleReplaceCall"
+                    ></formula-tooltip>
                 </transition>
             </teleport>
         </div>
