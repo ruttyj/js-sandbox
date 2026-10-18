@@ -1,0 +1,1050 @@
+{
+  "domain": "consumables",
+  "notes": "Tree: consumable > food / drink / potion / blighted-supply / charge-item; magic > magic-rune / magic-tablet / teleport / magic-orb; prayer > bone / demonic-ash / shade-remains / ensouled-head / pyre-log / prayer-scroll; misc > cannon > cannonball. Potions are grouped potion > purpose (combat-boost, restore, run-energy, cure, dragonfire-protection, skill-boost) > family (super-combat, prayer-potion ...). Each family covers every dose, the barbarian mix and the divine variant, so e.g. \"Divine super combat potion(4)\" is super-combat + divine-potion. Fish family keys (shark, anglerfish, karambwan, manta-ray, ...) use parent \"material\" and match raw, cooked, blighted and crate forms by name, so they can be merged with the raw-fish domain's identical keys. The key \"magic-rune\" (label \"Runes\") avoids clashing with the metal tier family \"rune\". teleport sits under magic; charged teleport jewellery (glory, dueling, games ...) also gets the equipment domain's jewellery tags. League/DMM cosmetic \"teleport scroll\" items are excluded. dragon-bone groups all dragonkin bones (dragon, superior, lava, frost, baby, wyvern, drake, hydra, wyrm) rather than one tag per bone type; it does not reuse the metal \"dragon\" key on purpose. No heal-amount groupings: the item data has no heal values and wiki categories do not encode them. pyre-log is placed under prayer (Shades of Mort'ton cremation); the woodcutting/firemaking domain may also want it.",
+  "tags": [
+    {
+      "key": "food",
+      "label": "Food",
+      "parent": "consumable",
+      "description": "Anything eaten to heal, cooked or not",
+      "match": {
+        "categoriesAny": [
+          "Edible items"
+        ],
+        "nameRegex": "^(cooked chompy|cooked oomlie wrap)",
+        "excludeNameRegex": "^(araxyte venom sac|poison chalice)$"
+      }
+    },
+    {
+      "key": "cooked-fish",
+      "label": "Cooked fish",
+      "parent": "food",
+      "description": "Cooked fish ready to eat (shrimps ... anglerfish, sailing fish)",
+      "match": {
+        "categoriesAny": [
+          "Edible items",
+          "Food"
+        ],
+        "categoriesAll": [
+          "Fish"
+        ],
+        "excludeNameRegex": "^raw "
+      }
+    },
+    {
+      "key": "cooked-meat",
+      "label": "Cooked meat",
+      "parent": "food",
+      "description": "Cooked and roasted meat, hunter meat and crab meat",
+      "match": {
+        "categoriesAny": [
+          "Edible items",
+          "Food"
+        ],
+        "categoriesAll": [
+          "Meat"
+        ],
+        "excludeNameRegex": "^(raw |wrapped oomlie$)|snail$"
+      }
+    },
+    {
+      "key": "pie",
+      "label": "Pies",
+      "parent": "food",
+      "description": "Baked pies (redberry, meat, admiral, wild, summer, botanical ...)",
+      "match": {
+        "nameRegex": " pie$",
+        "excludeNameRegex": "^(raw|uncooked|mud) "
+      }
+    },
+    {
+      "key": "pizza",
+      "label": "Pizzas",
+      "parent": "food",
+      "description": "Baked pizzas",
+      "match": {
+        "nameRegex": "pizza$"
+      }
+    },
+    {
+      "key": "cake",
+      "label": "Cakes",
+      "parent": "food",
+      "description": "Cakes",
+      "match": {
+        "nameRegex": "^(chocolate |mint )?cake$"
+      }
+    },
+    {
+      "key": "potato-dish",
+      "label": "Potato dishes",
+      "parent": "food",
+      "description": "Baked potatoes and topped potatoes",
+      "match": {
+        "nameRegex": "^((baked|chilli|egg|mushroom|tuna) potato|potato with (butter|cheese))$"
+      }
+    },
+    {
+      "key": "stew",
+      "label": "Stews",
+      "parent": "food",
+      "description": "Stews and curry",
+      "match": {
+        "nameRegex": "^((banana )?stew|curry)$"
+      }
+    },
+    {
+      "key": "kebab",
+      "label": "Kebabs",
+      "parent": "food",
+      "description": "Kebabs",
+      "match": {
+        "nameRegex": "kebab$"
+      }
+    },
+    {
+      "key": "gnome-food",
+      "label": "Gnome food",
+      "parent": "food",
+      "description": "Gnome cooking dishes: battas, crunchies, gnomebowls (and premade versions)",
+      "match": {
+        "nameRegex": "batta$|crunch(ies)?$|crun'$|^(premade )?(worm hole|veg ball|choc(olate)? bomb|ttl)$|^tangled toad's legs$",
+        "excludeNameRegex": "^(batta tin|crunchy tray)$"
+      }
+    },
+    {
+      "key": "shrimp",
+      "label": "Shrimps",
+      "parent": "material",
+      "description": "Shrimps family: raw, cooked and blighted shrimps",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?shrimps$|^(fish|bounty supply) crate \\(shrimps\\)$"
+      }
+    },
+    {
+      "key": "anchovy",
+      "label": "Anchovies",
+      "parent": "material",
+      "description": "Anchovies family: raw, cooked and blighted anchovies",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?anchovies$|^(fish|bounty supply) crate \\(anchovies\\)$"
+      }
+    },
+    {
+      "key": "sardine",
+      "label": "Sardines",
+      "parent": "material",
+      "description": "Sardines family: raw, cooked and blighted sardine",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?sardine$|^(fish|bounty supply) crate \\(sardine\\)$"
+      }
+    },
+    {
+      "key": "herring",
+      "label": "Herring",
+      "parent": "material",
+      "description": "Herring family: raw, cooked and blighted herring",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?herring$|^(fish|bounty supply) crate \\(herring\\)$"
+      }
+    },
+    {
+      "key": "mackerel",
+      "label": "Mackerel",
+      "parent": "material",
+      "description": "Mackerel family: raw, cooked and blighted mackerel",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?mackerel$|^(fish|bounty supply) crate \\(mackerel\\)$"
+      }
+    },
+    {
+      "key": "trout",
+      "label": "Trout",
+      "parent": "material",
+      "description": "Trout family: raw, cooked and blighted trout",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?trout$|^(fish|bounty supply) crate \\(trout\\)$"
+      }
+    },
+    {
+      "key": "cod",
+      "label": "Cod",
+      "parent": "material",
+      "description": "Cod family: raw, cooked and blighted cod",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?cod$|^(fish|bounty supply) crate \\(cod\\)$"
+      }
+    },
+    {
+      "key": "pike",
+      "label": "Pike",
+      "parent": "material",
+      "description": "Pike family: raw, cooked and blighted pike",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?pike$|^(fish|bounty supply) crate \\(pike\\)$"
+      }
+    },
+    {
+      "key": "salmon",
+      "label": "Salmon",
+      "parent": "material",
+      "description": "Salmon family: raw, cooked and blighted salmon",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?salmon$|^(fish|bounty supply) crate \\(salmon\\)$"
+      }
+    },
+    {
+      "key": "tuna",
+      "label": "Tuna",
+      "parent": "material",
+      "description": "Tuna family: raw, cooked and blighted tuna",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?tuna$|^(fish|bounty supply) crate \\(tuna\\)$"
+      }
+    },
+    {
+      "key": "rainbow-fish",
+      "label": "Rainbow fish",
+      "parent": "material",
+      "description": "Rainbow fish family: raw, cooked and blighted rainbow fish",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?rainbow fish$|^(fish|bounty supply) crate \\(rainbow fish\\)$"
+      }
+    },
+    {
+      "key": "cave-eel",
+      "label": "Cave eels",
+      "parent": "material",
+      "description": "Cave eels family: raw, cooked and blighted cave eel",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?cave eel$|^(fish|bounty supply) crate \\(cave eel\\)$"
+      }
+    },
+    {
+      "key": "slimy-eel",
+      "label": "Slimy eels",
+      "parent": "material",
+      "description": "Slimy eels family: raw, cooked and blighted slimy eel",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?slimy eel$|^(fish|bounty supply) crate \\(slimy eel\\)$"
+      }
+    },
+    {
+      "key": "lobster",
+      "label": "Lobsters",
+      "parent": "material",
+      "description": "Lobsters family: raw, cooked and blighted lobster",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?lobster$|^(fish|bounty supply) crate \\(lobster\\)$"
+      }
+    },
+    {
+      "key": "bass",
+      "label": "Bass",
+      "parent": "material",
+      "description": "Bass family: raw, cooked and blighted bass",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?bass$|^(fish|bounty supply) crate \\(bass\\)$"
+      }
+    },
+    {
+      "key": "swordfish",
+      "label": "Swordfish",
+      "parent": "material",
+      "description": "Swordfish family: raw, cooked and blighted swordfish",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?swordfish$|^(fish|bounty supply) crate \\(swordfish\\)$"
+      }
+    },
+    {
+      "key": "monkfish",
+      "label": "Monkfish",
+      "parent": "material",
+      "description": "Monkfish family: raw, cooked and blighted monkfish",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?monkfish$|^(fish|bounty supply) crate \\(monkfish\\)$"
+      }
+    },
+    {
+      "key": "karambwan",
+      "label": "Karambwans",
+      "parent": "material",
+      "description": "Karambwans family: raw, cooked and blighted karambwan",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?karambwan$|^(fish|bounty supply) crate \\(karambwan\\)$"
+      }
+    },
+    {
+      "key": "shark",
+      "label": "Sharks",
+      "parent": "material",
+      "description": "Sharks family: raw, cooked and blighted shark",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?shark$|^(fish|bounty supply) crate \\(shark\\)$"
+      }
+    },
+    {
+      "key": "sea-turtle",
+      "label": "Sea turtles",
+      "parent": "material",
+      "description": "Sea turtles family: raw, cooked and blighted sea turtle",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?sea turtle$|^(fish|bounty supply) crate \\(sea turtle\\)$"
+      }
+    },
+    {
+      "key": "manta-ray",
+      "label": "Manta rays",
+      "parent": "material",
+      "description": "Manta rays family: raw, cooked and blighted manta ray",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?manta ray$|^(fish|bounty supply) crate \\(manta ray\\)$"
+      }
+    },
+    {
+      "key": "anglerfish",
+      "label": "Anglerfish",
+      "parent": "material",
+      "description": "Anglerfish family: raw, cooked and blighted anglerfish",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?anglerfish$|^(fish|bounty supply) crate \\(anglerfish\\)$"
+      }
+    },
+    {
+      "key": "dark-crab",
+      "label": "Dark crabs",
+      "parent": "material",
+      "description": "Dark crabs family: raw, cooked and blighted dark crab",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?dark crab$|^(fish|bounty supply) crate \\(dark crab\\)$"
+      }
+    },
+    {
+      "key": "haddock",
+      "label": "Haddock",
+      "parent": "material",
+      "description": "Haddock family: raw, cooked and blighted haddock",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?haddock$|^(fish|bounty supply) crate \\(haddock\\)$"
+      }
+    },
+    {
+      "key": "halibut",
+      "label": "Halibut",
+      "parent": "material",
+      "description": "Halibut family: raw, cooked and blighted halibut",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?halibut$|^(fish|bounty supply) crate \\(halibut\\)$"
+      }
+    },
+    {
+      "key": "yellowfin",
+      "label": "Yellowfin",
+      "parent": "material",
+      "description": "Yellowfin family: raw, cooked and blighted yellowfin",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?yellowfin$|^(fish|bounty supply) crate \\(yellowfin\\)$"
+      }
+    },
+    {
+      "key": "bluefin",
+      "label": "Bluefin",
+      "parent": "material",
+      "description": "Bluefin family: raw, cooked and blighted bluefin",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?bluefin$|^(fish|bounty supply) crate \\(bluefin\\)$"
+      }
+    },
+    {
+      "key": "marlin",
+      "label": "Marlin",
+      "parent": "material",
+      "description": "Marlin family: raw, cooked and blighted marlin",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?marlin$|^(fish|bounty supply) crate \\(marlin\\)$"
+      }
+    },
+    {
+      "key": "giant-krill",
+      "label": "Giant krill",
+      "parent": "material",
+      "description": "Giant krill family: raw, cooked and blighted giant krill",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?giant krill$|^(fish|bounty supply) crate \\(giant krill\\)$"
+      }
+    },
+    {
+      "key": "jumbo-squid",
+      "label": "Jumbo squid",
+      "parent": "material",
+      "description": "Jumbo squid family: raw, cooked and blighted jumbo squid",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?jumbo squid$|^(fish|bounty supply) crate \\(jumbo squid\\)$"
+      }
+    },
+    {
+      "key": "swordtip-squid",
+      "label": "Swordtip squid",
+      "parent": "material",
+      "description": "Swordtip squid family: raw, cooked and blighted swordtip squid",
+      "match": {
+        "nameRegex": "^((raw|cooked|blighted) )?swordtip squid$|^(fish|bounty supply) crate \\(swordtip squid\\)$"
+      }
+    },
+    {
+      "key": "drink",
+      "label": "Drinks",
+      "parent": "consumable",
+      "description": "Ales, wines, spirits and cocktails",
+      "match": {
+        "categoriesAny": [
+          "Drinks"
+        ],
+        "excludeNameRegex": "^(beer glass|calquat keg)$"
+      }
+    },
+    {
+      "key": "ale",
+      "label": "Ales and beers",
+      "parent": "drink",
+      "description": "Brewed ales (incl. mature and keg versions), beers and stouts",
+      "match": {
+        "nameRegex": "^(asgarnian ale|axeman's folly|chef's delight|(mature )?cider|dragon bitter|dwarven stout|greenman'?s ale|moonlight mead|slayer's respite|(wizard's )?mind bomb|mature wmb|beer|beer tankard|keg of beer|sunbeam ale|steamforge brew|bandit's brew|blood pint)(\\(m?4?\\))?$"
+      }
+    },
+    {
+      "key": "wine",
+      "label": "Wines",
+      "parent": "drink",
+      "description": "Wines (jug of wine, Varlamore reds, whites and rosés)",
+      "match": {
+        "nameRegex": "wine( jug)?$| (red|white|rosé)$"
+      }
+    },
+    {
+      "key": "cocktail",
+      "label": "Cocktails",
+      "parent": "drink",
+      "description": "Gnome cocktails (and premade versions)",
+      "match": {
+        "nameRegex": "^(premade )?(blurberry special|blurb' sp\\.|choc saturday|choc s'dy|drunk dragon|dr' dragon|short green guy|sgg|wizard blizzard|wiz blz'd|pineapple punch|p' punch|fruit blast|fr' blast)$"
+      }
+    },
+    {
+      "key": "spirit",
+      "label": "Spirits",
+      "parent": "drink",
+      "description": "Distilled spirits",
+      "match": {
+        "nameRegex": "^(brandy|gin|vodka|whisky|rum( \\((blue|red)\\))?)$"
+      }
+    },
+    {
+      "key": "potion",
+      "label": "Potions",
+      "parent": "consumable",
+      "description": "Finished potions, barbarian mixes and divine potions (all doses)",
+      "match": {
+        "categoriesAny": [
+          "Potions"
+        ],
+        "nameRegex": "^blighted overload",
+        "excludeNameRegex": "\\(unf\\)$|^unfinished potion$|^weapon poison|^olive oil|\\(item\\)$|^coconut milk$|^bottled dragonbreath"
+      }
+    },
+    {
+      "key": "barbarian-mix",
+      "label": "Barbarian mixes",
+      "parent": "potion",
+      "description": "Two-dose potions mixed with roe/caviar (Barbarian Herblore)",
+      "match": {
+        "categoriesAny": [
+          "Barbarian mixes"
+        ]
+      }
+    },
+    {
+      "key": "hunters-mix",
+      "label": "Hunter's mixes",
+      "parent": "potion",
+      "description": "Jarred moth/butterfly mixes (moonlight moth, sunlight moth, snowy knight, black warlock, ruby harvest, sapphire glacialis)",
+      "match": {
+        "nameRegex": "^(moonlight moth|sunlight moth|snowy knight|black warlock|ruby harvest|sapphire glacialis) mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "divine-potion",
+      "label": "Divine potions",
+      "parent": "potion",
+      "description": "Divine potions: boost does not drop for 5 minutes",
+      "match": {
+        "nameRegex": "^divine .*potion\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "combat-boost",
+      "label": "Combat boosting potions",
+      "parent": "potion",
+      "description": "Potions that boost combat stats",
+      "match": {
+        "nameRegex": "^(magic essence mix|blighted overload|black warlock mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "attack-potion",
+      "label": "Attack potions",
+      "parent": "combat-boost",
+      "description": "Attack potion and attack mix",
+      "match": {
+        "nameRegex": "^attack (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "strength-potion",
+      "label": "Strength potions",
+      "parent": "combat-boost",
+      "description": "Strength potion and strength mix",
+      "match": {
+        "nameRegex": "^strength (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "defence-potion",
+      "label": "Defence potions",
+      "parent": "combat-boost",
+      "description": "Defence potion and defence mix",
+      "match": {
+        "nameRegex": "^defence (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-attack",
+      "label": "Super attack",
+      "parent": "combat-boost",
+      "description": "Super attack, superattack mix, divine super attack",
+      "match": {
+        "nameRegex": "^(divine )?super attack( potion)?\\s?\\(\\d\\)$|^superattack mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-strength",
+      "label": "Super strength",
+      "parent": "combat-boost",
+      "description": "Super strength, super str. mix, divine super strength",
+      "match": {
+        "nameRegex": "^(divine )?super strength( potion)?\\s?\\(\\d\\)$|^super str\\. mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-defence",
+      "label": "Super defence",
+      "parent": "combat-boost",
+      "description": "Super defence, super def. mix, divine super defence",
+      "match": {
+        "nameRegex": "^(divine )?super defence( potion)?\\s?\\(\\d\\)$|^super def\\. mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "combat-potion",
+      "label": "Combat potions",
+      "parent": "combat-boost",
+      "description": "Combat potion and combat mix",
+      "match": {
+        "nameRegex": "^combat (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-combat",
+      "label": "Super combat potions",
+      "parent": "combat-boost",
+      "description": "Super combat and divine super combat",
+      "match": {
+        "nameRegex": "^(divine )?super combat potion\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "ranging-potion",
+      "label": "Ranging potions",
+      "parent": "combat-boost",
+      "description": "Ranging potion, ranging mix, divine ranging",
+      "match": {
+        "nameRegex": "^(divine )?ranging potion\\s?\\(\\d\\)$|^ranging mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "magic-potion",
+      "label": "Magic potions",
+      "parent": "combat-boost",
+      "description": "Magic potion, magic mix, divine magic",
+      "match": {
+        "nameRegex": "^(divine )?magic potion\\s?\\(\\d\\)$|^magic mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "bastion-potion",
+      "label": "Bastion potions",
+      "parent": "combat-boost",
+      "description": "Bastion and divine bastion (ranged + defence)",
+      "match": {
+        "nameRegex": "^(divine )?bastion potion\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "battlemage-potion",
+      "label": "Battlemage potions",
+      "parent": "combat-boost",
+      "description": "Battlemage and divine battlemage (magic + defence)",
+      "match": {
+        "nameRegex": "^(divine )?battlemage potion\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "zamorak-brew",
+      "label": "Zamorak brews",
+      "parent": "combat-boost",
+      "description": "Zamorak brew and zamorak mix",
+      "match": {
+        "nameRegex": "^zamorak (brew|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "ancient-brew",
+      "label": "Ancient brews",
+      "parent": "combat-boost",
+      "description": "Ancient brew and ancient mix",
+      "match": {
+        "nameRegex": "^ancient (brew|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "forgotten-brew",
+      "label": "Forgotten brews",
+      "parent": "combat-boost",
+      "description": "Forgotten brew",
+      "match": {
+        "nameRegex": "^forgotten brew\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "armadyl-brew",
+      "label": "Armadyl brews",
+      "parent": "combat-boost",
+      "description": "Armadyl brew",
+      "match": {
+        "nameRegex": "^armadyl brew\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "restore",
+      "label": "Restore potions",
+      "parent": "potion",
+      "description": "Potions and teas that restore prayer, stats or hitpoints",
+      "match": {
+        "nameRegex": "^(menaphite remedy|moonlight moth mix|sunlight moth mix|snowy knight mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "prayer-potion",
+      "label": "Prayer potions",
+      "parent": "restore",
+      "description": "Prayer potion and prayer mix",
+      "match": {
+        "nameRegex": "^prayer (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "prayer-regeneration",
+      "label": "Prayer regeneration potions",
+      "parent": "restore",
+      "description": "Prayer regeneration potion",
+      "match": {
+        "nameRegex": "^prayer regeneration potion\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-restore",
+      "label": "Super restores",
+      "parent": "restore",
+      "description": "Super restore, super restore mix, blighted super restore",
+      "match": {
+        "nameRegex": "^(blighted )?super restore( mix)?\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "restore-potion",
+      "label": "Restore potions (basic)",
+      "parent": "restore",
+      "description": "Restore potion and restore mix",
+      "match": {
+        "nameRegex": "^restore (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "saradomin-brew",
+      "label": "Saradomin brews",
+      "parent": "restore",
+      "description": "Saradomin brew",
+      "match": {
+        "nameRegex": "^saradomin brew\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "sanfew-serum",
+      "label": "Sanfew serums",
+      "parent": "restore",
+      "description": "Sanfew serum (restore + cure)",
+      "match": {
+        "nameRegex": "^sanfew serum\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "guthix-rest",
+      "label": "Guthix rest teas",
+      "parent": "restore",
+      "description": "Guthix rest tea (heals, restores run energy, cures poison)",
+      "match": {
+        "nameRegex": "^guthix rest\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "run-energy",
+      "label": "Energy potions",
+      "parent": "potion",
+      "description": "Potions that restore run energy",
+      "match": {
+        "nameRegex": "^extreme energy potion\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "energy-potion",
+      "label": "Energy potions (basic)",
+      "parent": "run-energy",
+      "description": "Energy potion and energy mix",
+      "match": {
+        "nameRegex": "^energy (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-energy",
+      "label": "Super energy",
+      "parent": "run-energy",
+      "description": "Super energy and super energy mix",
+      "match": {
+        "nameRegex": "^super energy( mix)?\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "stamina",
+      "label": "Stamina potions",
+      "parent": "run-energy",
+      "description": "Stamina, stamina mix, extended stamina",
+      "match": {
+        "nameRegex": "^(extended )?stamina (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "cure",
+      "label": "Cures",
+      "parent": "potion",
+      "description": "Potions that cure poison, venom, disease or bleed",
+      "match": {
+        "nameRegex": "^(relicym's (balm|mix)|guthix balance|serum 207|sanfew serum|guthix rest|haemostatic dressing)\\s?\\(\\d\\)$|^haemostatic poultice$"
+      }
+    },
+    {
+      "key": "antipoison",
+      "label": "Antipoisons",
+      "parent": "cure",
+      "description": "Antipoison, superantipoison and their mixes",
+      "match": {
+        "nameRegex": "^(super)?antipoison\\s?\\(\\d\\)$|^antipoison mix\\s?\\(\\d\\)$|^anti-poison supermix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "antidote",
+      "label": "Antidotes",
+      "parent": "cure",
+      "description": "Antidote+, antidote++ and antidote+ mix",
+      "match": {
+        "nameRegex": "^antidote\\+\\+?( mix)?\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "anti-venom",
+      "label": "Anti-venoms",
+      "parent": "cure",
+      "description": "Anti-venom, anti-venom+ and extended anti-venom+",
+      "match": {
+        "nameRegex": "^(extended )?anti-venom\\+?\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "dragonfire-protection",
+      "label": "Antifire potions",
+      "parent": "potion",
+      "description": "Potions that protect against dragonfire"
+    },
+    {
+      "key": "antifire",
+      "label": "Antifires",
+      "parent": "dragonfire-protection",
+      "description": "Antifire, extended antifire and their mixes",
+      "match": {
+        "nameRegex": "^(extended )?antifire( potion| mix)?\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "super-antifire",
+      "label": "Super antifires",
+      "parent": "dragonfire-protection",
+      "description": "Super antifire, extended super antifire and their mixes",
+      "match": {
+        "nameRegex": "^(extended )?super antifire( potion| mix)?\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "skill-boost",
+      "label": "Skill boosting potions",
+      "parent": "potion",
+      "description": "Potions that boost a non-combat skill",
+      "match": {
+        "nameRegex": "^(ruby harvest mix|sapphire glacialis mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "agility-potion",
+      "label": "Agility potions",
+      "parent": "skill-boost",
+      "description": "Agility potion and agility mix",
+      "match": {
+        "nameRegex": "^agility (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "fishing-potion",
+      "label": "Fishing potions",
+      "parent": "skill-boost",
+      "description": "Fishing, super fishing and fishing mix",
+      "match": {
+        "nameRegex": "^(super )?fishing (potion|mix)\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "hunter-potion",
+      "label": "Hunter potions",
+      "parent": "skill-boost",
+      "description": "Hunter, super hunter and hunting mix",
+      "match": {
+        "nameRegex": "^(super )?hunter potion\\s?\\(\\d\\)$|^hunting mix\\s?\\(\\d\\)$"
+      }
+    },
+    {
+      "key": "magic-rune",
+      "label": "Runes",
+      "parent": "magic",
+      "description": "Runes used to cast spells",
+      "match": {
+        "categoriesAny": [
+          "Runes"
+        ]
+      }
+    },
+    {
+      "key": "elemental-rune",
+      "label": "Elemental runes",
+      "parent": "magic-rune",
+      "description": "Air, water, earth, fire (and sunfire) runes",
+      "match": {
+        "nameRegex": "^(air|water|earth|fire|sunfire) rune$"
+      }
+    },
+    {
+      "key": "catalytic-rune",
+      "label": "Catalytic runes",
+      "parent": "magic-rune",
+      "description": "Mind, body, chaos, cosmic, nature, law, death, astral, blood, soul, wrath runes",
+      "match": {
+        "nameRegex": "^(mind|body|chaos|cosmic|nature|law|death|astral|blood|soul|wrath) rune$"
+      }
+    },
+    {
+      "key": "combination-rune",
+      "label": "Combination runes",
+      "parent": "magic-rune",
+      "description": "Runes counting as two runes: dust, lava, mist, mud, smoke, steam, aether",
+      "match": {
+        "nameRegex": "^(dust|lava|mist|mud|smoke|steam|aether) rune$"
+      }
+    },
+    {
+      "key": "magic-tablet",
+      "label": "Magic tablets",
+      "parent": "magic",
+      "description": "One-use spell tablets: teleports, enchant, bones to bananas/peaches",
+      "match": {
+        "categoriesAny": [
+          "Magic tablets"
+        ]
+      }
+    },
+    {
+      "key": "teleport",
+      "label": "Teleport items",
+      "parent": "magic",
+      "description": "Items that teleport the player: tablets, scrolls, charged jewellery, seeds, etc.",
+      "match": {
+        "categoriesAny": [
+          "Teleportation items",
+          "Teleport spells"
+        ],
+        "nameRegex": "teleport",
+        "excludeNameRegex": "^(annihilation|armageddon|shattered|twisted|trailblazer( reloaded home)?|echo home) teleport scroll$|^teleport anchoring scroll$|^summon boat$|^rum \\((blue|red)\\)$"
+      }
+    },
+    {
+      "key": "teleport-scroll",
+      "label": "Teleport scrolls",
+      "parent": "teleport",
+      "description": "One-use teleport scrolls (stored in the master scroll book)",
+      "match": {
+        "categoriesAll": [
+          "Teleportation items"
+        ],
+        "nameRegex": " teleport( scroll)?$",
+        "excludeNameRegex": "^(wilderness crabs|target|annihilation|armageddon|shattered|twisted|trailblazer( reloaded home)?|echo home) teleport"
+      }
+    },
+    {
+      "key": "teleport-jewellery",
+      "label": "Teleport jewellery",
+      "parent": "teleport",
+      "description": "Charged jewellery with teleports (glory, dueling, games, skills, wealth ...)",
+      "match": {
+        "categoriesAny": [
+          "Teleportation items"
+        ],
+        "categoriesAll": [
+          "Jewellery"
+        ]
+      }
+    },
+    {
+      "key": "magic-orb",
+      "label": "Orbs",
+      "parent": "magic",
+      "description": "Unpowered and elemental orbs (Charge Orb spells)",
+      "match": {
+        "nameRegex": "^(unpowered|air|water|earth|fire) orb$"
+      }
+    },
+    {
+      "key": "bone",
+      "label": "Bones",
+      "parent": "prayer",
+      "description": "Bones buried or offered for Prayer xp",
+      "match": {
+        "categoriesAny": [
+          "Bones"
+        ],
+        "nameRegex": "^crushed superior dragon bones$"
+      }
+    },
+    {
+      "key": "dragon-bone",
+      "label": "Dragon bones",
+      "parent": "bone",
+      "description": "Bones of dragons and dragonkin (dragon, superior, lava, frost, baby dragon, wyvern, drake, hydra, wyrm)",
+      "match": {
+        "nameRegex": "^((baby|lava |frost |superior |crushed superior )?dragon|wyvern|drake|hydra|wyrm|wyrmling) ?bones$"
+      }
+    },
+    {
+      "key": "demonic-ash",
+      "label": "Demonic ashes",
+      "parent": "prayer",
+      "description": "Demonic ashes scattered for Prayer xp (fiendish ... infernal)",
+      "match": {
+        "categoriesAny": [
+          "Demonic ashes"
+        ]
+      }
+    },
+    {
+      "key": "shade-remains",
+      "label": "Shade remains",
+      "parent": "prayer",
+      "description": "Shade remains burnt on pyres in Mort'ton",
+      "match": {
+        "categoriesAll": [
+          "Remains"
+        ],
+        "nameRegex": "remains$"
+      }
+    },
+    {
+      "key": "ensouled-head",
+      "label": "Ensouled heads",
+      "parent": "prayer",
+      "description": "Ensouled heads reanimated with Arceuus spells",
+      "match": {
+        "categoriesAny": [
+          "Ensouled heads"
+        ]
+      }
+    },
+    {
+      "key": "pyre-log",
+      "label": "Pyre logs",
+      "parent": "prayer",
+      "description": "Logs treated with sacred oil, used to cremate shade remains",
+      "match": {
+        "nameRegex": "pyre logs$"
+      }
+    },
+    {
+      "key": "prayer-scroll",
+      "label": "Prayer scrolls",
+      "parent": "prayer",
+      "description": "Scrolls that unlock prayers (Rigour, Augury, Deadeye, Mystic Vigour)",
+      "match": {
+        "nameRegex": "^(dexterous|arcane|torn) prayer scroll$"
+      }
+    },
+    {
+      "key": "blighted-supply",
+      "label": "Blighted supplies",
+      "parent": "consumable",
+      "description": "Wilderness-only blighted food, potions and spell sacks",
+      "match": {
+        "nameRegex": "^blighted "
+      }
+    },
+    {
+      "key": "cannon",
+      "label": "Cannon",
+      "parent": "misc",
+      "description": "Dwarf multicannon parts and cannonballs",
+      "match": {
+        "nameRegex": "^(cannon (barrels|base|furnace|stand)|dwarf cannon set|dragon cannon barrel)$"
+      }
+    },
+    {
+      "key": "cannonball",
+      "label": "Cannonballs",
+      "parent": "cannon",
+      "description": "Cannonballs for the dwarf multicannon and ship cannons (incl. chainshot and incendiary)",
+      "match": {
+        "nameRegex": "cannonball$"
+      }
+    },
+    {
+      "key": "charge-item",
+      "label": "Charge items",
+      "parent": "consumable",
+      "description": "Items consumed as charges by degradable gear (Zulrah's scales, revenant ether, ancient essence)",
+      "match": {
+        "nameRegex": "^(zulrah's scales|revenant ether|ancient essence)$"
+      }
+    }
+  ]
+}

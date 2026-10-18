@@ -5,6 +5,7 @@ const EDITOR_SETTINGS_KEY = 'osrs-ge-tracker-editor-settings';
 const editorSettings = reactive({
     variableHighlight: true, // tint variables and item lookups with their color
     syntaxHighlight: false,  // color keywords, strings, numbers, comments, ... like an IDE
+    lineNumbers: false,      // show a line-number gutter beside the code
 });
 
 try {

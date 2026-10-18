@@ -710,7 +710,7 @@ input[type="text"]:focus, select:focus, .field:focus {
 }
 
 /* ==========================================================================
-   Group items list
+   Item list header (Item Tags tab)
    ========================================================================== */
 .group-items-header {
     display: flex;
@@ -722,57 +722,6 @@ input[type="text"]:focus, select:focus, .field:focus {
     border-bottom: 1px solid var(--line);
 }
 .group-items-header h3 { font-size: 1rem; }
-.group-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    padding: 0.6rem 0.6rem 0.6rem 0.35rem;
-    border-radius: var(--r-md);
-    border: 1px solid transparent;
-    transition: background-color 0.12s, border-color 0.12s;
-}
-.group-item:nth-child(odd) { background-color: rgba(255, 255, 255, 0.015); }
-.group-item:hover { background-color: var(--bg-3); border-color: var(--line); }
-.group-item.dragging, .group-card.dragging, .item-ref-row.dragging {
-    opacity: 0.5;
-    border: 1px dashed var(--accent);
-}
-.group-item-top, .group-item-bottom { display: flex; align-items: center; width: 100%; }
-.group-item-top { gap: 0.6rem; }
-.group-item-top .item-icon {
-    width: 32px;
-    height: 30px;
-    padding: 2px;
-    border-radius: var(--r-sm);
-    background: var(--bg-input);
-    border: 1px solid var(--line);
-    flex-shrink: 0;
-}
-.group-item-name { font-size: 0.85rem; font-weight: 500; min-width: 0; }
-.group-item-bottom { justify-content: space-between; padding-left: 2.1rem; }
-.group-item-info { flex-grow: 1; display: flex; align-items: center; gap: 1rem; }
-.group-item-prices { display: flex; gap: 0.5rem; font-size: 0.8rem; flex-wrap: wrap; }
-.group-item-prices .price-row {
-    padding: 2px 8px;
-    border-radius: var(--r-sm);
-    background: var(--bg-input);
-    border: 1px solid var(--line);
-}
-.remove-item-btn {
-    margin-left: auto;
-    height: 26px;
-    padding: 0 0.6rem;
-    background: transparent;
-    border: 1px solid var(--line-strong);
-    color: var(--text-2);
-    border-radius: var(--r-md);
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.12s;
-}
-.remove-item-btn:hover { color: var(--down); background: var(--down-soft); border-color: rgba(255, 90, 103, 0.4); }
 
 /* ==========================================================================
    Loading / error
@@ -890,6 +839,20 @@ input[type="text"]:focus, select:focus, .field:focus {
 .toast.success { border-left-color: var(--up); }
 .toast.error { border-left-color: var(--down); }
 .toast.info { border-left-color: var(--info); }
+.toast { display: flex; align-items: center; gap: 0.75rem; }
+.toast > span { flex: 1; }
+.toast-action {
+    flex-shrink: 0;
+    padding: 2px 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-ring);
+    border-radius: var(--r-sm);
+    color: var(--accent-hi);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.toast-action:hover { background: var(--accent); color: var(--accent-ink); }
 
 @keyframes slideIn {
     from { opacity: 0; transform: translateX(24px); }
@@ -1065,7 +1028,189 @@ input[type="text"]:focus, select:focus, .field:focus {
 }
 .item-ref-price { white-space: nowrap; }
 .item-ref-price-sep { color: var(--text-3); }
+.item-ref-spread {
+    min-width: 4.5em;
+    text-align: right;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+/* Stays at the top while the list scrolls under it. */
+.item-ref-sort-bar {
+    position: sticky;
+    top: -0.25rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: -0.25rem;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-input);
+    border-bottom: 1px solid var(--line);
+    font-size: 11.5px;
+}
+.item-ref-sort-label {
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 0.25rem;
+}
+.item-ref-sort-btn {
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text-2);
+    font-size: inherit;
+    cursor: pointer;
+}
+.item-ref-sort-btn:hover { color: var(--text-0); background: var(--bg-2); }
+.item-ref-sort-btn.active { color: var(--accent-hi); border-color: var(--accent-hi); background: var(--accent-soft); }
+.item-ref-sort-arrow { margin-left: 0.2rem; font-size: 0.8em; }
 .item-ref-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.item-ref-color { width: 12px; height: 12px; flex-shrink: 0; }
+.item-ref-remove {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    color: var(--text-3);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+}
+.item-ref-remove:hover { color: var(--down); border-color: var(--down); background: var(--down-soft); }
+
+/* Item tag chips (item lists and the code tooltip) */
+.item-ref-tags {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-family: var(--font-ui);
+}
+.item-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    border: 1px solid var(--line);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: 10.5px;
+    line-height: 17px;
+    white-space: nowrap;
+}
+.item-tag-chip-label { cursor: pointer; }
+.item-tag-chip-label:hover { color: var(--accent-hi); }
+.item-tag-chip-remove {
+    margin-left: 3px;
+    color: var(--text-3);
+    cursor: pointer;
+    display: none;
+}
+.item-tag-chip:hover .item-tag-chip-remove { display: inline; }
+.item-tag-chip-remove:hover { color: var(--down); }
+.item-tag-add {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 999px;
+    background: none;
+    border: 1px dashed var(--line-strong);
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+.item-ref-row:hover .item-tag-add { opacity: 1; }
+.item-tag-add:hover { color: var(--accent-hi); border-color: var(--accent); }
+.item-tag-input {
+    flex-shrink: 0;
+    width: 120px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--bg-input);
+    border: 1px solid var(--accent-ring);
+    border-radius: 999px;
+    color: var(--text-0);
+    font-size: 11px;
+}
+
+/* Item Tags tab */
+.item-tag-tree { max-height: calc(100vh - 360px); overflow-y: auto; }
+.item-tag-row { padding-top: 5px; padding-bottom: 5px; }
+.item-tag-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.item-tag-key { color: var(--text-2); font-size: 12px; }
+.item-tag-badge {
+    padding: 1px 6px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong);
+    color: var(--text-2);
+    font-size: 10.5px;
+}
+.item-tag-header-actions { margin-left: auto; display: flex; gap: 4px; }
+.item-tag-parent { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.item-tag-parent .scope-select { max-width: 260px; }
+.formula-tip-item-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* System tags are read-only and quiet; the user's own tags stand out (accent outline). */
+.item-tag-chip.system { color: var(--text-2); }
+.item-tag-chip.user {
+    color: var(--accent-hi);
+    background: var(--accent-soft);
+    border-color: var(--accent-ring);
+}
+.item-tag-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 2px 6px;
+    color: var(--text-1);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.item-tag-section-heading.system { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+.item-tag-section-empty { padding: 4px 4px 8px; color: var(--text-3); font-size: 0.8rem; }
+.item-tag-lock {
+    padding: 0 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    color: var(--text-3);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+}
+.item-tag-row.user { border-left: 2px solid var(--accent-ring); }
+.item-tag-row.system .group-card-name { color: var(--text-1); }
+.item-tag-row-parent { color: var(--text-3); font-size: 0.72rem; white-space: nowrap; }
+.item-tag-badge.user { color: var(--accent-hi); border-color: var(--accent-ring); background: var(--accent-soft); }
+.item-tag-bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+    color: var(--text-2);
+    font-size: 0.8rem;
+}
+.item-tag-bulk-bar > span { margin-right: auto; }
+.item-tag-add-panel { margin-bottom: 12px; }
+.item-ref-check { flex-shrink: 0; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.item-ref-row.selected { background-color: var(--accent-soft); }
+.scope-new-btn.btn-danger { background: transparent; color: var(--down); border: 1px solid rgba(255, 90, 103, 0.4); }
+.scope-new-btn.btn-danger:hover:not(:disabled) { background: var(--down-soft); filter: none; }
+.scope-new-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Item lookup (Scopes tab) */
 .item-lookup-input {
@@ -1119,6 +1264,21 @@ input[type="text"]:focus, select:focus, .field:focus {
 .tips ul { margin: 0; padding-left: 1.1rem; }
 .tips li { margin: 0.3rem 0; line-height: 1.55; }
 .tips li::marker { color: var(--text-3); }
+
+/* "Built-in functions" reference inside the tips */
+.function-group h5 {
+    margin: 0.75rem 0 0.35rem;
+    color: var(--text-1);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.function-group dl { margin: 0; }
+.function-group dt { margin-top: 0.5rem; }
+.function-group dd { margin: 0.15rem 0 0 1rem; line-height: 1.5; }
+.tips .function-params { margin: 0.15rem 0; }
+.tips .function-params li { margin: 0.1rem 0; }
+.function-returns { color: var(--text-3); }
 
 /* ==========================================================================
    Formula Highlighter Component
@@ -1181,10 +1341,10 @@ input[type="text"]:focus, select:focus, .field:focus {
 
 /* Syntax highlighting: the backdrop draws the colored text and the textarea's own text is made
    transparent (caret and selection stay visible). The find layer keeps its transparent text. */
-.formula-input-container.syntax-on .formula-backdrop:not(.formula-find-layer) { color: var(--text-0); }
+.formula-input-container.syntax-on .formula-backdrop:not(.formula-find-layer):not(.formula-gutter) { color: var(--text-0); }
 .formula-input-container.syntax-on .formula-textarea { color: transparent; }
 .formula-input-container.syntax-on .formula-textarea::selection { color: transparent; background: rgba(230, 180, 80, 0.28); }
-.implied-code-editor.syntax-on .formula-backdrop:not(.formula-find-layer) { opacity: 0.8; }
+.implied-code-editor.syntax-on .formula-backdrop:not(.formula-find-layer):not(.formula-gutter) { opacity: 0.8; }
 .tok-comment { color: #5f7187; }
 .tok-string  { color: #b5e08a; }
 .tok-number  { color: #f59e6c; }
@@ -1196,6 +1356,34 @@ input[type="text"]:focus, select:focus, .field:focus {
 .tok-punct   { color: #8592a6; }
 .tok-ident   { color: var(--text-0); }
 .tok-var     { color: #ffd479; }
+
+/* Line numbers: the gutter layer spans the whole editor behind the code, holding each line's
+   text (transparent) so wrapped lines keep their numbers level; the numbers sit out to the left
+   of the text, in the strip the other layers move aside for. It is never selectable, and the
+   textarea is the only thing that is, so copying code never includes the numbers.
+   --gutter-w is in ch, resolved in each layer's monospace font. */
+.formula-input-container.lines-on { --gutter-w: calc(var(--gutter-digits) * 1ch + 22px); }
+.formula-input-container.lines-on .formula-backdrop:not(.formula-gutter),
+.formula-input-container.lines-on .formula-textarea {
+    left: var(--gutter-w);
+    width: calc(100% - var(--gutter-w));
+}
+.formula-gutter {
+    z-index: 0;
+    padding-left: calc(var(--gutter-w) + 14px);
+    color: transparent;
+    user-select: none;
+    background: linear-gradient(to right,
+        var(--bg-1) calc(var(--gutter-w) - 1px),
+        var(--line) calc(var(--gutter-w) - 1px) var(--gutter-w),
+        transparent var(--gutter-w));
+}
+.gutter-row { position: relative; }
+.gutter-num {
+    position: absolute;
+    right: calc(100% + 22px); /* 8px clear of the gutter's edge */
+    color: var(--text-3);
+}
 
 /* Editor toolbar above a code editor, with the highlight toggles */
 .editor-toolbar {
@@ -1251,6 +1439,8 @@ input[type="text"]:focus, select:focus, .field:focus {
 .editor-toggle.on .editor-toggle-swatch { opacity: 1; }
 .swatch-vars { background: linear-gradient(135deg, #e6b450, #4ea1ff); }
 .swatch-syntax { background: linear-gradient(135deg, #c792ea 0 33%, #b5e08a 33% 66%, #f59e6c 66%); }
+.swatch-lines { background: repeating-linear-gradient(to bottom, var(--text-2) 0 2px, transparent 2px 4px); }
+.editor-toggles-label-gap { margin-left: 0.4rem; }
 
 /* Find / replace in a FormulaInput */
 .formula-find-layer mark {

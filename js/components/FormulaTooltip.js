@@ -5,6 +5,7 @@
 //   variable    { key, name, tags, color, value, hasValue } for a variable, else null
 //   itemArg     the getOsrsItem argument (a name or an ID as text) when the tip is about an item
 //   item        the GE item itemArg finds, or null (unknown, or the item list hasn't loaded)
+//   itemTags    [{ key, label, user }]: the item's own tags (user: one of the user's own)
 //   itemsLoaded whether the item list has loaded, to tell "unknown" from "loading"
 //   replaceCall { start, end, text }: the getOsrsItem('Name') call in the code the card can
 //               rewrite as a lookup by ID, or null (read-only code, or already by ID)
@@ -55,9 +56,8 @@ const tooltipExactNumber = (number) => {
 // Returns [{ label, value, title }].
 const itemDetailRows = (item) => {
     const rows = [];
-    const hasBothPrices = item.highPrice && item.lowPrice;
-    if (hasBothPrices) {
-        const spread = item.highPrice - item.lowPrice;
+    const spread = itemSpread(item);
+    if (spread !== null) {
         rows.push({ label: 'Spread', value: formatRSNumber(spread), title: tooltipExactNumber(spread) });
     }
     if (item.limit) {
@@ -206,6 +206,10 @@ const FormulaTooltip = {
                             <dd :title="row.title">{{ row.value }}</dd>
                         </template>
                     </dl>
+
+                    <div v-if="tip.itemTags && tip.itemTags.length" class="formula-tip-item-tags">
+                        <span v-for="tag in tip.itemTags" :key="tag.key" class="item-tag-chip" :class="tag.user ? 'user' : 'system'" :title="tag.key">{{ tag.label }}</span>
+                    </div>
 
                     <p v-if="item.examine" class="formula-tip-examine">{{ item.examine }}</p>
 

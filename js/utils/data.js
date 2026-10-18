@@ -1,4 +1,4 @@
-// Shared shape helpers for groups, items and variables, used by load, import and reorder.
+// Shared shape helpers for scopes and variables, used by load and import.
 
 // Returns a new array with the element at `from` moved to `to`.
 const moveItem = (array, from, to) => {
@@ -37,39 +37,24 @@ const normalizeVariable = (variable) => {
     return variable;
 };
 
-// Groups only persist id/color/order per item; names and prices come from the live item map.
-const normalizeGroupItems = (items) => items.map((item, index) => ({
-    id: item.id,
-    color: item.color || getRandomVibrantColor(),
-    order: item.order !== undefined ? item.order : index
-}));
-
-// Stored group items only hold id/color/order; merge in live name, icon and prices.
-// items: { [id]: item }
-const hydrateGroupItems = (groupItems, items) => groupItems.map(item => {
-    const globalItem = items[item.id];
-    return globalItem
-        ? { ...globalItem, ...item }
-        : { ...item, name: 'Loading...', highPrice: 0, lowPrice: 0 };
-});
-
-// A group is a named list of items. Scopes reference groups by id (as strings).
-const normalizeGroup = (group) => {
-    group.items = normalizeGroupItems(group.items || []);
-    return group;
-};
-
-// A scope is a block of code (the source of truth) plus the variables parsed from it and the
-// ids of the item groups it lists for reference. Referenced groups don't limit what the code
-// can use; any item is reachable through getOsrsItem.
+// A scope is a block of code (the source of truth) plus the variables parsed from it, the item
+// tags whose items it lists for reference (they don't limit the code: getOsrsItem reaches any
+// item), and its item colors: itemColors { [itemId]: color } holds the ones picked by hand, and
+// colorSeed seeds the automatic ones (see itemColors.js).
+// Scopes saved before item tags have groupIds instead; the groupsToItemTags migration converts them.
 const normalizeScope = (scope) => {
-    scope.groupIds = (scope.groupIds || []).map(String);
+    scope.itemTagKeys = (scope.itemTagKeys || []).map(String);
+    const hasItemColors = scope.itemColors && typeof scope.itemColors === 'object';
+    scope.itemColors = hasItemColors ? scope.itemColors : {};
+    if (scope.colorSeed === undefined) {
+        scope.colorSeed = newItemColorSeed();
+    }
     scope.variables = (scope.variables || []).map(normalizeVariable);
     if (typeof scope.code !== 'string') scope.code = generateScopeCode(scope);
     return scope;
 };
 
-// Before scopes existed, each group carried its own recipes (code/variables). Moves any
+// Before scopes existed, each item group carried its own recipes (code/variables). Moves any
 // non-empty recipes into a scope of the same name that references the group, and strips them
 // from the group. Returns the new scopes.
 const extractLegacyScopes = (groups) => {

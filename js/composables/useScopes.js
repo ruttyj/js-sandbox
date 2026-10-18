@@ -1,7 +1,8 @@
 // Scopes tab: a scope is one block of code (stored on `scope.code`) that runs live, top to
-// bottom; its top-level declarations are its variables. A scope can reference item groups; they're listed as a short list of items to draw
-// from, but don't limit the code (getOsrsItem reaches any item). The Global Vars tab edits the
-// globals the same way (see useVariables) and reuses registerVariableTags.
+// bottom; its top-level declarations are its variables. A scope can link item tags; their items
+// are listed to draw from, but don't limit the code (getOsrsItem reaches any item). Each scope
+// colors its items: by hand, or automatically from their tags (see itemColors.js). The Global
+// Vars tab edits the globals the same way (see useVariables) and reuses registerVariableTags.
 
 // Inserts text at the caret of a FormulaInput (or appends it when there's no editor), then
 // restores the caret after it. codeRef: a writable ref/computed holding the code.
@@ -19,8 +20,8 @@ const insertIntoCodeEditor = (editorRef, codeRef, text) => {
     }
 };
 
-const useScopes = ({ store, items, itemsByName, evaluation, showToast, showConfirmModal, showInputModal }) => {
-    const { groups, scopes, globalVariables, globalsCode, tags, saveData } = store;
+const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToast, showConfirmModal, showInputModal }) => {
+    const { scopes, globalVariables, globalsCode, tags, saveData } = store;
 
     const selectedScopeId = ref(null);
     const scopeCodeEditorRef = ref(null);
@@ -36,7 +37,7 @@ const useScopes = ({ store, items, itemsByName, evaluation, showToast, showConfi
     const createScope = () => {
         showInputModal('New Scope', '', (name) => {
             if (!name || !name.trim()) return;
-            const scope = normalizeScope({ id: Date.now(), name: name.trim(), groupIds: [], code: '' });
+            const scope = normalizeScope({ id: Date.now(), name: name.trim(), itemTagKeys: [], code: '' });
             scopes.value.push(scope);
             selectedScopeId.value = scope.id;
             saveData();
@@ -60,7 +61,7 @@ const useScopes = ({ store, items, itemsByName, evaluation, showToast, showConfi
         if (!scope) return;
         showConfirmModal(
             'Delete Scope',
-            `Are you sure you want to delete the scope "<strong>${scope.name}</strong>" and its code? Its item groups are kept.`,
+            `Are you sure you want to delete the scope "<strong>${scope.name}</strong>" and its code? Item tags aren't affected.`,
             () => {
                 scopes.value = scopes.value.filter(s => s.id !== scope.id);
                 saveData();
@@ -69,32 +70,142 @@ const useScopes = ({ store, items, itemsByName, evaluation, showToast, showConfi
         );
     };
 
-    // Referenced item groups
-    const scopeGroupOptions = computed(() => groups.value.map(g => ({ key: String(g.id), label: g.name })));
-
-    const scopeGroupIds = computed({
-        get: () => selectedScope.value?.groupIds || [],
-        set: (ids) => {
-            if (!selectedScope.value) return;
-            selectedScope.value.groupIds = ids;
+    // Linked item tags
+    const scopeItemTagKeys = computed({
+        get: () => selectedScope.value?.itemTagKeys || [],
+        set: (keys) => {
+            if (!selectedScope.value) {
+                return;
+            }
+            selectedScope.value.itemTagKeys = keys;
             saveData();
         },
     });
 
-    // [{ group, items }] for each referenced group that still exists, in reference order.
-    const scopeItemGroups = computed(() => {
-        const byId = new Map(groups.value.map(g => [String(g.id), g]));
-        return scopeGroupIds.value
-            .map(id => byId.get(id))
-            .filter(Boolean)
-            .map(group => ({ group, items: hydrateGroupItems(group.items, items.value) }));
+    // The items the scope's code looks up with getOsrsItem, once each.
+    const scopeCodeItems = computed(() => {
+        const catalog = itemTagsApi.itemCatalog.value;
+        const found = new Map();
+        for (const arg of itemArgsInCode(selectedScope.value?.code)) {
+            const item = findItem(arg, catalog.byId, catalog.byName);
+            if (item) {
+                found.set(item.id, item);
+            }
+        }
+        return [...found.values()];
     });
 
-    // Every referenced item once, for highlighting refs in the editor with the item's color.
-    const scopeItems = computed(() => {
-        const seen = new Set();
-        return scopeItemGroups.value.flatMap(g => g.items).filter(item => !seen.has(item.id) && seen.add(item.id));
+    // Every item the scope lists (by linked tag) or its code looks up, once, in that order.
+    const scopeItemSources = computed(() => {
+        const scope = selectedScope.value;
+        if (!scope) {
+            return [];
+        }
+        const byId = new Map();
+        for (const key of scope.itemTagKeys.filter(itemTagsApi.isItemTag)) {
+            for (const item of itemTagsApi.itemsWithTag(key)) {
+                byId.set(item.id, item);
+            }
+        }
+        for (const item of scopeCodeItems.value) {
+            byId.set(item.id, item);
+        }
+        return [...byId.values()];
     });
+
+    // Hues spread over the families the scope's items belong to (see allocateTagHues).
+    const scopeTagHues = computed(() => allocateTagHues({
+        seed: selectedScope.value?.colorSeed ?? 0,
+        itemTagLists: scopeItemSources.value.map(item => itemTagsApi.itemColorTagsOf(item.id)),
+        isFamilyTag: itemTagsApi.isFamilyTag,
+    }));
+
+    // Item colors. An item's color in a scope is the one picked by hand, else the automatic one.
+    const itemColorIn = (scope, itemId) => {
+        const picked = scope.itemColors[itemId];
+        if (picked) {
+            return picked;
+        }
+        return autoItemColor({
+            seed: scope.colorSeed,
+            itemId,
+            tags: itemTagsApi.itemColorTagsOf(itemId),
+            isFamilyTag: itemTagsApi.isFamilyTag,
+            tagHues: scopeTagHues.value,
+        });
+    };
+
+    // An item as a scope shows it: with its color and its own tags.
+    const scopeItem = (scope, item) => ({
+        ...item,
+        color: itemColorIn(scope, item.id),
+        tags: itemTagsApi.itemTagsOf(item.id),
+    });
+
+    // [{ key, label, items }] for each linked tag that exists, in the order they were linked.
+    const scopeItemTagSections = computed(() => {
+        const scope = selectedScope.value;
+        if (!scope) {
+            return [];
+        }
+        return scope.itemTagKeys
+            .filter(itemTagsApi.isItemTag)
+            .map(key => ({
+                key,
+                label: itemTagsApi.itemTagLabel(key),
+                items: itemTagsApi.itemsWithTag(key).map(item => scopeItem(scope, item)),
+            }));
+    });
+
+    // Every item the scope lists or its code looks up, with its color: what the editor tints
+    // item refs with, and what auto-coloring variables blends.
+    const scopeItems = computed(() => {
+        const scope = selectedScope.value;
+        if (!scope) {
+            return [];
+        }
+        return scopeItemSources.value.map(item => scopeItem(scope, item));
+    });
+
+    // The color shown for an item anywhere on the Scopes tab (e.g. in item search results).
+    const scopeItemColor = (itemId) => {
+        if (!selectedScope.value) {
+            return UNDECLARED_COLOR;
+        }
+        return itemColorIn(selectedScope.value, itemId);
+    };
+
+    const setScopeItemColor = (itemId, color) => {
+        if (!selectedScope.value) {
+            return;
+        }
+        selectedScope.value.itemColors[itemId] = color;
+        saveData();
+    };
+
+    // A new palette: a new seed, and the hand-picked colors are dropped.
+    const rerollScopeItemColors = () => {
+        const scope = selectedScope.value;
+        if (!scope) {
+            return;
+        }
+        const pickedCount = Object.keys(scope.itemColors).length;
+        const applyReroll = () => {
+            scope.colorSeed = newItemColorSeed();
+            scope.itemColors = {};
+            saveData();
+            showToast('New item colors.', 'success');
+        };
+        if (!pickedCount) {
+            applyReroll();
+            return;
+        }
+        showConfirmModal(
+            'New Item Colors',
+            `Give "<strong>${scope.name}</strong>" a new item palette? The <strong>${pickedCount}</strong> item color(s) picked by hand will be replaced too.`,
+            applyReroll
+        );
+    };
 
     // Code
     const scopeCode = computed({
@@ -258,7 +369,7 @@ const useScopes = ({ store, items, itemsByName, evaluation, showToast, showConfi
 
     return {
         selectedScopeId, selectedScope, createScope, renameScope, deleteScope,
-        scopeGroupOptions, scopeGroupIds, scopeItemGroups, scopeItems,
+        scopeItemTagKeys, scopeItemTagSections, scopeItems, scopeItemColor, setScopeItemColor, rerollScopeItemColors,
         scopeCode, scopeCodeErrors, scopeCodeEditorRef, scopeValues, impliedScopeCode, visibleGlobalVariables,
         onScopeCodeInput, onScopeCodeBlur, insertIntoScopeCode, registerVariableTags, isErrorValue,
         setGlobalVariableColor, setScopeVariableColor, autoColorScopeVariables,

@@ -13,6 +13,13 @@
  * @property {string} name
  * @property {number} [highPrice]
  * @property {number} [lowPrice]
+ * @property {boolean} [members]
+ * @property {number} [limit] GE buy limit per 4 hours.
+ * @property {number} [highalch]
+ * @property {number} [lowalch]
+ * @property {number} [value] Store value.
+ * @property {string} [examine]
+ * @property {string} [icon] The icon's file name on the OSRS wiki, e.g. "Filled plant pot.png".
  */
 
 const ItemRefs = (() => {
@@ -64,6 +71,45 @@ const ItemRefs = (() => {
     };
 
     /**
+     * The difference between an item's high and low price.
+     * @param {Item} item
+     * @returns {number|null} null when the item is missing either price.
+     */
+    const itemSpread = (item) => {
+        if (!item.highPrice || !item.lowPrice) {
+            return null;
+        }
+        return item.highPrice - item.lowPrice;
+    };
+
+    /**
+     * An item as user code sees it, from getOsrsItem and queryOsrsItems: a plain copy, so the code
+     * can't change the shared item list. Missing prices and numbers read as 0 (limit as null,
+     * since 0 would mean "can't be bought"). The icon is the wiki file name rather than image data;
+     * the image is at https://oldschool.runescape.wiki/images/<icon with spaces as _>.
+     * @param {Item} item
+     * @param {string[]} tags The item's own tag keys.
+     * @returns {{ id, name, highPrice, lowPrice, spread, members, limit, highalch, lowalch, value, examine, icon, tags }}
+     */
+    const toCodeItem = (item, tags) => {
+        return {
+            id: item.id,
+            name: item.name,
+            highPrice: item.highPrice || 0,
+            lowPrice: item.lowPrice || 0,
+            spread: itemSpread(item) ?? 0,
+            members: Boolean(item.members),
+            limit: item.limit ?? null,
+            highalch: item.highalch || 0,
+            lowalch: item.lowalch || 0,
+            value: item.value || 0,
+            examine: item.examine || '',
+            icon: item.icon || '',
+            tags,
+        };
+    };
+
+    /**
      * An item name as a string literal for code.
      * @example quoteItemName('Cannonball')   // -> 'Cannonball'
      * @example quoteItemName("Ahrim's hood") // -> "Ahrim's hood"
@@ -107,6 +153,8 @@ const ItemRefs = (() => {
         itemNameKey,
         isItemIdArg,
         findItem,
+        itemSpread,
+        toCodeItem,
         quoteItemName,
         buildItemLookup,
         buildItemRef,
@@ -120,6 +168,8 @@ const {
     itemNameKey,
     isItemIdArg,
     findItem,
+    itemSpread,
+    toCodeItem,
     quoteItemName,
     buildItemLookup,
     buildItemRef,

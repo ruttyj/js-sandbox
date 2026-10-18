@@ -1,0 +1,1921 @@
+{
+  "domain": "sources",
+  "notes": "Sources + cosmetics + misc leftovers. Uses the shared roots source, misc, skilling, construction and crafting as parents without redefining them. Boss, raid, slayer and minigame lists come from the wiki Collection log page (matched to GE items by name/wikiTitle), plus items assembled directly from those drops (godswords, Torva, spirit shields, Cerberus boots, toxic blowpipe...). They are written as exact-name nameRegex alternations, because the per-boss wiki categories are noisy (e.g. 'Zulrah' includes anti-venom, 'Theatre of Blood' includes raid potions, 'Nightmare Zone' includes runes). A parent tag with its own match directly holds items shared between several children or from content too small for its own tag: boss-drop holds Dragon pickaxe/2h/chainbody and small-boss uniques, gwd-drop holds godsword shards, minigame-reward holds small minigames. Some items purposely get two sibling tags when two sources drop them (Staff of light: Zilyana + K'ril; Dragon axe: Dagannoth Kings + Wintertodt; Toxic staff: K'ril + Zulrah). shop-item is an ids list (~1000) built from the wiki 'storeline' bucket (shops that take coins only), so it should be regenerated rather than hand-edited. Bucket query used: bucket('storeline').select('sold_item','page_name','store_currency'). Added a sailing tag under skilling (with boat-part and boat-paint), since Sailing is not in the shared skill list. flatpack and bagged-plant are parented to construction, and fremennik-component to crafting; drop them if the production domain already covers them. Left out: pets (none on the GE), release year / noteable / stackable / generic monster drops, Nightmare Zone and Tokkul shop stock (common runes and ores, which would mislabel), Pest Control, Mahogany Homes, Castle Wars and Wintertodt outfit rewards (untradeable, not on the GE).",
+  "tags": [
+    {
+      "key": "clue-reward",
+      "label": "Clue rewards",
+      "parent": "source",
+      "description": "Treasure Trails rewards of any tier",
+      "match": {
+        "categoriesAny": [
+          "Treasure Trails rewards"
+        ]
+      }
+    },
+    {
+      "key": "beginner-clue-reward",
+      "label": "Beginner clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards from beginner reward caskets",
+      "match": {
+        "categoriesAny": [
+          "Beginner clue rewards"
+        ]
+      }
+    },
+    {
+      "key": "easy-clue-reward",
+      "label": "Easy clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards from easy reward caskets",
+      "match": {
+        "categoriesAny": [
+          "Easy clue rewards"
+        ]
+      }
+    },
+    {
+      "key": "medium-clue-reward",
+      "label": "Medium clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards from medium reward caskets",
+      "match": {
+        "categoriesAny": [
+          "Medium clue rewards"
+        ]
+      }
+    },
+    {
+      "key": "hard-clue-reward",
+      "label": "Hard clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards from hard reward caskets",
+      "match": {
+        "categoriesAny": [
+          "Hard clue rewards"
+        ]
+      }
+    },
+    {
+      "key": "elite-clue-reward",
+      "label": "Elite clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards from elite reward caskets",
+      "match": {
+        "categoriesAny": [
+          "Elite clue rewards"
+        ]
+      }
+    },
+    {
+      "key": "master-clue-reward",
+      "label": "Master clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards from master reward caskets",
+      "match": {
+        "categoriesAny": [
+          "Master clue rewards"
+        ]
+      }
+    },
+    {
+      "key": "shared-clue-reward",
+      "label": "Shared clue rewards",
+      "parent": "clue-reward",
+      "description": "Rewards any clue tier can give: god book pages, blessings, clue teleport scrolls, firelighters",
+      "match": {
+        "categoriesAny": [
+          "Shared treasure trails items"
+        ]
+      }
+    },
+    {
+      "key": "third-age",
+      "label": "3rd Age items",
+      "parent": "clue-reward",
+      "description": "The 3rd Age equipment family (rare hard/elite/master clue rewards)",
+      "match": {
+        "categoriesAny": [
+          "3rd Age equipment"
+        ],
+        "nameRegex": "^3rd Age "
+      }
+    },
+    {
+      "key": "gilded",
+      "label": "Gilded items",
+      "parent": "clue-reward",
+      "description": "Gilded equipment and tools (rare clue rewards)",
+      "match": {
+        "nameRegex": "^Gilded ",
+        "excludeNameRegex": "\\(flatpack\\)$|^Gilded (altar|bench|clock|cape rack|dresser|wardrobe|four-poster|magic wardrobe)"
+      }
+    },
+    {
+      "key": "trimmed-armour",
+      "label": "Trimmed armour",
+      "parent": "clue-reward",
+      "description": "Trimmed (t), gold-trimmed (g) and heraldic (h1-h5) clue variants of armour and robes",
+      "match": {
+        "nameRegex": "\\((t|g|h[1-5])\\)$|(trimmed|gold-trimmed) set \\((lg|sk)\\)$",
+        "excludeNameRegex": "^(Grid master|Swords and emblem)"
+      }
+    },
+    {
+      "key": "god-page",
+      "label": "God book pages",
+      "parent": "clue-reward",
+      "description": "God book pages and page sets used to complete god books",
+      "match": {
+        "nameRegex": "^(Saradomin|Zamorak|Guthix|Bandos|Armadyl|Ancient) page [1-4]$| page set$"
+      }
+    },
+    {
+      "key": "raid-unique",
+      "label": "Raid uniques",
+      "parent": "source",
+      "description": "Unique rewards from the three raids"
+    },
+    {
+      "key": "cox-unique",
+      "label": "Chambers of Xeric uniques",
+      "parent": "raid-unique",
+      "description": "Unique rewards from the Chambers of Xeric (Twisted bow, Ancestral, Kodai, prayer scrolls...)",
+      "match": {
+        "categoriesAny": [
+          "Chambers of Xeric"
+        ],
+        "nameRegex": "^(Kodai wand|Ancestral robes set)$"
+      }
+    },
+    {
+      "key": "tob-unique",
+      "label": "Theatre of Blood uniques",
+      "parent": "raid-unique",
+      "description": "Unique rewards from the Theatre of Blood (Scythe, Justiciar, Sanguinesti, Ghrazi rapier...)",
+      "match": {
+        "nameRegex": "^(Scythe of Vitur \\(uncharged\\)|Ghrazi rapier|Sanguinesti staff \\(uncharged\\)|Justiciar faceguard|Justiciar chestguard|Justiciar legguards|Avernic defender hilt|Vial of blood|Justiciar armour set)$"
+      }
+    },
+    {
+      "key": "toa-unique",
+      "label": "Tombs of Amascut uniques",
+      "parent": "raid-unique",
+      "description": "Unique rewards from the Tombs of Amascut (Tumeken's shadow, Masori, Osmumten's fang...)",
+      "match": {
+        "nameRegex": "^(Tumeken's shadow \\(uncharged\\)|Elidinis' ward|Masori mask|Masori body|Masori chaps|Masori mask \\(f\\)|Masori body \\(f\\)|Masori chaps \\(f\\)|Lightbearer|Osmumten's fang)$|^Masori armour set"
+      }
+    },
+    {
+      "key": "boss-drop",
+      "label": "Boss drops",
+      "parent": "source",
+      "description": "Unique drops from bosses; this tag directly holds drops shared by several bosses and uniques of small bosses",
+      "match": {
+        "nameRegex": "^(Dragon pickaxe|Dragon 2h sword|Dragon chainbody|Jar of Sand|Jar of Darkness|Jar of Eyes|Hill giant club|Bryophyta's essence|Mole skin|Mole claw|Giant egg sac\\(full\\)|Sarachnis cudgel|Bottomless compost bucket|Cow slippers|Hallowfell|Ardeaglais teleport|Crimson kisten|Belle's folly \\(tarnished\\)|Glacial temotli|Frozen tear)$"
+      }
+    },
+    {
+      "key": "boss-jar",
+      "label": "Boss jars",
+      "parent": "boss-drop",
+      "description": "Cosmetic jars dropped by bosses (Jar of Swamp, Jar of Souls...)",
+      "match": {
+        "categoriesAny": [
+          "Jars"
+        ]
+      }
+    },
+    {
+      "key": "gwd-drop",
+      "label": "God Wars Dungeon drops",
+      "parent": "boss-drop",
+      "description": "Uniques from the God Wars Dungeon generals and Nex; directly holds godsword shards and other shared GWD items",
+      "match": {
+        "nameRegex": "^(Godsword shard 1|Godsword shard 2|Godsword shard 3|Godsword blade|Bandosian components|Armadylean plate)$|^Ancient ceremonial "
+      }
+    },
+    {
+      "key": "graardor-drop",
+      "label": "General Graardor drops",
+      "parent": "gwd-drop",
+      "description": "Bandos armour, Bandos hilt and godsword",
+      "match": {
+        "nameRegex": "^(Bandos chestplate|Bandos tassets|Bandos boots|Bandos hilt|Bandos godsword)$"
+      }
+    },
+    {
+      "key": "kreearra-drop",
+      "label": "Kree'arra drops",
+      "parent": "gwd-drop",
+      "description": "Armadyl armour, Armadyl hilt and godsword",
+      "match": {
+        "nameRegex": "^(Armadyl helmet|Armadyl chestplate|Armadyl chainskirt|Armadyl hilt|Armadyl godsword)$"
+      }
+    },
+    {
+      "key": "zilyana-drop",
+      "label": "Commander Zilyana drops",
+      "parent": "gwd-drop",
+      "description": "Armadyl crossbow, Saradomin sword, Saradomin's light, Saradomin hilt and godsword",
+      "match": {
+        "nameRegex": "^(Armadyl crossbow|Saradomin hilt|Saradomin sword|Saradomin's light|Saradomin godsword|Staff of Light)$"
+      }
+    },
+    {
+      "key": "kril-drop",
+      "label": "K'ril Tsutsaroth drops",
+      "parent": "gwd-drop",
+      "description": "Staff of the dead, Zamorakian spear, Steam battlestaff, Zamorak hilt and godsword",
+      "match": {
+        "nameRegex": "^(Staff of the Dead|Zamorakian spear|Zamorakian hasta|Steam battlestaff|Zamorak hilt|Zamorak godsword|Staff of Light|Toxic staff \\(uncharged\\))$"
+      }
+    },
+    {
+      "key": "nex-drop",
+      "label": "Nex drops",
+      "parent": "gwd-drop",
+      "description": "Torva, Zaryte vambraces, Nihil horn, Ancient hilt and the items made from them",
+      "match": {
+        "nameRegex": "^(Ancient hilt|Ancient godsword|Nihil horn|Nihil shard|Nihil dust|Zaryte vambraces|Zaryte crossbow)$|^Torva "
+      }
+    },
+    {
+      "key": "wilderness-boss-drop",
+      "label": "Wilderness boss drops",
+      "parent": "boss-drop",
+      "description": "Uniques from Callisto, Venenatis, Vet'ion, Scorpia, the archaeologists and Chaos Fanatic (wilderness rings, Voidwaker, ward shards, wilderness weapons)",
+      "match": {
+        "nameRegex": "^(Tyrannical ring|Treasonous ring|Ring of the gods|Claws of Callisto|Fangs of Venenatis|Skull of Vet'ion|Voidwaker|Voidwaker hilt|Voidwaker blade|Voidwaker gem|Webweaver bow \\(u\\)|Ursine chainmace \\(u\\)|Accursed sceptre \\(u\\)|Accursed sceptre \\(au\\)|Odium shard 1|Odium shard 2|Odium shard 3|Odium ward|Malediction shard 1|Malediction shard 2|Malediction shard 3|Malediction ward|Fedora|Steel ring)$"
+      }
+    },
+    {
+      "key": "dt2-boss-drop",
+      "label": "Desert Treasure II boss drops",
+      "parent": "boss-drop",
+      "description": "Uniques from Duke Sucellus, the Leviathan, Vardorvis and the Whisperer (Virtus, vestige rings, Soulreaper axe...)",
+      "match": {
+        "categoriesAny": [
+          "The Forgotten Four"
+        ],
+        "nameRegex": " vestige$|^Virtus "
+      }
+    },
+    {
+      "key": "barrows-drop",
+      "label": "Barrows equipment",
+      "parent": "boss-drop",
+      "description": "The six Barrows brothers' equipment, its degraded (0) versions and sets",
+      "match": {
+        "categoriesAny": [
+          "Barrows equipment"
+        ]
+      }
+    },
+    {
+      "key": "zulrah-drop",
+      "label": "Zulrah drops",
+      "parent": "boss-drop",
+      "description": "Zulrah uniques and the items made from them (Toxic blowpipe, Serpentine helm, toxic trident, scales)",
+      "match": {
+        "nameRegex": "^(Tanzanite fang|Magic fang|Serpentine visage|Serpentine helm \\(uncharged\\)|Toxic blowpipe \\(empty\\)|Uncharged toxic trident|Uncharged toxic trident \\(e\\)|Toxic staff \\(uncharged\\)|Zul-andra teleport|Zulrah's scales|Jar of Swamp)$"
+      }
+    },
+    {
+      "key": "vorkath-drop",
+      "label": "Vorkath drops",
+      "parent": "boss-drop",
+      "description": "Skeletal and Draconic visages, Dragonbone necklace and what they make",
+      "match": {
+        "nameRegex": "^(Skeletal visage|Dragonfire ward|Dragonbone necklace|Jar of Decay|Draconic visage)$"
+      }
+    },
+    {
+      "key": "corporeal-beast-drop",
+      "label": "Corporeal Beast drops",
+      "parent": "boss-drop",
+      "description": "Spirit shields and sigils",
+      "match": {
+        "nameRegex": "^(Elysian sigil|Spectral sigil|Arcane sigil|Elysian spirit shield|Spectral spirit shield|Arcane spirit shield|Spirit shield|Blessed spirit shield|Holy elixir|Jar of Spirits)$"
+      }
+    },
+    {
+      "key": "cerberus-drop",
+      "label": "Cerberus drops",
+      "parent": "boss-drop",
+      "description": "Primordial, Pegasian and Eternal crystals and boots, Smouldering stone",
+      "match": {
+        "nameRegex": "^(Eternal crystal|Pegasian crystal|Primordial crystal|Smouldering stone|Eternal boots|Pegasian boots|Primordial boots|Jar of Souls|Key master teleport)$"
+      }
+    },
+    {
+      "key": "alchemical-hydra-drop",
+      "label": "Alchemical Hydra drops",
+      "parent": "boss-drop",
+      "description": "Hydra's claw, Hydra leather, Hydra tail, Dragon hunter lance",
+      "match": {
+        "nameRegex": "^(Hydra's claw|Hydra tail|Hydra leather|Dragon hunter lance|Brimstone ring|Jar of Chemicals)$"
+      }
+    },
+    {
+      "key": "abyssal-sire-drop",
+      "label": "Abyssal Sire drops",
+      "parent": "boss-drop",
+      "description": "Abyssal bludgeon and Abyssal dagger",
+      "match": {
+        "nameRegex": "^(Abyssal bludgeon|Abyssal dagger|Abyssal dagger \\(p\\)|Abyssal dagger \\(p\\+\\)|Abyssal dagger \\(p\\+\\+\\)|Jar of Miasma)$"
+      }
+    },
+    {
+      "key": "kraken-drop",
+      "label": "Kraken drops",
+      "parent": "boss-drop",
+      "description": "Kraken tentacle and Trident of the seas",
+      "match": {
+        "nameRegex": "^(Kraken tentacle|Trident of the Seas \\(full\\)|Uncharged trident|Uncharged trident \\(e\\)|Jar of Dirt)$"
+      }
+    },
+    {
+      "key": "thermonuclear-smoke-devil-drop",
+      "label": "Thermonuclear smoke devil drops",
+      "parent": "boss-drop",
+      "description": "Occult necklace and Smoke battlestaff",
+      "match": {
+        "nameRegex": "^(Occult necklace|Smoke battlestaff|Jar of Smoke)$"
+      }
+    },
+    {
+      "key": "grotesque-guardians-drop",
+      "label": "Grotesque Guardians drops",
+      "parent": "boss-drop",
+      "description": "Granite gloves, ring and hammer, Black tourmaline core",
+      "match": {
+        "nameRegex": "^(Black tourmaline core|Guardian boots|Granite gloves|Granite ring|Granite hammer|Jar of Stone)$"
+      }
+    },
+    {
+      "key": "nightmare-drop",
+      "label": "Nightmare drops",
+      "parent": "boss-drop",
+      "description": "Inquisitor's armour and mace, Nightmare staff and orbs",
+      "match": {
+        "nameRegex": "^(Inquisitor's mace|Inquisitor's great helm|Inquisitor's hauberk|Inquisitor's plateskirt|Nightmare staff|Volatile orb|Harmonised orb|Eldritch orb|Jar of Dreams)$|^Inquisitor's armour set"
+      }
+    },
+    {
+      "key": "araxxor-drop",
+      "label": "Araxxor drops",
+      "parent": "boss-drop",
+      "description": "Noxious halberd, Amulet of rancour, Aranea boots and their components",
+      "match": {
+        "nameRegex": "^(Araxyte venom sac|Noxious halberd|Amulet of rancour|Aranea boots|Etched araxyte fang|Spider cave teleport)$"
+      }
+    },
+    {
+      "key": "yama-drop",
+      "label": "Yama drops",
+      "parent": "boss-drop",
+      "description": "Oathplate armour, Soulflame horn and Yama's contracts",
+      "match": {
+        "nameRegex": "^(Oathplate helm|Oathplate chest|Oathplate legs|Oathplate shards|Soulflame horn|Chasm teleport scroll|Barrel of demonic tallow \\(full\\))$|^Contract of "
+      }
+    },
+    {
+      "key": "dagannoth-kings-drop",
+      "label": "Dagannoth Kings drops",
+      "parent": "boss-drop",
+      "description": "The four Fremennik rings, Seercull, Mud battlestaff, Dragon axe",
+      "match": {
+        "nameRegex": "^(Berserker ring|Archers ring|Seers ring|Warrior ring|Seercull|Mud battlestaff|Dragon axe)$"
+      }
+    },
+    {
+      "key": "moons-of-peril-drop",
+      "label": "Moons of Peril drops",
+      "parent": "boss-drop",
+      "description": "Blood, Blue and Eclipse Moon armour and weapons",
+      "match": {
+        "nameRegex": "^(Blood|Blue|Eclipse) Moon |^(Eclipse atlatl|Dual macuahuitl|Atlatl dart)$"
+      }
+    },
+    {
+      "key": "fortis-colosseum-drop",
+      "label": "Fortis Colosseum rewards",
+      "parent": "boss-drop",
+      "description": "Sunfire fanatic armour, Tonalztics of Ralos, Echo crystal",
+      "match": {
+        "nameRegex": "^(Sunfire fanatic helm|Sunfire fanatic cuirass|Sunfire fanatic chausses|Echo crystal|Tonalztics of Ralos \\(uncharged\\)|Sunfire splinters|Searing page)$"
+      }
+    },
+    {
+      "key": "gauntlet-drop",
+      "label": "Gauntlet rewards",
+      "parent": "boss-drop",
+      "description": "Crystal armour and weapon seeds, Blade of Saeldor, Bow of Faerdhinen",
+      "match": {
+        "nameRegex": "^(Crystal armour seed|Crystal weapon seed|Enhanced crystal weapon seed|Blade of Saeldor \\(inactive\\)|Bow of Faerdhinen \\(inactive\\))$"
+      }
+    },
+    {
+      "key": "hueycoatl-drop",
+      "label": "Hueycoatl drops",
+      "parent": "boss-drop",
+      "description": "Dragon hunter wand, Tome of earth, Hueycoatl hide armour",
+      "match": {
+        "nameRegex": "^(Dragon hunter wand|Tome of Earth \\(empty\\)|Soiled page|Hueycoatl hide|Huasca seed)$|^Hueycoatl hide "
+      }
+    },
+    {
+      "key": "phantom-muspah-drop",
+      "label": "Phantom Muspah drops",
+      "parent": "boss-drop",
+      "description": "Venator bow and shard, Ancient essence, Saturated heart",
+      "match": {
+        "nameRegex": "^(Venator bow \\(uncharged\\)|Venator shard|Ancient essence|Saturated heart)$"
+      }
+    },
+    {
+      "key": "doom-of-mokhaiotl-drop",
+      "label": "Doom of Mokhaiotl drops",
+      "parent": "boss-drop",
+      "description": "Avernic treads, Eye of Ayak, Confliction gauntlets",
+      "match": {
+        "nameRegex": "^(Avernic treads|Eye of Ayak \\(uncharged\\)|Confliction gauntlets|Mokhaiotl waystone|Demon tear)$"
+      }
+    },
+    {
+      "key": "royal-titans-drop",
+      "label": "Royal Titans drops",
+      "parent": "boss-drop",
+      "description": "Element staff crowns and Twinflame staff",
+      "match": {
+        "nameRegex": "^(Ice element staff crown|Fire element staff crown|Twinflame staff)$"
+      }
+    },
+    {
+      "key": "monster-unique",
+      "label": "Monster uniques",
+      "parent": "source",
+      "description": "Notable unique drops from non-boss monsters (Dragon warhammer, Dragon full helm, Elder chaos robes...)",
+      "match": {
+        "nameRegex": "^(Dragon warhammer|Dragon full helm|Shield left half|Dragon metal slice|Dragon metal lump|Dragon limbs|Dragon spear|Dragon spear\\(p\\)|Dragon spear\\(p\\+\\)|Dragon spear\\(p\\+\\+\\)|Shaman mask|Elder chaos top|Elder chaos robe|Elder chaos hood|Broken zombie axe|Broken zombie helmet|Squid beak)$"
+      }
+    },
+    {
+      "key": "slayer-unique",
+      "label": "Slayer uniques",
+      "parent": "monster-unique",
+      "description": "Uniques from Slayer monsters (Abyssal whip, Occult necklace, Dark bow, Mystic light/dark/dusk, granite...)",
+      "match": {
+        "nameRegex": "^(Imbued heart|Eternal gem|Dust battlestaff|Mist battlestaff|Abyssal whip|Granite maul|Brine sabre|Leaf-bladed sword|Leaf-bladed battleaxe|Necklace of Fangs|Black mask|Black mask \\(10\\)|Granite longsword|Granite boots|Granite legs|Granite helm|Wyvern visage|Dragon boots|Dark bow|Dragon thrownaxe|Dragon harpoon|Dragon sword|Dragon knife|Dragon knife\\(p\\)|Dragon knife\\(p\\+\\)|Dragon knife\\(p\\+\\+\\)|Broken dragon hasta|Drake's tooth|Drake's claw|Mystic hat \\(light\\)|Mystic robe top \\(light\\)|Mystic robe bottom \\(light\\)|Mystic gloves \\(light\\)|Mystic boots \\(light\\)|Mystic hat \\(dark\\)|Mystic robe top \\(dark\\)|Mystic robe bottom \\(dark\\)|Mystic gloves \\(dark\\)|Mystic boots \\(dark\\)|Mystic hat \\(dusk\\)|Mystic robe top \\(dusk\\)|Mystic robe bottom \\(dusk\\)|Mystic gloves \\(dusk\\)|Mystic boots \\(dusk\\)|Basilisk jaw|Aquanite tendon|Dagon'hai hat|Dagon'hai robe top|Dagon'hai robe bottom|Blood shard|Ancient ceremonial mask|Ancient ceremonial top|Ancient ceremonial legs|Ancient ceremonial gloves|Ancient ceremonial boots|Warped sceptre \\(uncharged\\)|Sulphur blades|Teleport anchoring scroll|Earthbound tecpatl|Antler guard|Broken antler|Dragon metal sheet|Horn of Plenty \\(empty\\)|Gryphon feather|Venator tooth|Venator fang|Air diamond|Water sapphire|Earth emerald|Fire ruby|Dragon metal shard)$"
+      }
+    },
+    {
+      "key": "revenant-drop",
+      "label": "Revenant drops",
+      "parent": "monster-unique",
+      "description": "Revenant weapons, Amulet of avarice, Bracelet of ethereum, ancient artefacts and ether",
+      "match": {
+        "categoriesAny": [
+          "Revenant Caves"
+        ],
+        "nameRegex": "^(Thammaron's sceptre|Viggora's chainmace|Craw's bow)"
+      }
+    },
+    {
+      "key": "demonic-gorilla-drop",
+      "label": "Demonic gorilla drops",
+      "parent": "monster-unique",
+      "description": "Zenyte shards and ballista parts",
+      "match": {
+        "nameRegex": "^(Zenyte shard|Light frame|Heavy frame|Ballista limbs|Ballista spring|Monkey tail)$"
+      }
+    },
+    {
+      "key": "tormented-demon-drop",
+      "label": "Tormented demon drops",
+      "parent": "monster-unique",
+      "description": "Tormented synapse and Burning claws",
+      "match": {
+        "nameRegex": "^(Tormented synapse|Burning claw|Burning claws|Guthixian temple teleport)$"
+      }
+    },
+    {
+      "key": "minigame-reward",
+      "label": "Minigame rewards",
+      "parent": "source",
+      "description": "Rewards from minigames; this tag directly holds rewards of minigames too small for their own tag (Barbarian Assault, Gnome Restaurant, Hallowed Sepulchre, Trouble Brewing...)",
+      "match": {
+        "nameRegex": "^(Granite helm|Granite body|Pirate's hook|Kovac's grog|Grand seed pod|Gnome scarf|Gnome goggles|Mint cake|Strange old lockpick \\(full\\)|Ring of endurance \\(uncharged\\)|Chugging barrel \\(disassembled\\)|Rum \\(red\\)|Rum \\(blue\\)|Ent branch|Greenman mask|Colossal wyrm teleport scroll)$"
+      }
+    },
+    {
+      "key": "last-man-standing-reward",
+      "label": "Last Man Standing rewards",
+      "parent": "minigame-reward",
+      "description": "LMS reward shop items: dark bow paints, whip mixes, upgrade kits, teleport tablets",
+      "match": {
+        "categoriesAny": [
+          "Last Man Standing"
+        ],
+        "nameRegex": "^Ornate maul handle$"
+      }
+    },
+    {
+      "key": "bounty-hunter-reward",
+      "label": "Bounty Hunter rewards",
+      "parent": "minigame-reward",
+      "description": "Bounty Hunter rewards incl. Ancient Warriors' equipment (Vesta's, Statius's, Morrigan's, Zuriel's)",
+      "match": {
+        "categoriesAny": [
+          "Bounty Hunter",
+          "Ancient Warriors' equipment"
+        ]
+      }
+    },
+    {
+      "key": "blighted-supply",
+      "label": "Blighted supplies",
+      "parent": "minigame-reward",
+      "description": "Blighted food, potions and spell sacks from the LMS, Bounty Hunter and Soul Wars shops (wilderness-only)",
+      "match": {
+        "nameRegex": "^Blighted "
+      }
+    },
+    {
+      "key": "mage-training-arena-reward",
+      "label": "Mage Training Arena rewards",
+      "parent": "minigame-reward",
+      "description": "Infinity robes, MTA wands, Mage's book",
+      "match": {
+        "nameRegex": "^(Beginner wand|Apprentice wand|Teacher wand|Master wand|Infinity hat|Infinity top|Infinity bottoms|Infinity boots|Infinity gloves|Mage's book)$"
+      }
+    },
+    {
+      "key": "skilling-boss-reward",
+      "label": "Skilling boss rewards",
+      "parent": "minigame-reward",
+      "description": "Rewards from Wintertodt, Tempoross, Zalcano and Guardians of the Rift (tomes and pages, Dragon axe/harpoon, crystal tool seed...)",
+      "match": {
+        "nameRegex": "^(Tome of Fire \\(empty\\)|Burnt page|Tome of Water \\(empty\\)|Soaked page|Dragon axe|Dragon harpoon|Crystal tool seed|Zalcano shard|Catalytic talisman|Ring of the elements)$"
+      }
+    },
+    {
+      "key": "shades-of-mortton",
+      "label": "Shades of Mort'ton items",
+      "parent": "minigame-reward",
+      "description": "Shades of Mort'ton minigame resources and rewards: pyre logs, shade remains, sacred oil, locks, Amulet of the damned",
+      "match": {
+        "categoriesAny": [
+          "Shades of Mort'ton (minigame)",
+          "Shades of Mort'ton"
+        ],
+        "excludeNameRegex": "^Unfinished potion$"
+      }
+    },
+    {
+      "key": "tai-bwo-wannai",
+      "label": "Tai Bwo Wannai items",
+      "parent": "minigame-reward",
+      "description": "Tai Bwo Wannai Cleanup rewards and resources: villager clothes, machetes, thatch spars, Broodoo shields",
+      "match": {
+        "categoriesAny": [
+          "Tai Bwo Wannai Cleanup"
+        ],
+        "nameRegex": "^(Villager (robe|hat|sandals|armband)|Tribal top) \\("
+      }
+    },
+    {
+      "key": "pyramid-plunder",
+      "label": "Pyramid Plunder artefacts",
+      "parent": "minigame-reward",
+      "description": "Pyramid Plunder artefacts (scarabs, statuettes, seals) and Pharaoh's sceptre",
+      "match": {
+        "categoriesAny": [
+          "Pyramid Plunder"
+        ]
+      }
+    },
+    {
+      "key": "holiday-item",
+      "label": "Holiday & event items",
+      "parent": "source",
+      "description": "Holiday rares and event rewards: partyhats, Halloween masks, Santa hat, Christmas cracker, event shop cosmetics",
+      "match": {
+        "categoriesAny": [
+          "Event rewards",
+          "2013 Halloween event",
+          "Grid Master"
+        ],
+        "nameRegex": "^(Partyhat set|Halloween mask set)$"
+      }
+    },
+    {
+      "key": "league-reward",
+      "label": "League rewards",
+      "parent": "source",
+      "description": "Tradeable Leagues reward shop items: relic hunter outfits, banners, ornament kits, house scrolls",
+      "match": {
+        "categoriesAny": [
+          "Twisted League",
+          "Trailblazer League",
+          "Shattered Relics League",
+          "Trailblazer Reloaded League",
+          "Raging Echoes League",
+          "Demonic Pacts League"
+        ],
+        "nameRegex": "^(Twisted|Trailblazer|Shattered|Raging echoes|Echo|Demonic pacts) .*(banner|scroll|ornament kit|rug|curtains|globe|horns|blueprints|armour set)"
+      }
+    },
+    {
+      "key": "deadman-reward",
+      "label": "Deadman rewards",
+      "parent": "source",
+      "description": "Deadman Mode seasonal items: corrupted weapons, trinkets, sigils, Deadman reward store items",
+      "match": {
+        "categoriesAny": [
+          "Deadman seasonal items",
+          "Deadman: Armageddon",
+          "Deadman: Annihilation",
+          "Deadman: Apocalypse",
+          "Deadman: Reborn",
+          "Deadman Mode"
+        ]
+      }
+    },
+    {
+      "key": "sigil",
+      "label": "Sigils",
+      "parent": "deadman-reward",
+      "description": "Deadman Mode sigils",
+      "match": {
+        "nameRegex": "^Sigil of "
+      }
+    },
+    {
+      "key": "shop-item",
+      "label": "Shop items",
+      "parent": "source",
+      "description": "Items sold for coins by an NPC shop somewhere in the game (wiki store data)",
+      "match": {
+        "ids": [
+          2,
+          6,
+          8,
+          10,
+          12,
+          36,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          52,
+          115,
+          121,
+          133,
+          175,
+          197,
+          221,
+          227,
+          229,
+          233,
+          243,
+          273,
+          299,
+          301,
+          303,
+          305,
+          307,
+          309,
+          311,
+          313,
+          314,
+          317,
+          321,
+          327,
+          329,
+          331,
+          333,
+          335,
+          339,
+          341,
+          345,
+          347,
+          349,
+          353,
+          355,
+          359,
+          361,
+          363,
+          365,
+          371,
+          373,
+          377,
+          379,
+          383,
+          385,
+          401,
+          426,
+          428,
+          436,
+          438,
+          440,
+          442,
+          444,
+          447,
+          449,
+          451,
+          453,
+          554,
+          555,
+          556,
+          557,
+          558,
+          559,
+          560,
+          561,
+          562,
+          563,
+          564,
+          565,
+          566,
+          579,
+          590,
+          596,
+          621,
+          626,
+          628,
+          630,
+          632,
+          634,
+          636,
+          638,
+          640,
+          642,
+          644,
+          646,
+          648,
+          650,
+          652,
+          654,
+          656,
+          658,
+          660,
+          662,
+          664,
+          800,
+          801,
+          802,
+          803,
+          804,
+          805,
+          825,
+          826,
+          827,
+          828,
+          829,
+          830,
+          837,
+          839,
+          841,
+          843,
+          845,
+          847,
+          849,
+          851,
+          853,
+          855,
+          857,
+          863,
+          864,
+          865,
+          877,
+          880,
+          882,
+          884,
+          886,
+          888,
+          890,
+          892,
+          946,
+          948,
+          950,
+          952,
+          954,
+          958,
+          960,
+          970,
+          973,
+          975,
+          981,
+          1005,
+          1007,
+          1011,
+          1013,
+          1015,
+          1017,
+          1019,
+          1021,
+          1023,
+          1025,
+          1027,
+          1059,
+          1061,
+          1063,
+          1065,
+          1067,
+          1069,
+          1071,
+          1073,
+          1075,
+          1077,
+          1079,
+          1081,
+          1083,
+          1085,
+          1087,
+          1089,
+          1091,
+          1093,
+          1095,
+          1097,
+          1099,
+          1101,
+          1103,
+          1105,
+          1107,
+          1109,
+          1111,
+          1113,
+          1115,
+          1117,
+          1119,
+          1121,
+          1123,
+          1125,
+          1127,
+          1129,
+          1131,
+          1133,
+          1135,
+          1137,
+          1139,
+          1141,
+          1143,
+          1145,
+          1147,
+          1151,
+          1153,
+          1155,
+          1157,
+          1159,
+          1161,
+          1163,
+          1165,
+          1167,
+          1169,
+          1171,
+          1173,
+          1175,
+          1177,
+          1181,
+          1183,
+          1185,
+          1189,
+          1191,
+          1193,
+          1195,
+          1197,
+          1199,
+          1201,
+          1203,
+          1205,
+          1207,
+          1209,
+          1211,
+          1213,
+          1215,
+          1217,
+          1237,
+          1239,
+          1241,
+          1243,
+          1245,
+          1247,
+          1265,
+          1267,
+          1269,
+          1271,
+          1273,
+          1275,
+          1277,
+          1279,
+          1281,
+          1283,
+          1285,
+          1287,
+          1289,
+          1291,
+          1293,
+          1295,
+          1297,
+          1299,
+          1301,
+          1303,
+          1305,
+          1307,
+          1309,
+          1311,
+          1313,
+          1315,
+          1317,
+          1321,
+          1323,
+          1325,
+          1327,
+          1329,
+          1331,
+          1333,
+          1335,
+          1337,
+          1339,
+          1341,
+          1343,
+          1345,
+          1347,
+          1349,
+          1351,
+          1353,
+          1355,
+          1357,
+          1359,
+          1363,
+          1365,
+          1367,
+          1369,
+          1371,
+          1375,
+          1377,
+          1379,
+          1381,
+          1383,
+          1385,
+          1387,
+          1389,
+          1391,
+          1420,
+          1422,
+          1424,
+          1428,
+          1430,
+          1432,
+          1434,
+          1450,
+          1523,
+          1539,
+          1540,
+          1550,
+          1592,
+          1595,
+          1597,
+          1599,
+          1601,
+          1603,
+          1605,
+          1607,
+          1617,
+          1619,
+          1621,
+          1623,
+          1635,
+          1637,
+          1639,
+          1641,
+          1643,
+          1654,
+          1656,
+          1658,
+          1660,
+          1662,
+          1692,
+          1694,
+          1696,
+          1698,
+          1700,
+          1714,
+          1718,
+          1725,
+          1727,
+          1729,
+          1731,
+          1733,
+          1734,
+          1735,
+          1755,
+          1757,
+          1759,
+          1763,
+          1765,
+          1767,
+          1769,
+          1771,
+          1773,
+          1775,
+          1777,
+          1779,
+          1781,
+          1783,
+          1785,
+          1793,
+          1823,
+          1831,
+          1833,
+          1835,
+          1837,
+          1854,
+          1887,
+          1891,
+          1905,
+          1907,
+          1909,
+          1911,
+          1913,
+          1915,
+          1917,
+          1919,
+          1921,
+          1923,
+          1925,
+          1927,
+          1929,
+          1931,
+          1933,
+          1935,
+          1937,
+          1941,
+          1942,
+          1944,
+          1947,
+          1949,
+          1951,
+          1955,
+          1957,
+          1963,
+          1965,
+          1969,
+          1971,
+          1973,
+          1975,
+          1978,
+          1980,
+          1982,
+          1985,
+          1987,
+          1993,
+          2003,
+          2007,
+          2015,
+          2017,
+          2019,
+          2021,
+          2023,
+          2025,
+          2026,
+          2028,
+          2030,
+          2032,
+          2034,
+          2036,
+          2038,
+          2040,
+          2102,
+          2108,
+          2114,
+          2120,
+          2126,
+          2128,
+          2130,
+          2132,
+          2134,
+          2136,
+          2138,
+          2142,
+          2164,
+          2165,
+          2166,
+          2167,
+          2169,
+          2171,
+          2219,
+          2221,
+          2223,
+          2225,
+          2227,
+          2229,
+          2231,
+          2233,
+          2235,
+          2237,
+          2239,
+          2241,
+          2243,
+          2283,
+          2289,
+          2309,
+          2313,
+          2323,
+          2325,
+          2327,
+          2347,
+          2349,
+          2351,
+          2355,
+          2357,
+          2368,
+          2472,
+          2520,
+          2522,
+          2524,
+          2526,
+          2862,
+          2876,
+          2878,
+          2894,
+          2896,
+          2898,
+          2900,
+          2902,
+          2904,
+          2906,
+          2908,
+          2910,
+          2912,
+          2914,
+          2916,
+          2918,
+          2920,
+          2922,
+          2924,
+          2926,
+          2928,
+          2930,
+          2932,
+          2934,
+          2936,
+          2938,
+          2940,
+          2942,
+          2955,
+          2961,
+          2976,
+          3095,
+          3096,
+          3097,
+          3099,
+          3105,
+          3142,
+          3144,
+          3157,
+          3188,
+          3190,
+          3192,
+          3194,
+          3196,
+          3198,
+          3200,
+          3202,
+          3204,
+          3211,
+          3226,
+          3363,
+          3420,
+          3422,
+          3424,
+          3678,
+          3749,
+          3751,
+          3753,
+          3755,
+          3759,
+          3761,
+          3763,
+          3765,
+          3767,
+          3769,
+          3771,
+          3773,
+          3775,
+          3777,
+          3779,
+          3781,
+          3783,
+          3785,
+          3787,
+          3789,
+          3791,
+          3793,
+          3795,
+          3797,
+          3799,
+          3801,
+          3803,
+          4012,
+          4014,
+          4016,
+          4089,
+          4091,
+          4093,
+          4095,
+          4097,
+          4156,
+          4161,
+          4162,
+          4164,
+          4166,
+          4168,
+          4170,
+          4315,
+          4317,
+          4319,
+          4321,
+          4323,
+          4325,
+          4327,
+          4329,
+          4331,
+          4333,
+          4335,
+          4337,
+          4339,
+          4341,
+          4343,
+          4345,
+          4347,
+          4349,
+          4351,
+          4353,
+          4355,
+          4357,
+          4359,
+          4361,
+          4363,
+          4365,
+          4367,
+          4369,
+          4371,
+          4373,
+          4375,
+          4377,
+          4379,
+          4381,
+          4383,
+          4385,
+          4387,
+          4389,
+          4391,
+          4393,
+          4395,
+          4397,
+          4399,
+          4401,
+          4403,
+          4405,
+          4407,
+          4409,
+          4411,
+          4413,
+          4517,
+          4522,
+          4525,
+          4535,
+          4537,
+          4546,
+          4548,
+          4551,
+          4587,
+          4591,
+          4593,
+          4600,
+          4608,
+          4627,
+          4675,
+          4684,
+          4687,
+          4689,
+          4740,
+          4773,
+          4778,
+          4783,
+          4788,
+          4793,
+          4798,
+          4803,
+          4819,
+          4820,
+          4827,
+          4844,
+          4850,
+          5014,
+          5016,
+          5018,
+          5024,
+          5026,
+          5028,
+          5030,
+          5032,
+          5034,
+          5036,
+          5038,
+          5040,
+          5042,
+          5044,
+          5046,
+          5048,
+          5050,
+          5052,
+          5096,
+          5097,
+          5305,
+          5306,
+          5307,
+          5308,
+          5309,
+          5310,
+          5311,
+          5318,
+          5319,
+          5320,
+          5321,
+          5322,
+          5323,
+          5324,
+          5325,
+          5329,
+          5331,
+          5341,
+          5343,
+          5350,
+          5354,
+          5376,
+          5418,
+          5504,
+          5523,
+          5574,
+          5575,
+          5576,
+          5751,
+          5763,
+          5767,
+          5931,
+          5970,
+          5972,
+          5974,
+          5982,
+          5986,
+          5994,
+          5996,
+          5998,
+          6000,
+          6002,
+          6006,
+          6032,
+          6036,
+          6297,
+          6299,
+          6382,
+          6384,
+          6386,
+          6388,
+          6390,
+          6392,
+          6394,
+          6396,
+          6398,
+          6400,
+          6402,
+          6404,
+          6406,
+          6408,
+          6410,
+          6412,
+          6414,
+          6416,
+          6418,
+          6420,
+          6587,
+          6589,
+          6591,
+          6599,
+          6601,
+          6603,
+          6605,
+          6607,
+          6609,
+          6611,
+          6613,
+          6615,
+          6617,
+          6619,
+          6621,
+          6623,
+          6625,
+          6627,
+          6629,
+          6631,
+          6633,
+          6697,
+          6705,
+          6794,
+          6814,
+          7051,
+          7110,
+          7112,
+          7114,
+          7116,
+          7122,
+          7124,
+          7126,
+          7128,
+          7130,
+          7132,
+          7134,
+          7136,
+          7138,
+          7159,
+          7162,
+          7170,
+          7178,
+          7188,
+          7198,
+          7208,
+          7218,
+          7433,
+          7435,
+          7437,
+          7439,
+          7441,
+          7443,
+          7445,
+          7447,
+          7449,
+          7451,
+          7668,
+          7919,
+          7936,
+          7944,
+          7946,
+          8417,
+          8419,
+          8421,
+          8423,
+          8425,
+          8427,
+          8429,
+          8431,
+          8433,
+          8435,
+          8437,
+          8439,
+          8441,
+          8443,
+          8445,
+          8447,
+          8449,
+          8451,
+          8453,
+          8455,
+          8457,
+          8459,
+          8461,
+          8784,
+          8786,
+          8788,
+          8790,
+          8794,
+          8837,
+          8872,
+          8880,
+          8882,
+          9003,
+          9075,
+          9140,
+          9174,
+          9177,
+          9179,
+          9181,
+          9183,
+          9185,
+          9420,
+          9423,
+          9425,
+          9427,
+          9429,
+          9431,
+          9434,
+          9440,
+          9442,
+          9444,
+          9446,
+          9448,
+          9450,
+          9452,
+          9629,
+          9634,
+          9636,
+          9638,
+          9640,
+          9642,
+          9644,
+          9666,
+          9668,
+          9670,
+          9672,
+          9674,
+          9676,
+          9678,
+          9735,
+          10006,
+          10008,
+          10010,
+          10012,
+          10025,
+          10029,
+          10031,
+          10087,
+          10088,
+          10089,
+          10090,
+          10091,
+          10093,
+          10095,
+          10097,
+          10099,
+          10101,
+          10103,
+          10117,
+          10119,
+          10121,
+          10123,
+          10150,
+          10156,
+          10814,
+          10816,
+          10818,
+          10820,
+          10828,
+          10927,
+          10952,
+          10954,
+          10956,
+          10958,
+          10973,
+          11065,
+          11069,
+          11072,
+          11076,
+          11085,
+          11092,
+          11200,
+          11260,
+          11874,
+          11876,
+          12863,
+          13431,
+          13573,
+          13658,
+          21754,
+          22097,
+          22430,
+          23037,
+          23948,
+          24003,
+          24006,
+          24009,
+          24012,
+          24015,
+          24018,
+          24021,
+          24024,
+          24027,
+          24774,
+          24782,
+          25826,
+          26266,
+          28896,
+          29163,
+          29174,
+          29177,
+          29218,
+          29277,
+          29292,
+          29409,
+          29412,
+          29415,
+          29418,
+          29421,
+          29900,
+          29944,
+          29947,
+          29952,
+          29955,
+          29958,
+          29963,
+          29966,
+          29993,
+          30002,
+          31255,
+          31258,
+          31261,
+          31716,
+          31719,
+          31906,
+          31908,
+          31910,
+          31912,
+          31914,
+          31964,
+          33074,
+          33836,
+          33839,
+          33842,
+          33845,
+          33848,
+          33851,
+          33854,
+          33857,
+          33860,
+          33863,
+          33866,
+          33869,
+          33872,
+          33875,
+          33878,
+          33881,
+          33884,
+          33887,
+          33890,
+          33893,
+          33896,
+          33899,
+          33902,
+          33905,
+          33908,
+          33911,
+          33914,
+          33917,
+          33920,
+          33923,
+          33926,
+          33929,
+          33932,
+          33935,
+          33938,
+          33941,
+          33944,
+          33947,
+          33950,
+          33953,
+          33956,
+          33959,
+          33962,
+          33965,
+          33968,
+          33971,
+          33974,
+          33977,
+          33980,
+          33983,
+          33986,
+          33989,
+          33992,
+          33995,
+          33998,
+          34001,
+          34004,
+          34007,
+          34010,
+          34013,
+          34017
+        ]
+      }
+    },
+    {
+      "key": "cosmetic",
+      "label": "Cosmetics",
+      "parent": "misc",
+      "description": "Purely cosmetic items: ornament kits, costumes, team capes"
+    },
+    {
+      "key": "ornament-kit",
+      "label": "Ornament kits & recolours",
+      "parent": "cosmetic",
+      "description": "Ornament kits, colour kits, paints, whip mixes and cosmetic upgrade kits applied to other items",
+      "match": {
+        "categoriesAny": [
+          "Ornament kits"
+        ],
+        "nameRegex": "(ornament|colour) kit$|dark bow paint$|whip mix$"
+      }
+    },
+    {
+      "key": "team-cape",
+      "label": "Team capes",
+      "parent": "cosmetic",
+      "description": "Numbered team capes and clue team capes",
+      "match": {
+        "categoriesAny": [
+          "Team capes"
+        ]
+      }
+    },
+    {
+      "key": "costume",
+      "label": "Costumes",
+      "parent": "cosmetic",
+      "description": "Novelty outfits and fancy dress not covered by clue tags (H.A.M. robes, Evil chicken, cavalier mask, combo hats...)",
+      "match": {
+        "categoriesAny": [
+          "Emote enhancers"
+        ],
+        "nameRegex": "^(Ham shirt|Ham robe|Ham hood|Ham cloak|Ham logo|Ham gloves|Ham boots|Evil chicken feet|Evil chicken wings|Evil chicken head|Evil chicken legs|Partyhat & specs|Pirate hat & patch|Top hat & monocle|Double eye patch|Right eye patch|Cavalier mask|Spotted cape|Spottier cape|White gloves|Shade robe top|Shade robe)$"
+      }
+    },
+    {
+      "key": "item-set",
+      "label": "Item sets",
+      "parent": "misc",
+      "description": "GE item sets that can be exchanged for their component pieces",
+      "match": {
+        "categoriesAny": [
+          "Item sets"
+        ]
+      }
+    },
+    {
+      "key": "quest-item",
+      "label": "Quest items",
+      "parent": "misc",
+      "description": "Tradeable items used in quests",
+      "match": {
+        "categoriesAny": [
+          "Quest items"
+        ]
+      }
+    },
+    {
+      "key": "key",
+      "label": "Keys",
+      "parent": "misc",
+      "description": "Keys and key halves (crystal key, brimstone key, muddy key...)",
+      "match": {
+        "categoriesAny": [
+          "Keys"
+        ],
+        "nameRegex": " key$|half of key$"
+      }
+    },
+    {
+      "key": "flatpack",
+      "label": "Flatpacks",
+      "parent": "construction",
+      "description": "Pre-built player-owned house furniture",
+      "match": {
+        "categoriesAny": [
+          "Flatpacks"
+        ],
+        "nameRegex": "\\(flatpack\\)$"
+      }
+    },
+    {
+      "key": "bagged-plant",
+      "label": "Bagged plants",
+      "parent": "construction",
+      "description": "Bagged trees, hedges and flowers for the POH garden",
+      "match": {
+        "categoriesAny": [
+          "Bagged items"
+        ]
+      }
+    },
+    {
+      "key": "fremennik-component",
+      "label": "Dagannoth armour components",
+      "parent": "crafting",
+      "description": "Waterbirth Island drops crafted into rock-shell, spined and skeletal armour",
+      "match": {
+        "nameRegex": "^(Dagannoth hide|Rock-shell chunk|Rock-shell shard|Rock-shell splinter|Skull piece|Ribcage piece|Fibula piece|Circular hide|Flattened hide|Stretched hide)$"
+      }
+    },
+    {
+      "key": "book",
+      "label": "Books",
+      "parent": "misc",
+      "description": "Books, guides and tomes that can be read or stored in a bookcase",
+      "match": {
+        "categoriesAny": [
+          "Texts and tomes",
+          "Storable in bookcases"
+        ]
+      }
+    },
+    {
+      "key": "light-source",
+      "label": "Light sources",
+      "parent": "misc",
+      "description": "Candles, torches, lanterns and the mining helmet for dark areas",
+      "match": {
+        "categoriesAny": [
+          "Light sources"
+        ]
+      }
+    },
+    {
+      "key": "snail",
+      "label": "Snail items",
+      "parent": "misc",
+      "description": "Mort Myre snails, snail meat, blamish shells and snelms",
+      "match": {
+        "categoriesAny": [
+          "Snails"
+        ]
+      }
+    },
+    {
+      "key": "toy",
+      "label": "Toys",
+      "parent": "misc",
+      "description": "Clockwork toys and toy horseys",
+      "match": {
+        "nameRegex": "^Toy (soldier|doll|mouse|cat)|toy horsey$"
+      }
+    },
+    {
+      "key": "currency",
+      "label": "Currency",
+      "parent": "misc",
+      "description": "Old school bonds and tradeable shop/minigame currencies (trading sticks, archery tickets, numulite)",
+      "match": {
+        "categoriesAny": [
+          "Currency"
+        ],
+        "nameRegex": "^(Old school bond|Trading sticks|Archery ticket|Numulite)$"
+      }
+    },
+    {
+      "key": "unlock-item",
+      "label": "Unlock scrolls",
+      "parent": "misc",
+      "description": "Single-use items that permanently unlock an ability (prayer scrolls, runescrolls, teleport anchoring scroll...)",
+      "match": {
+        "categoriesAny": [
+          "Single-use ability unlock items"
+        ]
+      }
+    },
+    {
+      "key": "upgrade-item",
+      "label": "Upgrade components",
+      "parent": "misc",
+      "description": "Components attached to other gear to upgrade it (crystals, fangs, tentacle, Kodai insignia, Bandosian components...)",
+      "match": {
+        "categoriesAny": [
+          "Upgrade items"
+        ]
+      }
+    },
+    {
+      "key": "sailing",
+      "label": "Sailing",
+      "parent": "skilling",
+      "description": "Sailing skill items: boat parts, paints and sailing resources",
+      "match": {
+        "categoriesAny": [
+          "Sailing",
+          "Boats"
+        ],
+        "nameRegex": "^Fish crate \\(|^(Elkhorn|Pillar|Umbral) coral$|^(Summon boat|Teleport to boat|Dragon cannon barrel)$"
+      }
+    },
+    {
+      "key": "boat-part",
+      "label": "Boat parts",
+      "parent": "sailing",
+      "description": "Keel and hull parts for building boats",
+      "match": {
+        "nameRegex": " (keel|hull) parts$"
+      }
+    },
+    {
+      "key": "boat-paint",
+      "label": "Boat paints",
+      "parent": "sailing",
+      "description": "Cosmetic boat paints",
+      "match": {
+        "nameRegex": "^(Barracuda|Shark|Inky|Angler's|Salvor's|Merchant's) paint$"
+      }
+    }
+  ]
+}

@@ -1,9 +1,8 @@
 // Wires the composables together. Dependencies flow one way:
-// toasts/modals -> store -> items -> groups -> evaluation -> scopes -> variables -> dashboard / import-export / url.
+// toasts/modals -> store -> items -> item tags -> evaluation -> scopes -> variables -> dashboard / import-export / url.
 createApp({
     components: {
         'formula-input': FormulaInput,
-        'group-item-list': GroupItemList,
         'tag-multi-select': TagMultiSelect,
         'item-ref-list': ItemRefList,
         'item-icon': ItemIcon,
@@ -19,10 +18,12 @@ createApp({
         const store = useTrackerStore({ showToast });
         const itemsApi = useRunescapeItems({ showToast });
 
-        const groupsApi = useItemGroups({
+        const itemTagsApi = useItemTags({
             store,
             items: itemsApi.items,
+            itemsByName: itemsApi.itemsByName,
             showToast,
+            showUndoToast: toastApi.showUndoToast,
             showConfirmModal: modalApi.showConfirmModal,
             showInputModal: modalApi.showInputModal,
         });
@@ -31,12 +32,14 @@ createApp({
             store,
             items: itemsApi.items,
             itemsByName: itemsApi.itemsByName,
+            itemQuerySource: itemTagsApi.itemQuerySource,
         });
 
         const scopesApi = useScopes({
             store,
             items: itemsApi.items,
             itemsByName: itemsApi.itemsByName,
+            itemTagsApi,
             evaluation,
             showToast,
             showConfirmModal: modalApi.showConfirmModal,
@@ -46,6 +49,7 @@ createApp({
         const variablesApi = useVariables({
             store,
             items: itemsApi.items,
+            itemTagsApi,
             evaluation,
             selectedScope: scopesApi.selectedScope,
             scopesApi,
@@ -61,16 +65,12 @@ createApp({
             getGlobalVariableValue: variablesApi.getGlobalVariableValue,
         });
 
-        const importExportApi = useImportExport({
-            store,
-            selectedGroupId: groupsApi.selectedGroupId,
-            showToast,
-        });
+        const importExportApi = useImportExport({ store, showToast });
 
         const { initFromUrl } = useUrlState({
-            groups: store.groups,
+            isItemTag: itemTagsApi.isItemTag,
             scopes: store.scopes,
-            selectedGroupId: groupsApi.selectedGroupId,
+            selectedItemTagKey: itemTagsApi.selectedItemTagKey,
             selectedScopeId: scopesApi.selectedScopeId,
             activeTab,
         });
@@ -88,13 +88,14 @@ createApp({
             ...modalApi,
             ...store,
             ...itemsApi,
-            ...groupsApi,
+            ...itemTagsApi,
             ...scopesApi,
             ...variablesApi,
             ...tagsApi,
             ...dashboardApi,
             ...importExportApi,
             formatVarValue,
+            formulaFunctionReference: FORMULA_FUNCTION_REFERENCE,
             // Values panels: entries are split by whether the code's `return { ... }` exposes them.
             publicEntries: (entries) => entries.filter(e => !e.private),
             privateEntries: (entries) => entries.filter(e => e.private),

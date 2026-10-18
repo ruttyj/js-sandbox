@@ -1,0 +1,29 @@
+{
+  "notes": "How tools/build-item-tags.mjs combines the proposals. Tags with the same key are merged (their rules are combined: an item matching any of them gets the tag). When proposals give a tag different parents, the more specific one wins (the one under the other); 'parents' settles the rest. 'renameKeys' renames a key inside one proposal before merging, to split two different meanings or join two names for one thing.",
+  "roots": [
+    { "key": "equipment", "label": "Equipment", "parent": null },
+    { "key": "skilling", "label": "Skilling", "parent": null },
+    { "key": "consumable", "label": "Consumables", "parent": null },
+    { "key": "material", "label": "Materials & families", "parent": null },
+    { "key": "source", "label": "Sources", "parent": null },
+    { "key": "misc", "label": "Miscellaneous", "parent": null },
+    { "key": "magic", "label": "Magic", "parent": "skilling" },
+    { "key": "prayer", "label": "Prayer", "parent": "skilling" }
+  ],
+  "renameKeys": {
+    "skilling": {
+      "battlestaff": "battlestaff-crafting",
+      "magic-wood": "magic-tree"
+    }
+  },
+  "labels": {
+    "battlestaff-crafting": "Battlestaff crafting",
+    "magic-tree": "Magic (tree)"
+  },
+  "parents": {
+    "pyre-log": "log",
+    "blighted-supply": "consumable",
+    "cannonball": "ammunition",
+    "third-age": "gear-family"
+  }
+}

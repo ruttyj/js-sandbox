@@ -5,13 +5,14 @@
 // the public globals, and the Dashboard only lists public variables.
 // A scope can also read another scope's public values with importScope('Name'); that scope runs
 // (or reuses its cached result) first. Circular imports are an error.
-const useEvaluation = ({ store, items, itemsByName }) => {
+// itemQuerySource: what queryOsrsItems() searches, with item tags (see useItemTags).
+const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
     const { globalsCode, scopes } = store;
 
     const declaredKeys = (code) => parseScopeCode(code).variables.map(v => v.key);
 
     const runGlobals = () => runScopeCode(globalsCode.value, declaredKeys(globalsCode.value), {
-        items: items.value, itemsByName: itemsByName.value,
+        items: items.value, itemsByName: itemsByName.value, itemQuerySource,
     });
 
     const globalsResult = computed(runGlobals);
@@ -50,7 +51,8 @@ const useEvaluation = ({ store, items, itemsByName }) => {
                 runningScopes.push(scope);
                 try {
                     return runScopeCode(scope.code, declaredKeys(scope.code), {
-                        items: items.value, itemsByName: itemsByName.value, globals: exportedValues(runGlobals()), importScope,
+                        items: items.value, itemsByName: itemsByName.value, itemQuerySource,
+                        globals: exportedValues(runGlobals()), importScope,
                     });
                 } finally {
                     runningScopes.pop();

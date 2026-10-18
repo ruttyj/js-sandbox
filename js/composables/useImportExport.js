@@ -1,17 +1,28 @@
-// JSON export/import of item groups, scopes and globals, with merge-or-overwrite on import.
-const useImportExport = ({ store, selectedGroupId, showToast }) => {
-    const { groups, scopes, globalVariables, globalsCode, saveData } = store;
+// JSON export/import of scopes, globals and the user's item tags, with merge-or-overwrite on import.
+const useImportExport = ({ store, showToast }) => {
+    const { scopes, globalVariables, globalsCode, itemTags, saveData } = store;
 
     const importFile = ref(null); // template ref to the hidden <input type="file">
     const isImportModalVisible = ref(false);
-    const pendingImportGroups = ref(null);
+    const pendingImport = ref(null);
 
-    const exportGroups = () => {
-        if (groups.value.length === 0 && scopes.value.length === 0 && globalVariables.value.length === 0) {
+    const hasDataToExport = () => {
+        return scopes.value.length > 0
+            || globalVariables.value.length > 0
+            || itemTags.value.length > 0;
+    };
+
+    const exportData = () => {
+        if (!hasDataToExport()) {
             showToast("There is no data to export.", 'info');
             return;
         }
-        const data = { groups: groups.value, scopes: scopes.value, globals: globalVariables.value, globalsCode: globalsCode.value };
+        const data = {
+            scopes: scopes.value,
+            globals: globalVariables.value,
+            globalsCode: globalsCode.value,
+            itemTags: itemTags.value,
+        };
         const dataBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
         const link = document.createElement('a');
@@ -25,40 +36,53 @@ const useImportExport = ({ store, selectedGroupId, showToast }) => {
 
     const triggerImport = () => importFile.value.click();
 
-    // Accepts the old format (array of groups) and the newer ones ({ groups, scopes?, globals }).
-    // Files from before scopes existed have recipes inside their groups; those become scopes.
-    const parseImport = (imported) => {
-        let parsed;
+    // The file's contents in the current shape. Accepts every format the app has exported: an
+    // array of item groups (oldest), { groups, scopes?, globals, globalsCode? }, the first item-tags
+    // version (with itemTagEdits), and the current { scopes, globals, globalsCode, itemTags }.
+    // Groups become user item tags.
+    const readImportedData = (imported) => {
         if (Array.isArray(imported)) {
-            if (!imported.every(g => g.id && g.name && Array.isArray(g.items))) throw new Error('Invalid file format.');
-            parsed = { groups: imported, scopes: [], globals: [], globalsCode: null };
-        } else if (typeof imported === 'object' && imported !== null) {
-            if (!imported.groups && !imported.scopes && !imported.globals) {
-                throw new Error('Invalid file format: Missing groups, scopes or globals.');
+            if (!imported.every(g => g.id && g.name && Array.isArray(g.items))) {
+                throw new Error('Invalid file format.');
             }
-            parsed = {
-                groups: Array.isArray(imported.groups) ? imported.groups : [],
-                scopes: Array.isArray(imported.scopes) ? imported.scopes : [],
-                globals: Array.isArray(imported.globals) ? imported.globals : [],
-                globalsCode: typeof imported.globalsCode === 'string' ? imported.globalsCode : null,
-            };
-        } else {
+            return { groups: imported, scopes: [], globals: [], globalsCode: null };
+        }
+        if (typeof imported !== 'object' || imported === null) {
             throw new Error('Invalid file format.');
         }
+        const knownKeys = ['groups', 'scopes', 'globals', 'itemTags', 'itemTagEdits'];
+        if (!knownKeys.some(key => imported[key])) {
+            throw new Error('Invalid file format: nothing to import.');
+        }
+        return {
+            groups: Array.isArray(imported.groups) ? imported.groups : [],
+            scopes: Array.isArray(imported.scopes) ? imported.scopes : [],
+            globals: Array.isArray(imported.globals) ? imported.globals : [],
+            globalsCode: typeof imported.globalsCode === 'string' ? imported.globalsCode : null,
+            itemTags: imported.itemTags,
+            itemTagEdits: imported.itemTagEdits,
+        };
+    };
+
+    // Files from before scopes existed have recipes inside their groups; those become scopes.
+    const parseImport = (imported) => {
+        const parsed = readImportedData(imported);
         parsed.scopes = [...parsed.scopes, ...extractLegacyScopes(parsed.groups)];
-        parsed.groups.forEach(normalizeGroup);
+        normalizeItemTagData(parsed);
+        // groupsToItemTags migration: exports made before item tags carry groups.
+        migrateGroupsToItemTags(parsed);
         parsed.scopes.forEach(normalizeScope);
         return parsed;
     };
 
-    const importGroups = (event) => {
+    const importData = (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = e => {
             try {
-                pendingImportGroups.value = parseImport(JSON.parse(e.target.result));
+                pendingImport.value = parseImport(JSON.parse(e.target.result));
                 isImportModalVisible.value = true;
             } catch (err) {
                 console.error(err);
@@ -82,73 +106,56 @@ const useImportExport = ({ store, selectedGroupId, showToast }) => {
     const appendVariablesToCode = (code, added) =>
         (added.length ? (code || '').trimEnd() + '\n\n' + generateScopeCode({ variables: added }) : code);
 
-    const mergeGroup = (existingGroup, importedGroup) => {
-        const existingItemIds = new Set(existingGroup.items.map(i => i.id));
-        importedGroup.items.forEach(importedItem => {
-            if (!existingItemIds.has(importedItem.id)) {
-                existingGroup.items.push({
-                    id: importedItem.id,
-                    color: importedItem.color || getRandomVibrantColor(),
-                    order: existingGroup.items.length
-                });
-            }
-        });
-    };
-
+    // Linked tags are combined; an item color already set here is kept.
     const mergeScope = (existingScope, importedScope) => {
         const added = mergeVariables(existingScope.variables, importedScope.variables);
         existingScope.code = appendVariablesToCode(existingScope.code, added);
-        existingScope.groupIds = [...new Set([...existingScope.groupIds, ...importedScope.groupIds])];
+        existingScope.itemTagKeys = [...new Set([...existingScope.itemTagKeys, ...importedScope.itemTagKeys])];
+        existingScope.itemColors = { ...importedScope.itemColors, ...existingScope.itemColors };
     };
 
     // A fresh id that can't clash with existing ones (ids are timestamps).
     const newImportId = () => Date.now() + Math.random();
 
-    const overwriteWithImport = (importedData) => {
-        groups.value = importedData.groups;
-        scopes.value = importedData.scopes;
-        globalVariables.value = importedData.globals.map(normalizeVariable);
-        globalsCode.value = importedData.globalsCode ?? generateScopeCode({ variables: globalVariables.value });
-        selectedGroupId.value = null;
-    };
-
-    // Groups and scopes are matched by name, not id, so exports from other devices merge cleanly.
-    // Returns imported group id -> the id that group has now (both as strings).
-    const mergeImportedGroups = (importedGroups) => {
-        const groupIdMap = new Map();
-        importedGroups.forEach(importedGroup => {
-            let group = groups.value.find(g => g.name === importedGroup.name);
-            if (group) {
-                mergeGroup(group, importedGroup);
-            } else {
-                group = { ...importedGroup, id: newImportId() };
-                groups.value.push(group);
-            }
-            groupIdMap.set(String(importedGroup.id), String(group.id));
-        });
-        return groupIdMap;
-    };
-
-    // groupIdMap: from mergeImportedGroups, so the scopes' group refs point at the merged groups.
-    const mergeImportedScopes = (importedScopes, groupIdMap) => {
+    // Scopes are matched by name, not id, so exports from other devices merge cleanly.
+    const mergeImportedScopes = (importedScopes) => {
         importedScopes.forEach(importedScope => {
-            importedScope.groupIds = importedScope.groupIds.map(id => groupIdMap.get(id) ?? id);
             const existingScope = scopes.value.find(s => s.name === importedScope.name);
             if (existingScope) mergeScope(existingScope, importedScope);
             else scopes.value.push({ ...importedScope, id: newImportId() });
         });
     };
 
+    // User tags are matched by key: a tag that exists here keeps its label and parent and gains
+    // the imported tag's items.
+    const mergeImportedItemTags = (importedTags) => {
+        for (const imported of importedTags) {
+            const existing = itemTags.value.find(tag => tag.key === imported.key);
+            if (existing) {
+                existing.items = [...new Set([...existing.items, ...imported.items])];
+            } else {
+                itemTags.value.push(imported);
+            }
+        }
+    };
+
     const mergeImport = (importedData) => {
-        const groupIdMap = mergeImportedGroups(importedData.groups);
-        mergeImportedScopes(importedData.scopes, groupIdMap);
+        mergeImportedItemTags(importedData.itemTags);
+        mergeImportedScopes(importedData.scopes);
         const added = mergeVariables(globalVariables.value, importedData.globals);
         globalsCode.value = appendVariablesToCode(globalsCode.value, added);
     };
 
+    const overwriteWithImport = (importedData) => {
+        scopes.value = importedData.scopes;
+        globalVariables.value = importedData.globals.map(normalizeVariable);
+        globalsCode.value = importedData.globalsCode ?? generateScopeCode({ variables: globalVariables.value });
+        itemTags.value = importedData.itemTags;
+    };
+
     // choice: 'overwrite' | 'merge' (anything else just closes the modal).
     const confirmImport = (choice) => {
-        const importedData = pendingImportGroups.value;
+        const importedData = pendingImport.value;
         if (choice === 'overwrite') {
             overwriteWithImport(importedData);
             showToast('Data overwritten successfully!', 'success');
@@ -162,11 +169,11 @@ const useImportExport = ({ store, selectedGroupId, showToast }) => {
 
     const cancelImport = () => {
         isImportModalVisible.value = false;
-        pendingImportGroups.value = null;
+        pendingImport.value = null;
     };
 
     return {
-        importFile, isImportModalVisible, pendingImportGroups,
-        exportGroups, triggerImport, importGroups, confirmImport, cancelImport,
+        importFile, isImportModalVisible, pendingImport,
+        exportData, triggerImport, importData, confirmImport, cancelImport,
     };
 };

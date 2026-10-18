@@ -1,0 +1,1240 @@
+{
+  "domain": "skilling",
+  "notes": "Two dimensions: KIND tags under the skill that uses the item (skilling > smithing > metal-bar, crafting > uncut-gem, fletching > unstrung-bow, herblore > grimy-herb, cooking > raw-fish, construction > plank, runecraft > talisman, woodcutting > log > pyre-log, mining > ore, sailing > ship-part), and FAMILY tags under material, grouped by family type (material > metal > rune, material > wood > maple, material > herb > ranarr, material > gem > ruby, material > dragonhide > blue-dragonhide, material > fish > shark). The family groups (metal, wood, herb, gem, dragonhide, fish) have no rule of their own and let the app give one family type related colours. Family rules are deliberately broad (wiki metal/gem categories, or the family word in the name) so the same tag lands on ore, bar, equipment, seed, sapling, potion (unf), bolts and jewellery across every domain; other proposals can reuse these keys without redefining them. Judgement calls: (1) the Magic-wood family is keyed 'magic-wood' with a closed name list, because 'magic' is the shared Magic skill tag and 'Magic stone' / 'Magic potion' are not wood. (2) Normal logs family is 'normal-wood', not 'normal'. (3) Red topaz family is keyed 'topaz'. (4) The wiki 'Rune' category also holds god/gilded/Dragonstone armour and rune armour sets (rune-tier items), so they get 'rune' too. (5) Logs are under woodcutting, but 'fletching' and 'firemaking' also match logs directly; raw fish are under cooking (the skill that buys them), not fishing. (6) Mining/woodcutting are only grouping parents here; tool and gathering items are left to the gathering proposal. (7) 'sailing' is a new skill tag under skilling (not in the README list) for hull/keel parts and repair kits. (8) Fish families cover the 16 main cooked fish only; less traded species (cod, pike, herring, Sailing fish) are tagged raw-fish without a family. (9) Herblore secondaries come straight from the wiki category, which includes crossover items such as Raw haddock, Silver bar and Superior dragon bones. Left out on purpose (other domains or too small to tag): runes, tools (chisel, saw, tinderbox), lanterns and candles, toys, butterfly/impling jars, Sailing paints, dyes. The domain has 129 tags, a little over the ~120 guideline, because of the per-family tags.",
+  "tags": [
+    {
+      "key": "skilling",
+      "label": "Skilling",
+      "parent": null,
+      "description": "Root for skill tags (shared root)"
+    },
+    {
+      "key": "material",
+      "label": "Materials",
+      "parent": null,
+      "description": "Root for material families: metals, woods, herbs, gems (shared root)"
+    },
+    {
+      "key": "mining",
+      "label": "Mining",
+      "parent": "skilling",
+      "description": "Mined resources: ores and stone"
+    },
+    {
+      "key": "smithing",
+      "label": "Smithing",
+      "parent": "skilling",
+      "description": "Smithing materials: metal bars"
+    },
+    {
+      "key": "crafting",
+      "label": "Crafting",
+      "parent": "skilling",
+      "description": "Crafting materials and intermediates: gems, leather, glass, pottery, jewellery parts, textiles"
+    },
+    {
+      "key": "fletching",
+      "label": "Fletching",
+      "parent": "skilling",
+      "description": "Fletching materials and unfinished ranged items: logs, unstrung bows, tips, shafts, feathers",
+      "match": {
+        "nameRegex": "^((Oak|Willow|Teak|Maple|Mahogany|Yew|Magic|Redwood|Achey tree) )?logs$"
+      }
+    },
+    {
+      "key": "herblore",
+      "label": "Herblore",
+      "parent": "skilling",
+      "description": "Herblore materials: herbs, unfinished potions, secondaries, vials and tars",
+      "match": {
+        "nameRegex": "^(Vial of water|Vial|Swamp tar|(Guam|Marrentill|Tarromin|Harralander|Irit) tar)$"
+      }
+    },
+    {
+      "key": "cooking",
+      "label": "Cooking",
+      "parent": "skilling",
+      "description": "Raw cooking ingredients: raw fish, raw meat, uncooked pies and doughs"
+    },
+    {
+      "key": "construction",
+      "label": "Construction",
+      "parent": "skilling",
+      "description": "Construction materials and products: planks, nails, flatpacks, bagged plants"
+    },
+    {
+      "key": "runecraft",
+      "label": "Runecraft",
+      "parent": "skilling",
+      "description": "Runecraft supplies: essence, talismans, tiaras"
+    },
+    {
+      "key": "woodcutting",
+      "label": "Woodcutting",
+      "parent": "skilling",
+      "description": "Logs of every tree"
+    },
+    {
+      "key": "firemaking",
+      "label": "Firemaking",
+      "parent": "skilling",
+      "description": "Items burned for Firemaking: logs and pyre logs",
+      "match": {
+        "categoriesAny": [
+          "Logs"
+        ],
+        "excludeNameRegex": "^Bark$"
+      }
+    },
+    {
+      "key": "sailing",
+      "label": "Sailing",
+      "parent": "skilling",
+      "description": "Sailing shipbuilding materials"
+    },
+    {
+      "key": "ore",
+      "label": "Ores",
+      "parent": "mining",
+      "description": "Metal ores and coal (copper ... runite)",
+      "match": {
+        "categoriesAny": [
+          "Ores"
+        ],
+        "excludeNameRegex": "^(Granite|Sandstone) "
+      }
+    },
+    {
+      "key": "stone",
+      "label": "Stone",
+      "parent": "mining",
+      "description": "Quarried stone: granite, sandstone, limestone, basalt",
+      "match": {
+        "nameRegex": "^((Granite|Sandstone) \\(\\d+k?g\\)|Limestone|Basalt)$"
+      }
+    },
+    {
+      "key": "metal-bar",
+      "label": "Metal bars",
+      "parent": "smithing",
+      "description": "Smelted bars (bronze ... runite, gold, silver, lead, cupronickel)",
+      "match": {
+        "categoriesAny": [
+          "Metal bars"
+        ]
+      }
+    },
+    {
+      "key": "uncut-gem",
+      "label": "Uncut gems",
+      "parent": "crafting",
+      "description": "Gems before cutting (opal ... zenyte)",
+      "match": {
+        "nameRegex": "^Uncut "
+      }
+    },
+    {
+      "key": "cut-gem",
+      "label": "Cut gems",
+      "parent": "crafting",
+      "description": "Cut gems (opal ... zenyte, amethyst)",
+      "match": {
+        "nameRegex": "^(Opal|Jade|Red topaz|Sapphire|Emerald|Ruby|Diamond|Dragonstone|Onyx|Zenyte|Amethyst)$"
+      }
+    },
+    {
+      "key": "hide",
+      "label": "Hides",
+      "parent": "crafting",
+      "description": "Untanned hides: cowhide, dragonhides, snake and yak hides",
+      "match": {
+        "nameRegex": "^(Cowhide|(Green|Blue|Red|Black|Scaly blue) dragonhide|Snake hide( \\(swamp\\))?|Yak-hide|Dagannoth hide|Hueycoatl hide)$"
+      }
+    },
+    {
+      "key": "leather",
+      "label": "Leather",
+      "parent": "crafting",
+      "description": "Tanned leather: soft, hard, dragon leather, snakeskin",
+      "match": {
+        "categoriesAny": [
+          "Leather"
+        ],
+        "nameRegex": "^Cured yak-hide$"
+      }
+    },
+    {
+      "key": "glassblowing",
+      "label": "Glassblowing",
+      "parent": "crafting",
+      "description": "Glassmaking inputs and glassblown items: sand, soda ash, seaweed, molten glass, vials, orbs",
+      "match": {
+        "nameRegex": "^(Molten glass|Bucket of sand|Soda ash|Seaweed|Giant seaweed|Vial|Beer glass|Empty fishbowl|Unpowered orb|Lantern lens|Empty light orb|Light orb|Empty oil lamp|Empty candle lantern|Glassblowing pipe)$"
+      }
+    },
+    {
+      "key": "pottery",
+      "label": "Pottery",
+      "parent": "crafting",
+      "description": "Clay and pottery: unfired and fired pots, bowls, pie dishes",
+      "match": {
+        "nameRegex": "^(Clay|Soft clay|Unfired .+|Pot|Pie dish|Bowl|Empty plant pot|Pot lid|Empty cup)$"
+      }
+    },
+    {
+      "key": "battlestaff",
+      "label": "Battlestaves & orbs",
+      "parent": "crafting",
+      "description": "Battlestaves and the elemental orbs attached to them",
+      "match": {
+        "nameRegex": "^(Battlestaff|(Air|Water|Earth|Fire|Lava|Mud|Steam|Smoke|Dust|Mist) battlestaff|(Air|Water|Earth|Fire|Unpowered) orb)$"
+      }
+    },
+    {
+      "key": "jewellery-mould",
+      "label": "Jewellery moulds",
+      "parent": "crafting",
+      "description": "Moulds for casting gold and silver items",
+      "match": {
+        "categoriesAny": [
+          "Moulds"
+        ]
+      }
+    },
+    {
+      "key": "unstrung-jewellery",
+      "label": "Unstrung jewellery",
+      "parent": "crafting",
+      "description": "Unstrung amulets and holy symbols, before stringing",
+      "match": {
+        "nameRegex": "amulet \\(u\\)$|^Unstrung (symbol|emblem)$"
+      }
+    },
+    {
+      "key": "textile",
+      "label": "Textiles",
+      "parent": "crafting",
+      "description": "Wool, flax, yarn, thread, rope and bolts of cloth",
+      "match": {
+        "nameRegex": "^(Wool|Ball of wool|Flax|Hemp|Cotton boll|(Linen|Hemp|Cotton) yarn|Thread|Bolt of (cloth|linen|canvas|cotton)|Silk|Rope)$"
+      }
+    },
+    {
+      "key": "unstrung-bow",
+      "label": "Unstrung bows",
+      "parent": "fletching",
+      "description": "Unstrung shortbows and longbows (u)",
+      "match": {
+        "nameRegex": "(long|short)bow \\(u\\)$|^Unstrung comp bow$"
+      }
+    },
+    {
+      "key": "crossbow-part",
+      "label": "Crossbow parts",
+      "parent": "fletching",
+      "description": "Crossbow stocks, limbs and unstrung crossbows (u)",
+      "match": {
+        "nameRegex": " stock$|limbs$|crossbow \\(u\\)$",
+        "excludeNameRegex": "^Ballista "
+      }
+    },
+    {
+      "key": "bowstring",
+      "label": "Bowstrings",
+      "parent": "fletching",
+      "description": "Bow strings, crossbow strings and the flax / sinew they are spun from",
+      "match": {
+        "nameRegex": "^(Bow string|Crossbow string|Magic string|Flax|Sinew)$"
+      }
+    },
+    {
+      "key": "arrowtip",
+      "label": "Arrowtips",
+      "parent": "fletching",
+      "description": "Arrowtips and broad arrowheads",
+      "match": {
+        "nameRegex": "arrowtips$|^Broad arrowheads$"
+      }
+    },
+    {
+      "key": "shaft",
+      "label": "Shafts & headless ammo",
+      "parent": "fletching",
+      "description": "Arrow, javelin and dart shafts, and headless arrows",
+      "match": {
+        "nameRegex": "^(Arrow shaft|Headless arrow|Ogre arrow shaft|Flighted ogre arrow|Javelin shaft|Atlatl dart shaft|Headless atlatl dart)$"
+      }
+    },
+    {
+      "key": "bolt-tip",
+      "label": "Bolt tips",
+      "parent": "fletching",
+      "description": "Gem and pearl bolt tips",
+      "match": {
+        "categoriesAny": [
+          "Bolt tips"
+        ],
+        "nameRegex": "bolt tips$"
+      }
+    },
+    {
+      "key": "unfinished-bolt",
+      "label": "Unfinished bolts",
+      "parent": "fletching",
+      "description": "Bolts (unf) before feathering",
+      "match": {
+        "categoriesAny": [
+          "Unfinished bolts"
+        ],
+        "nameRegex": "bolts ?\\(unf\\)$|^Unfinished broad bolts$"
+      }
+    },
+    {
+      "key": "dart-tip",
+      "label": "Dart tips",
+      "parent": "fletching",
+      "description": "Dart tips (bronze ... dragon, amethyst, atlatl)",
+      "match": {
+        "nameRegex": "dart tips?$"
+      }
+    },
+    {
+      "key": "javelin-tip",
+      "label": "Javelin tips",
+      "parent": "fletching",
+      "description": "Javelin tips and heads",
+      "match": {
+        "nameRegex": "javelin (tips|heads)$"
+      }
+    },
+    {
+      "key": "feather",
+      "label": "Feathers",
+      "parent": "fletching",
+      "description": "Feathers for fletching and fly fishing",
+      "match": {
+        "categoriesAny": [
+          "Feathers"
+        ]
+      }
+    },
+    {
+      "key": "ballista-part",
+      "label": "Ballista parts",
+      "parent": "fletching",
+      "description": "Ballista frames, limbs, springs and unfinished ballistae",
+      "match": {
+        "nameRegex": "^(Ballista limbs|Ballista spring|Light frame|Heavy frame|Monkey tail|(Incomplete|Unstrung) (light|heavy) ballista)$"
+      }
+    },
+    {
+      "key": "grimy-herb",
+      "label": "Grimy herbs",
+      "parent": "herblore",
+      "description": "Herbs before cleaning (grimy guam ... grimy torstol)",
+      "match": {
+        "categoriesAll": [
+          "Herbs"
+        ],
+        "nameRegex": "^Grimy "
+      }
+    },
+    {
+      "key": "clean-herb",
+      "label": "Clean herbs",
+      "parent": "herblore",
+      "description": "Cleaned herbs (guam ... torstol)",
+      "match": {
+        "categoriesAny": [
+          "Herbs"
+        ],
+        "excludeNameRegex": "^(Grimy .+|Doogle leaves|Gout tuber)$"
+      }
+    },
+    {
+      "key": "unfinished-potion",
+      "label": "Unfinished potions",
+      "parent": "herblore",
+      "description": "Herb + vial of water, before the secondary",
+      "match": {
+        "categoriesAny": [
+          "Unfinished potions"
+        ],
+        "nameRegex": "potion \\(unf\\)$"
+      }
+    },
+    {
+      "key": "herblore-secondary",
+      "label": "Herblore secondaries",
+      "parent": "herblore",
+      "description": "Secondary ingredients added to unfinished potions",
+      "match": {
+        "categoriesAny": [
+          "Herblore secondaries"
+        ]
+      }
+    },
+    {
+      "key": "raw-fish",
+      "label": "Raw fish",
+      "parent": "cooking",
+      "description": "Uncooked fish to cook (shrimps ... anglerfish)",
+      "match": {
+        "categoriesAll": [
+          "Fish"
+        ],
+        "nameRegex": "^(Raw|Leaping) "
+      }
+    },
+    {
+      "key": "raw-meat",
+      "label": "Raw meat",
+      "parent": "cooking",
+      "description": "Uncooked meat to cook (beef, chicken, hunter meats)",
+      "match": {
+        "categoriesAll": [
+          "Meat"
+        ],
+        "nameRegex": "^Raw "
+      }
+    },
+    {
+      "key": "cooking-ingredient",
+      "label": "Cooking ingredients",
+      "parent": "cooking",
+      "description": "Uncooked pies, doughs, flour, milk and other cooking inputs",
+      "match": {
+        "nameRegex": "^(Pot of flour|Pot of cornflour|Pastry dough|Bread dough|Gianne dough|Pizza base|Pie shell|Uncooked (?!egg).+ pie|Raw (mud|garden|fish|admiral|wild|summer) pie|Uncooked egg|Bucket of milk|Pot of cream|Pat of butter|Chocolate dust|Grapes|Jug of water|Cake tin|Ale yeast|Barley malt)$"
+      }
+    },
+    {
+      "key": "plank",
+      "label": "Planks",
+      "parent": "construction",
+      "description": "Planks (plank, oak ... mahogany, camphor, ironwood, rosewood)",
+      "match": {
+        "nameRegex": "^((Oak|Teak|Mahogany|Camphor|Ironwood|Rosewood) )?plank$"
+      }
+    },
+    {
+      "key": "nail",
+      "label": "Nails",
+      "parent": "construction",
+      "description": "Nails (bronze ... dragon)",
+      "match": {
+        "categoriesAny": [
+          "Nails"
+        ],
+        "nameRegex": " nails$",
+        "excludeNameRegex": "^Nail beast"
+      }
+    },
+    {
+      "key": "construction-material",
+      "label": "Construction materials",
+      "parent": "construction",
+      "description": "Other building materials: limestone bricks, marble, magic stone, gold leaf, bolts of cloth",
+      "match": {
+        "nameRegex": "^(Limestone brick|Marble block|Magic stone|Gold leaf|Condensed gold|Bolt of cloth|Thatch spar (light|med|dense))$"
+      }
+    },
+    {
+      "key": "flatpack",
+      "label": "Flatpacks",
+      "parent": "construction",
+      "description": "Furniture flatpacks built at a workbench",
+      "match": {
+        "categoriesAny": [
+          "Flatpacks"
+        ],
+        "nameRegex": "\\(flatpack\\)$"
+      }
+    },
+    {
+      "key": "bagged-plant",
+      "label": "Bagged plants",
+      "parent": "construction",
+      "description": "Bagged trees, flowers and hedges for the POH garden",
+      "match": {
+        "categoriesAny": [
+          "Bagged items"
+        ],
+        "nameRegex": "^Bagged |\\(bagged\\)$"
+      }
+    },
+    {
+      "key": "essence",
+      "label": "Essence",
+      "parent": "runecraft",
+      "description": "Rune and pure essence",
+      "match": {
+        "nameRegex": "^(Rune|Pure|Daeyalt|Dark) essence$"
+      }
+    },
+    {
+      "key": "talisman",
+      "label": "Talismans",
+      "parent": "runecraft",
+      "description": "Runecraft talismans",
+      "match": {
+        "nameRegex": " talisman$"
+      }
+    },
+    {
+      "key": "tiara",
+      "label": "Tiaras",
+      "parent": "runecraft",
+      "description": "Blank and runecraft tiaras",
+      "match": {
+        "nameRegex": "tiara$",
+        "excludeNameRegex": "^Fancy tiara$"
+      }
+    },
+    {
+      "key": "log",
+      "label": "Logs",
+      "parent": "woodcutting",
+      "description": "Logs (logs ... redwood, camphor, ironwood, rosewood)",
+      "match": {
+        "categoriesAny": [
+          "Logs"
+        ],
+        "excludeNameRegex": "^Bark$"
+      }
+    },
+    {
+      "key": "pyre-log",
+      "label": "Pyre logs",
+      "parent": "log",
+      "description": "Logs treated with sacred oil for barbarian firemaking",
+      "match": {
+        "nameRegex": "pyre logs$"
+      }
+    },
+    {
+      "key": "ship-part",
+      "label": "Ship parts",
+      "parent": "sailing",
+      "description": "Hull parts, keel parts and repair kits for boats",
+      "match": {
+        "nameRegex": "(hull|keel) parts$|repair kit$"
+      }
+    },
+    {
+      "key": "metal",
+      "label": "Metals",
+      "parent": "material",
+      "description": "Metal families: bronze ... dragon, gold, silver"
+    },
+    {
+      "key": "bronze",
+      "label": "Bronze",
+      "parent": "metal",
+      "description": "Bronze items, copper and tin ore",
+      "match": {
+        "nameRegex": "^(Large )?(Bronze|Copper|Tin) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Bronze"
+        ]
+      }
+    },
+    {
+      "key": "iron",
+      "label": "Iron",
+      "parent": "metal",
+      "description": "Iron ore, bars and items",
+      "match": {
+        "nameRegex": "^(Large )?(Iron) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Iron"
+        ]
+      }
+    },
+    {
+      "key": "steel",
+      "label": "Steel",
+      "parent": "metal",
+      "description": "Steel bars and items",
+      "match": {
+        "nameRegex": "^(Large )?(Steel) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Steel"
+        ]
+      }
+    },
+    {
+      "key": "black",
+      "label": "Black",
+      "parent": "metal",
+      "description": "Black metal items",
+      "match": {
+        "nameRegex": "^(Large )?(Black) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Black"
+        ]
+      }
+    },
+    {
+      "key": "mithril",
+      "label": "Mithril",
+      "parent": "metal",
+      "description": "Mithril ore, bars and items",
+      "match": {
+        "nameRegex": "^(Large )?(Mithril|Mith) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Mithril"
+        ]
+      }
+    },
+    {
+      "key": "adamant",
+      "label": "Adamant",
+      "parent": "metal",
+      "description": "Adamantite ore, bars and adamant items",
+      "match": {
+        "nameRegex": "^(Large )?(Adamant|Adamantite) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Adamant"
+        ]
+      }
+    },
+    {
+      "key": "rune",
+      "label": "Rune",
+      "parent": "metal",
+      "description": "Runite ore, bars and rune items",
+      "match": {
+        "nameRegex": "^(Large )?(Rune|Runite) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Rune"
+        ]
+      }
+    },
+    {
+      "key": "dragon",
+      "label": "Dragon",
+      "parent": "metal",
+      "description": "Dragon metal items",
+      "match": {
+        "nameRegex": "^(Large )?(Dragon) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$"
+      }
+    },
+    {
+      "key": "gold",
+      "label": "Gold",
+      "parent": "metal",
+      "description": "Gold ore, bars and gold items",
+      "match": {
+        "nameRegex": "^(Large )?(Gold) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Gold"
+        ]
+      }
+    },
+    {
+      "key": "silver",
+      "label": "Silver",
+      "parent": "metal",
+      "description": "Silver ore, bars and silver items",
+      "match": {
+        "nameRegex": "^(Large )?(Silver) (ore|bar|nails|arrowtips|dart tip|javelin (tips|heads)|bolts ?\\(unf\\)|limbs|crossbow \\(u\\)|keel parts|(chainshot |incendiary )?cannonball|wire|studs|spit|metal sheet)$",
+        "categoriesAny": [
+          "Silver"
+        ]
+      }
+    },
+    {
+      "key": "wood",
+      "label": "Woods",
+      "parent": "material",
+      "description": "Wood families: normal ... redwood, camphor, ironwood, rosewood"
+    },
+    {
+      "key": "normal-wood",
+      "label": "Normal wood",
+      "parent": "wood",
+      "description": "Plain logs and the planks, bows and stocks made from them",
+      "match": {
+        "nameRegex": "^(Large )?(Logs|Plank|Pyre logs|Wooden stock|Shortbow( \\(u\\))?|Longbow( \\(u\\))?|Wooden hull parts|Wooden shield)$"
+      }
+    },
+    {
+      "key": "oak",
+      "label": "Oak",
+      "parent": "wood",
+      "description": "Oak logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bOak\\b"
+      }
+    },
+    {
+      "key": "willow",
+      "label": "Willow",
+      "parent": "wood",
+      "description": "Willow logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bWillow\\b"
+      }
+    },
+    {
+      "key": "teak",
+      "label": "Teak",
+      "parent": "wood",
+      "description": "Teak logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bTeak\\b"
+      }
+    },
+    {
+      "key": "maple",
+      "label": "Maple",
+      "parent": "wood",
+      "description": "Maple logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bMaple\\b"
+      }
+    },
+    {
+      "key": "mahogany",
+      "label": "Mahogany",
+      "parent": "wood",
+      "description": "Mahogany logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bMahogany\\b"
+      }
+    },
+    {
+      "key": "yew",
+      "label": "Yew",
+      "parent": "wood",
+      "description": "Yew logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bYew\\b"
+      }
+    },
+    {
+      "key": "redwood",
+      "label": "Redwood",
+      "parent": "wood",
+      "description": "Redwood logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bRedwood\\b"
+      }
+    },
+    {
+      "key": "camphor",
+      "label": "Camphor",
+      "parent": "wood",
+      "description": "Camphor logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bCamphor\\b"
+      }
+    },
+    {
+      "key": "ironwood",
+      "label": "Ironwood",
+      "parent": "wood",
+      "description": "Ironwood logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bIronwood\\b"
+      }
+    },
+    {
+      "key": "rosewood",
+      "label": "Rosewood",
+      "parent": "wood",
+      "description": "Rosewood logs, planks, bows, seeds and furniture",
+      "match": {
+        "nameRegex": "\\bRosewood\\b"
+      }
+    },
+    {
+      "key": "magic-wood",
+      "label": "Magic wood",
+      "parent": "wood",
+      "description": "Magic logs, bows, stocks, seeds and roots",
+      "match": {
+        "nameRegex": "^Magic (logs|pyre logs|(long|short)bow( \\(u\\))?|comp bow|stock|seed|sapling|leaves|roots|bird house|shield|string)$"
+      }
+    },
+    {
+      "key": "herb",
+      "label": "Herbs",
+      "parent": "material",
+      "description": "Herb families: grimy/clean herbs, unfinished potions and seeds of one herb"
+    },
+    {
+      "key": "guam",
+      "label": "Guam",
+      "parent": "herb",
+      "description": "Guam herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bguam\\b"
+      }
+    },
+    {
+      "key": "marrentill",
+      "label": "Marrentill",
+      "parent": "herb",
+      "description": "Marrentill herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bmarrentill\\b"
+      }
+    },
+    {
+      "key": "tarromin",
+      "label": "Tarromin",
+      "parent": "herb",
+      "description": "Tarromin herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\btarromin\\b"
+      }
+    },
+    {
+      "key": "harralander",
+      "label": "Harralander",
+      "parent": "herb",
+      "description": "Harralander herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bharralander\\b"
+      }
+    },
+    {
+      "key": "ranarr",
+      "label": "Ranarr",
+      "parent": "herb",
+      "description": "Ranarr herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\branarr\\b"
+      }
+    },
+    {
+      "key": "toadflax",
+      "label": "Toadflax",
+      "parent": "herb",
+      "description": "Toadflax herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\btoadflax\\b"
+      }
+    },
+    {
+      "key": "irit",
+      "label": "Irit",
+      "parent": "herb",
+      "description": "Irit herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\birit\\b"
+      }
+    },
+    {
+      "key": "avantoe",
+      "label": "Avantoe",
+      "parent": "herb",
+      "description": "Avantoe herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bavantoe\\b"
+      }
+    },
+    {
+      "key": "kwuarm",
+      "label": "Kwuarm",
+      "parent": "herb",
+      "description": "Kwuarm herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bkwuarm\\b"
+      }
+    },
+    {
+      "key": "huasca",
+      "label": "Huasca",
+      "parent": "herb",
+      "description": "Huasca herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bhuasca\\b"
+      }
+    },
+    {
+      "key": "snapdragon",
+      "label": "Snapdragon",
+      "parent": "herb",
+      "description": "Snapdragon herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bsnapdragon\\b"
+      }
+    },
+    {
+      "key": "cadantine",
+      "label": "Cadantine",
+      "parent": "herb",
+      "description": "Cadantine herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bcadantine\\b"
+      }
+    },
+    {
+      "key": "lantadyme",
+      "label": "Lantadyme",
+      "parent": "herb",
+      "description": "Lantadyme herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\blantadyme\\b"
+      }
+    },
+    {
+      "key": "dwarf-weed",
+      "label": "Dwarf weed",
+      "parent": "herb",
+      "description": "Dwarf weed herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\bdwarf weed\\b"
+      }
+    },
+    {
+      "key": "torstol",
+      "label": "Torstol",
+      "parent": "herb",
+      "description": "Torstol herbs (grimy and clean), unfinished potion and seed",
+      "match": {
+        "nameRegex": "\\btorstol\\b"
+      }
+    },
+    {
+      "key": "gem",
+      "label": "Gems",
+      "parent": "material",
+      "description": "Gem families: uncut/cut gem, bolt tips, bolts and jewellery of one gem"
+    },
+    {
+      "key": "opal",
+      "label": "Opal",
+      "parent": "gem",
+      "description": "Opal gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bopal\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Opal"
+        ]
+      }
+    },
+    {
+      "key": "jade",
+      "label": "Jade",
+      "parent": "gem",
+      "description": "Jade gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bjade\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Jade"
+        ]
+      }
+    },
+    {
+      "key": "topaz",
+      "label": "Red topaz",
+      "parent": "gem",
+      "description": "Red topaz gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\btopaz\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Red topaz"
+        ]
+      }
+    },
+    {
+      "key": "sapphire",
+      "label": "Sapphire",
+      "parent": "gem",
+      "description": "Sapphire gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bsapphire\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Sapphire"
+        ]
+      }
+    },
+    {
+      "key": "emerald",
+      "label": "Emerald",
+      "parent": "gem",
+      "description": "Emerald gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bemerald\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Emerald"
+        ]
+      }
+    },
+    {
+      "key": "ruby",
+      "label": "Ruby",
+      "parent": "gem",
+      "description": "Ruby gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bruby\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Ruby"
+        ]
+      }
+    },
+    {
+      "key": "diamond",
+      "label": "Diamond",
+      "parent": "gem",
+      "description": "Diamond gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bdiamond\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Diamond"
+        ]
+      }
+    },
+    {
+      "key": "dragonstone",
+      "label": "Dragonstone",
+      "parent": "gem",
+      "description": "Dragonstone gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bdragonstone\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Dragonstone"
+        ]
+      }
+    },
+    {
+      "key": "onyx",
+      "label": "Onyx",
+      "parent": "gem",
+      "description": "Onyx gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bonyx\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Onyx"
+        ]
+      }
+    },
+    {
+      "key": "zenyte",
+      "label": "Zenyte",
+      "parent": "gem",
+      "description": "Zenyte gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bzenyte\\b",
+        "excludeNameRegex": "^Enchant ",
+        "categoriesAny": [
+          "Zenyte"
+        ]
+      }
+    },
+    {
+      "key": "amethyst",
+      "label": "Amethyst",
+      "parent": "gem",
+      "description": "Amethyst gems and the bolt tips, bolts and jewellery made from them",
+      "match": {
+        "nameRegex": "\\bamethyst\\b",
+        "excludeNameRegex": "^Enchant "
+      }
+    },
+    {
+      "key": "dragonhide",
+      "label": "Dragonhides",
+      "parent": "material",
+      "description": "Dragonhide colour families: hide, leather and d'hide armour"
+    },
+    {
+      "key": "green-dragonhide",
+      "label": "Green dragonhide",
+      "parent": "dragonhide",
+      "description": "Green dragonhide, green dragon leather and green d'hide armour",
+      "match": {
+        "nameRegex": "\\bGreen (d'hide|dragonhide|dragon leather)\\b"
+      }
+    },
+    {
+      "key": "blue-dragonhide",
+      "label": "Blue dragonhide",
+      "parent": "dragonhide",
+      "description": "Blue dragonhide, blue dragon leather and blue d'hide armour",
+      "match": {
+        "nameRegex": "\\bBlue (d'hide|dragonhide|dragon leather)\\b"
+      }
+    },
+    {
+      "key": "red-dragonhide",
+      "label": "Red dragonhide",
+      "parent": "dragonhide",
+      "description": "Red dragonhide, red dragon leather and red d'hide armour",
+      "match": {
+        "nameRegex": "\\bRed (d'hide|dragonhide|dragon leather)\\b"
+      }
+    },
+    {
+      "key": "black-dragonhide",
+      "label": "Black dragonhide",
+      "parent": "dragonhide",
+      "description": "Black dragonhide, black dragon leather and black d'hide armour",
+      "match": {
+        "nameRegex": "\\bBlack (d'hide|dragonhide|dragon leather)\\b"
+      }
+    },
+    {
+      "key": "fish",
+      "label": "Fish",
+      "parent": "material",
+      "description": "Fish families: raw and cooked fish of one species"
+    },
+    {
+      "key": "shrimp",
+      "label": "Shrimp",
+      "parent": "fish",
+      "description": "Shrimp (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bshrimps?\\b"
+      }
+    },
+    {
+      "key": "anchovy",
+      "label": "Anchovy",
+      "parent": "fish",
+      "description": "Anchovy (raw and cooked)",
+      "match": {
+        "nameRegex": "\\banchov(y|ies)\\b"
+      }
+    },
+    {
+      "key": "sardine",
+      "label": "Sardine",
+      "parent": "fish",
+      "description": "Sardine (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bsardine\\b"
+      }
+    },
+    {
+      "key": "trout",
+      "label": "Trout",
+      "parent": "fish",
+      "description": "Trout (raw and cooked)",
+      "match": {
+        "nameRegex": "\\btrout\\b"
+      }
+    },
+    {
+      "key": "salmon",
+      "label": "Salmon",
+      "parent": "fish",
+      "description": "Salmon (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bsalmon\\b"
+      }
+    },
+    {
+      "key": "tuna",
+      "label": "Tuna",
+      "parent": "fish",
+      "description": "Tuna (raw and cooked)",
+      "match": {
+        "nameRegex": "\\btuna\\b"
+      }
+    },
+    {
+      "key": "lobster",
+      "label": "Lobster",
+      "parent": "fish",
+      "description": "Lobster (raw and cooked)",
+      "match": {
+        "nameRegex": "\\blobster$"
+      }
+    },
+    {
+      "key": "bass",
+      "label": "Bass",
+      "parent": "fish",
+      "description": "Bass (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bbass$"
+      }
+    },
+    {
+      "key": "swordfish",
+      "label": "Swordfish",
+      "parent": "fish",
+      "description": "Swordfish (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bswordfish$"
+      }
+    },
+    {
+      "key": "monkfish",
+      "label": "Monkfish",
+      "parent": "fish",
+      "description": "Monkfish (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bmonkfish$"
+      }
+    },
+    {
+      "key": "karambwan",
+      "label": "Karambwan",
+      "parent": "fish",
+      "description": "Karambwan (raw and cooked)",
+      "match": {
+        "nameRegex": "^(Raw |Cooked |Blighted )?karambwan$"
+      }
+    },
+    {
+      "key": "shark",
+      "label": "Shark",
+      "parent": "fish",
+      "description": "Shark (raw and cooked)",
+      "match": {
+        "nameRegex": "^(Raw )?shark$"
+      }
+    },
+    {
+      "key": "sea-turtle",
+      "label": "Sea turtle",
+      "parent": "fish",
+      "description": "Sea turtle (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bsea turtle$"
+      }
+    },
+    {
+      "key": "manta-ray",
+      "label": "Manta ray",
+      "parent": "fish",
+      "description": "Manta ray (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bmanta ray$"
+      }
+    },
+    {
+      "key": "anglerfish",
+      "label": "Anglerfish",
+      "parent": "fish",
+      "description": "Anglerfish (raw and cooked)",
+      "match": {
+        "nameRegex": "\\banglerfish$"
+      }
+    },
+    {
+      "key": "dark-crab",
+      "label": "Dark crab",
+      "parent": "fish",
+      "description": "Dark crab (raw and cooked)",
+      "match": {
+        "nameRegex": "\\bdark crab$"
+      }
+    }
+  ]
+}

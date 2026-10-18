@@ -3,8 +3,12 @@
 // A block of code (the globals' or a scope's) runs as one JavaScript program, top to bottom, so
 // loops, counters and reassignment (let x = 1; x = 2;) work, and a name must be declared before
 // it's used. It runs in strict mode against a scope that holds:
-//   getOsrsItem('Name')  -> { id, name, highPrice, lowPrice } of any GE item (name is case-insensitive)
+//   getOsrsItem('Name')  -> { id, name, highPrice, lowPrice, spread, members, limit, ... } of any GE
+//                           item (name is case-insensitive; see toCodeItem in itemRefs.js)
 //   getOsrsItem(id)      -> the same, by item ID (a number, or a string of digits)
+//   queryOsrsItems()     -> a query builder over every GE item (see itemQuery.js)
+//   queryOsrsItemRecipes(), queryOsrsItemLinks(type)
+//                        -> query builders over recipes and the links between items (itemGraph.js)
 //   I_<id>_H / I_<id>_L  -> legacy refs to an item's high / low price, still evaluated
 //   global variable keys -> their values, read-only (a scope's own declarations override them)
 //   MIN, MAX, SUM, ...   -> the library in functions.js
@@ -15,7 +19,9 @@
 //   utils/format.js        convertRunescapeNumbers
 //   formula/sourceScan.js  scanLiteralOrComment, matchParen
 //   formula/functions.js   FORMULA_FUNCTIONS, isFormulaFunction
-//   formula/itemRefs.js    ITEM_LOOKUP_FN, isItemIdArg, findItem
+//   formula/itemRefs.js    ITEM_LOOKUP_FN, isItemIdArg, findItem, toCodeItem
+//   formula/itemQuery.js   ITEM_QUERY_FN, createItemQuery, untaggedItemSource
+//   formula/itemGraph.js   RECIPE_QUERY_FN, LINK_QUERY_FN, createItemRecipeQuery, createItemLinkQuery
 //
 // Sections: shared types -> loop guards -> error lines -> the code's environment -> result
 // values -> running a program -> reading a run's result -> public API.
@@ -36,6 +42,8 @@ const FormulaEngine = (() => {
      * @property {Map<string, *>} [globals] Global variable values the code can read.
      * @property {(function(string): Object<string, *>)|null} [importScope] Another scope's public
      *     values by name, for importScope('Name'). Omitted for the globals, which can't import scopes.
+     * @property {ItemQuerySource|null} [itemQuerySource] What queryOsrsItems() searches, with item
+     *     tags. Defaults to the items alone, without tags.
      */
 
     /**
@@ -285,6 +293,9 @@ const FormulaEngine = (() => {
      * @property {(function(string): Object<string, *>)|null} importScope null for the globals' own
      *     code, which can't import scopes.
      * @property {function(string|number): Object} getOsrsItem
+     * @property {function(): Object} queryOsrsItems
+     * @property {function(): Object} queryOsrsItemRecipes
+     * @property {function(string): Object} queryOsrsItemLinks
      */
 
     /**
@@ -303,24 +314,20 @@ const FormulaEngine = (() => {
      * Creates getOsrsItem('Name') / getOsrsItem(id), an O(1) lookup by name or item ID.
      * @param {Object<string, Item>} itemsById
      * @param {Map<string, Item>} itemsByName Items by itemNameKey(name).
-     * @returns {function(string|number): { id: number|null, name: string, highPrice: number, lowPrice: number }}
+     * @param {ItemQuerySource} querySource Where the item's tags come from.
+     * @returns {function(string|number): Object} The item as toCodeItem builds it (itemRefs.js).
      *     Throws for an unknown item, except before the item list has loaded.
      */
-    const createItemLookup = (itemsById, itemsByName) => {
+    const createItemLookup = (itemsById, itemsByName, querySource) => {
         return (nameOrId) => {
             const item = findItem(nameOrId, itemsById, itemsByName);
             if (item) {
-                return {
-                    id: item.id,
-                    name: item.name,
-                    highPrice: item.highPrice || 0,
-                    lowPrice: item.lowPrice || 0,
-                };
+                return toCodeItem(item, querySource.tagsOf(item.id));
             }
 
             // Before the item list has loaded, every item reads as 0 rather than an error.
             if (itemsByName.size === 0) {
-                return { id: null, name: String(nameOrId), highPrice: 0, lowPrice: 0 };
+                return toCodeItem({ id: null, name: String(nameOrId) }, []);
             }
 
             throw unknownItemError(nameOrId);
@@ -363,6 +370,9 @@ const FormulaEngine = (() => {
             || ITEM_REF_NAME.test(name)
             || env.globals.has(name)
             || name === ITEM_LOOKUP_FN
+            || name === ITEM_QUERY_FN
+            || name === RECIPE_QUERY_FN
+            || name === LINK_QUERY_FN
             || isScopeImport(env, name);
     };
 
@@ -390,6 +400,15 @@ const FormulaEngine = (() => {
         if (name === ITEM_LOOKUP_FN) {
             return env.getOsrsItem;
         }
+        if (name === ITEM_QUERY_FN) {
+            return env.queryOsrsItems;
+        }
+        if (name === RECIPE_QUERY_FN) {
+            return env.queryOsrsItemRecipes;
+        }
+        if (name === LINK_QUERY_FN) {
+            return env.queryOsrsItemLinks;
+        }
         if (isScopeImport(env, name)) {
             return env.importScope;
         }
@@ -406,8 +425,18 @@ const FormulaEngine = (() => {
      * @param {Required<RunContext>} context
      * @returns {Proxy}
      */
-    const createScopeProxy = ({ items, itemsByName, globals, importScope }) => {
-        const env = { items, globals, importScope, getOsrsItem: createItemLookup(items, itemsByName) };
+    const createScopeProxy = ({ items, itemsByName, globals, importScope, itemQuerySource }) => {
+        const querySource = itemQuerySource || untaggedItemSource(items);
+        const graphContext = { itemsById: items, itemsByName, source: querySource };
+        const env = {
+            items,
+            globals,
+            importScope,
+            getOsrsItem: createItemLookup(items, itemsByName, querySource),
+            queryOsrsItems: () => createItemQuery(querySource),
+            queryOsrsItemRecipes: () => createItemRecipeQuery(graphContext),
+            queryOsrsItemLinks: (type) => createItemLinkQuery(graphContext, type),
+        };
 
         return new Proxy({}, {
             has: (_, name) => {
@@ -590,9 +619,9 @@ const FormulaEngine = (() => {
      * @returns {RunResult}
      */
     const runScopeCode = (code, keys, context) => {
-        const { items = {}, itemsByName = new Map(), globals = new Map(), importScope = null } = context;
+        const { items = {}, itemsByName = new Map(), globals = new Map(), importScope = null, itemQuerySource = null } = context;
 
-        const scope = createScopeProxy({ items, itemsByName, globals, importScope });
+        const scope = createScopeProxy({ items, itemsByName, globals, importScope, itemQuerySource });
         const runtime = createRuntime();
         const { returned, error } = executeProgram(buildProgram(code, keys), scope, runtime);
 

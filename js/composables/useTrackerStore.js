@@ -1,5 +1,5 @@
-// Persisted app data (item groups, scopes, global variables and their code, tags) and its
-// localStorage load/save/migration.
+// Persisted app data (scopes, global variables and their code, variable tags, the user's item
+// tags) and its localStorage load/save/migration.
 const STORAGE_KEY = 'osrs-ge-tracker-data';
 const OLD_GROUPS_KEY = 'osrs-ge-tracker-groups';
 const OLD_GLOBALS_KEY = 'osrs-ge-tracker-globals';
@@ -16,11 +16,12 @@ const readStoredJson = (key, label) => {
     }
 };
 
-// The raw saved data: { data: { groups, scopes, globals, globalsCode, tags }, fromOldKeys, failed }.
+// The raw saved data: { data: { groups, scopes, globals, globalsCode, tags, itemTags, itemTagEdits },
+// fromOldKeys, failed }. groups and itemTagEdits only exist in data saved by older versions.
 // globalsCode is null when none was saved. Data saved before everything shared one key is read
 // from the old split keys (fromOldKeys). failed: the data exists but couldn't be parsed.
 const readTrackerStorage = () => {
-    const data = { groups: [], scopes: [], globals: [], globalsCode: null, tags: [] };
+    const data = { groups: [], scopes: [], globals: [], globalsCode: null, tags: [], itemTags: [], itemTagEdits: {} };
 
     if (!localStorage.getItem(STORAGE_KEY)) {
         const oldGroups = readStoredJson(OLD_GROUPS_KEY, 'old groups');
@@ -37,23 +38,35 @@ const readTrackerStorage = () => {
     if (parsed.globals) data.globals = parsed.globals;
     if (typeof parsed.globalsCode === 'string') data.globalsCode = parsed.globalsCode;
     if (parsed.tags) data.tags = parsed.tags;
+    if (parsed.itemTags) data.itemTags = parsed.itemTags;
+    if (parsed.itemTagEdits) data.itemTagEdits = parsed.itemTagEdits;
     return { data, fromOldKeys: false, failed: false };
 };
 
+const migrationMessage = (extractedScopeCount, migratedTagCount) => {
+    if (migratedTagCount) {
+        return "Item groups are now item tags (your own tags, on the Item Tags tab).";
+    }
+    if (extractedScopeCount) {
+        return `Moved the recipes of ${extractedScopeCount} group(s) into Scopes.`;
+    }
+    return "Data migrated to new storage format.";
+};
+
 const useTrackerStore = ({ showToast }) => {
-    const groups = ref([]);
     const scopes = ref([]);
     const globalVariables = ref([]); // derived from globalsCode, like a scope's variables from its code
     const globalsCode = ref('');
-    const tags = ref([]);
+    const tags = ref([]); // variable tags
+    const itemTags = ref([]);
 
     const saveData = () => {
         const data = {
-            groups: groups.value,
             scopes: scopes.value,
             globals: globalVariables.value,
             globalsCode: globalsCode.value,
-            tags: tags.value
+            tags: tags.value,
+            itemTags: itemTags.value,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     };
@@ -68,7 +81,13 @@ const useTrackerStore = ({ showToast }) => {
         const extractedScopes = extractLegacyScopes(data.groups);
         data.scopes = [...data.scopes, ...extractedScopes];
 
-        data.groups.forEach(normalizeGroup);
+        // groupsToItemTags migration: groups become item tags (a backup of the old data is kept).
+        normalizeItemTagData(data);
+        if (data.groups.length || Object.keys(data.itemTagEdits).length) {
+            backupBeforeItemTagMigration(STORAGE_KEY);
+        }
+        const migratedGroups = migrateGroupsToItemTags(data);
+
         data.scopes.forEach(normalizeScope);
         data.globals.forEach(normalizeVariable);
 
@@ -79,19 +98,17 @@ const useTrackerStore = ({ showToast }) => {
         const loadedGlobalsCode = data.globalsCode
             ?? (data.globals.length ? generateScopeCode({ variables: data.globals }) : '');
 
-        groups.value = data.groups;
         scopes.value = data.scopes;
         globalVariables.value = data.globals;
         globalsCode.value = loadedGlobalsCode;
         tags.value = data.tags;
+        itemTags.value = data.itemTags;
 
-        if (fromOldKeys || extractedScopes.length || addedTags) {
+        if (fromOldKeys || extractedScopes.length || addedTags || migratedGroups) {
             saveData();
-            showToast(extractedScopes.length
-                ? `Moved the recipes of ${extractedScopes.length} group(s) into Scopes.`
-                : "Data migrated to new storage format.", "success");
+            showToast(migrationMessage(extractedScopes.length, migratedGroups), "success");
         }
     };
 
-    return { groups, scopes, globalVariables, globalsCode, tags, saveData, loadSavedData };
+    return { scopes, globalVariables, globalsCode, tags, itemTags, saveData, loadSavedData };
 };

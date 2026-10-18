@@ -227,6 +227,32 @@ const highlightCode = (hl) => {
 };
 
 
+// --- Line numbers -----------------------------------------------------------------------------
+// The gutter is a layer beside the textarea, never inside it, so selecting and copying code
+// can't pick up the numbers. Each row holds its line's text (transparent) at the textarea's
+// width, so a wrapped line's row grows just as tall as the line and the next number stays level
+// with the next line. The number itself is positioned out into the gutter.
+
+// At least two digits wide, so the gutter doesn't jump when the code reaches line 10.
+const MIN_GUTTER_DIGITS = 2;
+
+const gutterDigits = (text) => {
+    const lineCount = text.split('\n').length;
+    return Math.max(MIN_GUTTER_DIGITS, String(lineCount).length);
+};
+
+// An empty row holds a <br> so it is still one line tall.
+const lineNumberGutterHtml = (text) => {
+    let html = '';
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const lineHtml = lines[i] === '' ? '<br>' : escapeHtml(lines[i]);
+        html += `<div class="gutter-row"><span class="gutter-num">${i + 1}</span>${lineHtml}</div>`;
+    }
+    return html;
+};
+
+
 // --- Item calls in the code -------------------------------------------------------------------
 // Where a getOsrsItem(...) call sits in the code, so the tooltip can rewrite it to look the item
 // up by ID. A call is { start, end, text }: text is code.slice(start, end).
@@ -260,8 +286,9 @@ const declaredItemCall = (code, key) => {
 
 // --- Hover tooltip content --------------------------------------------------------------------
 // tc (the tooltip context): { text, editable, variables, valueForKey, catalog }. text: the code;
-// editable: whether the tooltip may rewrite it. catalog: { byId, byName } over every GE item (or
-// null); valueForKey: key -> the variable's current value (or null when not provided).
+// editable: whether the tooltip may rewrite it. catalog: { byId, byName, tagsOf?, labelOf? } over
+// every GE item (or null); tagsOf / labelOf / isUserTag describe items' tags when item tags are
+// loaded. valueForKey: key -> the variable's current value (or null when not provided).
 
 // The backdrop spans a tooltip can be about (see renderVariable and tintItemRef).
 const TIP_TARGET_SELECTOR = '[data-var-key], [data-item-arg]';
@@ -297,6 +324,18 @@ const catalogItem = (catalog, itemArg) => {
 
 const isCatalogLoaded = (catalog) => Boolean(catalog && catalog.byName.size);
 
+// An item's tags as [{ key, label, user }], or [] when the catalog has no tag data.
+const catalogItemTags = (catalog, item) => {
+    if (!item || !catalog?.tagsOf) {
+        return [];
+    }
+    return catalog.tagsOf(item.id).map(key => ({
+        key,
+        label: catalog.labelOf ? catalog.labelOf(key) : key,
+        user: Boolean(catalog.isUserTag && catalog.isUserTag(key)),
+    }));
+};
+
 // The item a variable holds: one assigned a getOsrsItem(...) call directly, or failing that one
 // whose value is an item object (e.g. `const Seed = pairs.Magic.seed`). Returns the item's
 // getOsrsItem argument, or null when the variable isn't an item.
@@ -324,6 +363,7 @@ const itemTipContent = (tc, itemArg, call) => {
     return {
         itemArg,
         item,
+        itemTags: catalogItemTags(tc.catalog, item),
         itemsLoaded: isCatalogLoaded(tc.catalog),
         replaceCall: canReplace ? call : null,
     };
@@ -334,7 +374,7 @@ const variableTipContent = (tc, key) => {
     const hasValue = Boolean(tc.valueForKey);
     const value = hasValue ? tc.valueForKey(key) : undefined;
     const itemArg = variableItemArg(tc, variable, value);
-    const noItem = { itemArg: null, item: null, replaceCall: null };
+    const noItem = { itemArg: null, item: null, itemTags: [], replaceCall: null };
 
     return {
         variable: {
@@ -382,6 +422,7 @@ const FormulaInput = {
     setup(props, { emit, expose }) {
         const textareaRef = ref(null);
         const backdropRef = ref(null);
+        const gutterRef = ref(null);
         const containerRef = ref(null);
         let resizeObserver = null;
 
@@ -547,8 +588,9 @@ const FormulaInput = {
             },
         });
 
-        // The layers that mirror the textarea: the highlight backdrop and, while find is open, its matches.
-        const mirrorLayers = () => [backdropRef.value, find.findLayerRef.value].filter(Boolean);
+        // The layers that mirror the textarea: the highlight backdrop, the line-number gutter when
+        // shown and, while find is open, its matches.
+        const mirrorLayers = () => [backdropRef.value, gutterRef.value, find.findLayerRef.value].filter(Boolean);
 
         // Matches the layers' right padding to the textarea's scrollbar, so lines wrap at the same width.
         const syncStyles = () => {
@@ -609,6 +651,8 @@ const FormulaInput = {
         };
 
         watch(() => props.modelValue, () => nextTick(syncAll));
+        // Showing the gutter narrows the code, which can rewrap it, and the new gutter starts unscrolled.
+        watch(() => editorSettings.lineNumbers, () => nextTick(syncAll));
 
         onMounted(() => {
             if (!textareaRef.value || !backdropRef.value) return;
@@ -647,6 +691,22 @@ const FormulaInput = {
             itemsByName: itemLookup.value.byName,
         }));
 
+        const gutterHTML = computed(() => {
+            if (!editorSettings.lineNumbers) {
+                return '';
+            }
+            return lineNumberGutterHtml(props.modelValue || '');
+        });
+
+        // The gutter's width, as a CSS variable the layers use to make room for it. In ch, so it
+        // follows the code font's digit width.
+        const containerStyle = computed(() => {
+            if (!editorSettings.lineNumbers) {
+                return null;
+            }
+            return { '--gutter-digits': gutterDigits(props.modelValue || '') };
+        });
+
         const focus = () => textareaRef.value?.focus();
 
         expose({ focus, textareaRef });
@@ -660,13 +720,18 @@ const FormulaInput = {
             ...find,
             editorSettings,
             textareaRef, backdropRef, containerRef, handleInput, handleKeydown, handleScroll, highlightedHTML,
+            gutterRef, gutterHTML, containerStyle,
             tip, handleMouseMove, hideTipSoon, dismissTip, handleTipEnter, handleTipLeave,
             handleColorInput, handlePickerClosed, handleReplaceCall,
             openPicker: () => { pickerOpen = true; },
         };
     },
     template: `
-        <div class="formula-input-container" :class="{ 'syntax-on': editorSettings.syntaxHighlight }" ref="containerRef">
+        <div class="formula-input-container"
+             :class="{ 'syntax-on': editorSettings.syntaxHighlight, 'lines-on': editorSettings.lineNumbers }"
+             :style="containerStyle"
+             ref="containerRef">
+            <div v-if="editorSettings.lineNumbers" class="formula-backdrop formula-gutter" ref="gutterRef" aria-hidden="true" v-html="gutterHTML"></div>
             <div class="formula-backdrop" ref="backdropRef" v-html="highlightedHTML"></div>
             <div v-if="findOpen" class="formula-backdrop formula-find-layer" ref="findLayerRef" v-html="findLayerHTML"></div>
             <div class="formula-find-probe" ref="findProbeRef"></div>

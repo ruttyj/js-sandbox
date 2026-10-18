@@ -1,0 +1,808 @@
+{
+  "domain": "farming",
+  "notes": "Seeds are split by patch type (allotment, herb, flower, hops, bush, tree, hardwood, fruit-tree, special); seed and sapling types come from name lists because the wiki only has flat \"Seeds\"/\"Saplings\" categories. Hops seeds include flax/hemp/cotton and hardwood seeds include camphor/ironwood/rosewood (both confirmed on the wiki). Mithril/Adamant seeds (flower gambling) are excluded from seed/farming. Family tags (trees, fruit trees, herbs, grape, flax/hemp/cotton, seaweed, coral, kebbit, larupia, graahk, kyatt, antelope) sit under the shared material root and match broadly by name so they also catch other domains’ items of the family (logs, planks, bows, flatpacks, grimy/clean herbs, unf potions, outfits); the merge should union these rules with other proposals’ rules for the same key. The magic tree family uses key magic-tree because magic is the skill tag; orange and curry use exact name lists to avoid the colour (Orange cape/dye/feather) and the Curry dish. No family tags for allotment, bush, flower or hop crops (each would only cover a seed and one crop; the seed/produce type tags already group them). fur sits under hunter-drop, so non-Hunter furs (Bear fur, Grey wolf fur, Fur, Jaguar fur) also get hunter. Metal tiers on axes/pickaxes are left to the equipment/smithing proposal (the items carry Bronze..Rune categories). woodcutting/mining/fishing have no direct rule here; production proposals may add logs/ores/raw fish. Spirit, hespori, crystal and anima seeds are not GE-tradeable, and only Bird nest (empty)/Crushed nest exist on the GE (nest contents like seeds and rings are tagged by their own types).",
+  "tags": [
+    {
+      "key": "farming",
+      "label": "Farming",
+      "parent": "skilling",
+      "description": "Seeds, saplings, produce, compost and farming tools",
+      "match": {
+        "categoriesAny": [
+          "Farming",
+          "Seeds",
+          "Saplings",
+          "Farming tools"
+        ],
+        "nameRegex": "^(Elkhorn|Pillar|Umbral) coral$",
+        "excludeNameRegex": "^(Mithril seeds|Adamant seeds|Grand seed pod)$| yarn$"
+      }
+    },
+    {
+      "key": "seed",
+      "label": "Seeds",
+      "parent": "farming",
+      "description": "Anything planted in a patch, plant pot or coral nursery",
+      "match": {
+        "categoriesAny": [
+          "Seeds"
+        ],
+        "excludeNameRegex": "^(Seed dibber|Mithril seeds|Adamant seeds)$"
+      }
+    },
+    {
+      "key": "allotment-seed",
+      "label": "Allotment seeds",
+      "parent": "seed",
+      "description": "Potato, onion, cabbage, tomato, sweetcorn, strawberry, watermelon, snape grass",
+      "match": {
+        "nameRegex": "^(Potato|Onion|Cabbage|Tomato|Sweetcorn|Strawberry|Watermelon|Snape grass) seed$"
+      }
+    },
+    {
+      "key": "herb-seed",
+      "label": "Herb seeds",
+      "parent": "seed",
+      "description": "Guam ... torstol, huasca, and the goutweed tuber",
+      "match": {
+        "nameRegex": "^(Guam|Marrentill|Tarromin|Harralander|Ranarr|Toadflax|Irit|Avantoe|Kwuarm|Snapdragon|Cadantine|Lantadyme|Dwarf weed|Torstol|Huasca) seed$|^Gout tuber$"
+      }
+    },
+    {
+      "key": "flower-seed",
+      "label": "Flower seeds",
+      "parent": "seed",
+      "description": "Marigold, rosemary, nasturtium, woad, limpwurt, white lily",
+      "match": {
+        "nameRegex": "^(Marigold|Rosemary|Nasturtium|Woad|Limpwurt|White lily) seed$"
+      }
+    },
+    {
+      "key": "hops-seed",
+      "label": "Hops seeds",
+      "parent": "seed",
+      "description": "Seeds for hops patches: barley, jute, hops, and flax, hemp, cotton",
+      "match": {
+        "nameRegex": "^(Barley|Jute|Hammerstone|Asgarnian|Yanillian|Krandorian|Wildblood|Flax|Hemp|Cotton) seed$"
+      }
+    },
+    {
+      "key": "bush-seed",
+      "label": "Bush seeds",
+      "parent": "seed",
+      "description": "Redberry, cadavaberry, dwellberry, jangerberry, whiteberry, poison ivy",
+      "match": {
+        "nameRegex": "^(Redberry|Cadavaberry|Dwellberry|Jangerberry|Whiteberry|Poison ivy) seed$"
+      }
+    },
+    {
+      "key": "tree-seed",
+      "label": "Tree seeds",
+      "parent": "seed",
+      "description": "Seeds for regular tree patches (acorn ... magic)",
+      "match": {
+        "nameRegex": "^(Acorn|Willow seed|Maple seed|Yew seed|Magic seed)$"
+      }
+    },
+    {
+      "key": "hardwood-seed",
+      "label": "Hardwood seeds",
+      "parent": "seed",
+      "description": "Seeds for hardwood tree patches: teak, mahogany, camphor, ironwood, rosewood",
+      "match": {
+        "nameRegex": "^(Teak|Mahogany|Camphor|Ironwood|Rosewood) seed$"
+      }
+    },
+    {
+      "key": "fruit-tree-seed",
+      "label": "Fruit tree seeds",
+      "parent": "seed",
+      "description": "Apple, banana, orange, curry, pineapple, papaya, palm, dragonfruit",
+      "match": {
+        "nameRegex": "^(Apple tree|Banana tree|Orange tree|Curry tree|Pineapple|Papaya tree|Palm tree|Dragonfruit tree) seed$"
+      }
+    },
+    {
+      "key": "special-seed",
+      "label": "Special seeds",
+      "parent": "seed",
+      "description": "Seeds for special patches: cactus, belladonna, mushroom, seaweed, grape, calquat, celastrus, redwood, coral frags",
+      "match": {
+        "nameRegex": "^(Cactus seed|Potato cactus seed|Belladonna seed|Mushroom spore|Seaweed spore|Grape seed|Calquat tree seed|Celastrus seed|Redwood tree seed|Elkhorn frag|Pillar frag|Umbral frag)$"
+      }
+    },
+    {
+      "key": "sapling",
+      "label": "Saplings",
+      "parent": "farming",
+      "description": "Tree, hardwood and fruit tree saplings, ready to plant",
+      "match": {
+        "categoriesAny": [
+          "Saplings"
+        ]
+      }
+    },
+    {
+      "key": "produce",
+      "label": "Produce",
+      "parent": "farming",
+      "description": "Crops harvested from farming patches, plus tree roots and leaves",
+      "match": {
+        "categoriesAny": [
+          "Produce"
+        ],
+        "nameRegex": "^(Elkhorn|Pillar|Umbral) coral$",
+        "excludeNameRegex": "^(Basket|Empty sack|Weeds)$| yarn$"
+      }
+    },
+    {
+      "key": "fruit",
+      "label": "Fruit",
+      "parent": "produce",
+      "description": "Fruit, including fruit tree crops and baskets of fruit",
+      "match": {
+        "categoriesAny": [
+          "Fruit"
+        ],
+        "nameRegex": "^(Papaya fruit|Apples\\(5\\)|Oranges\\(5\\)|Bananas\\(5\\)|Strawberries\\(5\\))$"
+      }
+    },
+    {
+      "key": "vegetable",
+      "label": "Vegetables",
+      "parent": "produce",
+      "description": "Allotment vegetables and sacks or baskets of them",
+      "match": {
+        "nameRegex": "^(Potato|Onion|Cabbage|Tomato|Sweetcorn|Potatoes\\(10\\)|Onions\\(10\\)|Cabbages\\(10\\)|Tomatoes\\(5\\))$"
+      }
+    },
+    {
+      "key": "berry",
+      "label": "Berries",
+      "parent": "produce",
+      "description": "Bush crops",
+      "match": {
+        "nameRegex": "^(Redberries|Cadava berries|Dwellberries|Jangerberries|White berries|Poison ivy berries)$"
+      }
+    },
+    {
+      "key": "hops",
+      "label": "Hops crops",
+      "parent": "produce",
+      "description": "Crops from hops patches: barley, jute, hops, flax, hemp, cotton",
+      "match": {
+        "nameRegex": " hops$|^(Barley|Jute fibre|Flax|Hemp|Cotton boll)$"
+      }
+    },
+    {
+      "key": "flower",
+      "label": "Flowers",
+      "parent": "produce",
+      "description": "Flower patch crops",
+      "match": {
+        "nameRegex": "^(Marigolds|Nasturtiums|Rosemary|White lily|Woad leaf|Limpwurt root)$"
+      }
+    },
+    {
+      "key": "compost",
+      "label": "Compost",
+      "parent": "farming",
+      "description": "Compost, supercompost, ultracompost, compost potions and the bottomless bucket",
+      "match": {
+        "nameRegex": "compost"
+      }
+    },
+    {
+      "key": "farming-tool",
+      "label": "Farming tools",
+      "parent": "farming",
+      "description": "Spade, rake, trowel, secateurs, seed dibber, watering can, plant pots, baskets, sacks, plant cure",
+      "match": {
+        "categoriesAny": [
+          "Farming tools"
+        ],
+        "excludeNameRegex": "compost|\\(\\d+\\)$"
+      }
+    },
+    {
+      "key": "oak",
+      "label": "Oak",
+      "parent": "material",
+      "description": "Oak tree family: acorn, sapling, logs, roots, leaves and oak products",
+      "match": {
+        "nameRegex": "\\boak\\b|^Acorn$"
+      }
+    },
+    {
+      "key": "willow",
+      "label": "Willow",
+      "parent": "material",
+      "description": "Willow tree family",
+      "match": {
+        "nameRegex": "\\bwillow\\b"
+      }
+    },
+    {
+      "key": "maple",
+      "label": "Maple",
+      "parent": "material",
+      "description": "Maple tree family",
+      "match": {
+        "nameRegex": "\\bmaple\\b"
+      }
+    },
+    {
+      "key": "yew",
+      "label": "Yew",
+      "parent": "material",
+      "description": "Yew tree family",
+      "match": {
+        "nameRegex": "\\byew\\b"
+      }
+    },
+    {
+      "key": "magic-tree",
+      "label": "Magic tree",
+      "parent": "material",
+      "description": "Magic tree family (key avoids the 'magic' skill tag)",
+      "match": {
+        "nameRegex": "^magic (seed|sapling|logs|roots|leaves|bird house|pyre logs|shortbow|longbow)"
+      }
+    },
+    {
+      "key": "teak",
+      "label": "Teak",
+      "parent": "material",
+      "description": "Teak tree family",
+      "match": {
+        "nameRegex": "\\bteak\\b"
+      }
+    },
+    {
+      "key": "mahogany",
+      "label": "Mahogany",
+      "parent": "material",
+      "description": "Mahogany tree family",
+      "match": {
+        "nameRegex": "\\bmahogany\\b"
+      }
+    },
+    {
+      "key": "camphor",
+      "label": "Camphor",
+      "parent": "material",
+      "description": "Camphor tree family",
+      "match": {
+        "nameRegex": "\\bcamphor\\b"
+      }
+    },
+    {
+      "key": "ironwood",
+      "label": "Ironwood",
+      "parent": "material",
+      "description": "Ironwood tree family",
+      "match": {
+        "nameRegex": "\\bironwood\\b"
+      }
+    },
+    {
+      "key": "rosewood",
+      "label": "Rosewood",
+      "parent": "material",
+      "description": "Rosewood tree family",
+      "match": {
+        "nameRegex": "\\brosewood\\b"
+      }
+    },
+    {
+      "key": "redwood",
+      "label": "Redwood",
+      "parent": "material",
+      "description": "Redwood tree family",
+      "match": {
+        "nameRegex": "\\bredwood\\b"
+      }
+    },
+    {
+      "key": "celastrus",
+      "label": "Celastrus",
+      "parent": "material",
+      "description": "Celastrus tree family",
+      "match": {
+        "nameRegex": "\\bcelastrus\\b"
+      }
+    },
+    {
+      "key": "calquat",
+      "label": "Calquat",
+      "parent": "material",
+      "description": "Calquat tree family",
+      "match": {
+        "nameRegex": "\\bcalquat\\b"
+      }
+    },
+    {
+      "key": "apple",
+      "label": "Apple",
+      "parent": "material",
+      "description": "Apple tree family",
+      "match": {
+        "nameRegex": "\\bapples?\\b"
+      }
+    },
+    {
+      "key": "banana",
+      "label": "Banana",
+      "parent": "material",
+      "description": "Banana tree family",
+      "match": {
+        "nameRegex": "\\bbananas?\\b",
+        "excludeNameRegex": "^Bones to bananas"
+      }
+    },
+    {
+      "key": "orange",
+      "label": "Orange",
+      "parent": "material",
+      "description": "Orange tree family (fruit only, not the colour)",
+      "match": {
+        "nameRegex": "^(Orange|Oranges\\(5\\)|Orange tree seed|Orange sapling|Orange chunks|Orange slices)$"
+      }
+    },
+    {
+      "key": "curry",
+      "label": "Curry tree",
+      "parent": "material",
+      "description": "Curry tree family",
+      "match": {
+        "nameRegex": "^Curry (tree seed|sapling|leaf)$"
+      }
+    },
+    {
+      "key": "pineapple",
+      "label": "Pineapple",
+      "parent": "material",
+      "description": "Pineapple tree family",
+      "match": {
+        "nameRegex": "\\bpineapple\\b"
+      }
+    },
+    {
+      "key": "papaya",
+      "label": "Papaya",
+      "parent": "material",
+      "description": "Papaya tree family",
+      "match": {
+        "nameRegex": "\\bpapaya\\b"
+      }
+    },
+    {
+      "key": "palm",
+      "label": "Palm",
+      "parent": "material",
+      "description": "Palm tree family, including coconuts",
+      "match": {
+        "nameRegex": "^Palm (tree seed|sapling)$|\\bcoconut\\b"
+      }
+    },
+    {
+      "key": "dragonfruit",
+      "label": "Dragonfruit",
+      "parent": "material",
+      "description": "Dragonfruit tree family",
+      "match": {
+        "nameRegex": "\\bdragonfruit\\b"
+      }
+    },
+    {
+      "key": "grape",
+      "label": "Grape",
+      "parent": "material",
+      "description": "Grape vine family",
+      "match": {
+        "nameRegex": "\\bgrapes?\\b"
+      }
+    },
+    {
+      "key": "guam",
+      "label": "Guam",
+      "parent": "material",
+      "description": "Guam herb family: seed, grimy, clean, unfinished potion",
+      "match": {
+        "nameRegex": "\\bguam\\b"
+      }
+    },
+    {
+      "key": "marrentill",
+      "label": "Marrentill",
+      "parent": "material",
+      "description": "Marrentill herb family",
+      "match": {
+        "nameRegex": "\\bmarrentill\\b"
+      }
+    },
+    {
+      "key": "tarromin",
+      "label": "Tarromin",
+      "parent": "material",
+      "description": "Tarromin herb family",
+      "match": {
+        "nameRegex": "\\btarromin\\b"
+      }
+    },
+    {
+      "key": "harralander",
+      "label": "Harralander",
+      "parent": "material",
+      "description": "Harralander herb family",
+      "match": {
+        "nameRegex": "\\bharralander\\b"
+      }
+    },
+    {
+      "key": "ranarr",
+      "label": "Ranarr",
+      "parent": "material",
+      "description": "Ranarr herb family",
+      "match": {
+        "nameRegex": "\\branarr\\b"
+      }
+    },
+    {
+      "key": "toadflax",
+      "label": "Toadflax",
+      "parent": "material",
+      "description": "Toadflax herb family",
+      "match": {
+        "nameRegex": "\\btoadflax\\b"
+      }
+    },
+    {
+      "key": "irit",
+      "label": "Irit",
+      "parent": "material",
+      "description": "Irit herb family",
+      "match": {
+        "nameRegex": "\\birit\\b"
+      }
+    },
+    {
+      "key": "avantoe",
+      "label": "Avantoe",
+      "parent": "material",
+      "description": "Avantoe herb family",
+      "match": {
+        "nameRegex": "\\bavantoe\\b"
+      }
+    },
+    {
+      "key": "kwuarm",
+      "label": "Kwuarm",
+      "parent": "material",
+      "description": "Kwuarm herb family",
+      "match": {
+        "nameRegex": "\\bkwuarm\\b"
+      }
+    },
+    {
+      "key": "huasca",
+      "label": "Huasca",
+      "parent": "material",
+      "description": "Huasca herb family",
+      "match": {
+        "nameRegex": "\\bhuasca\\b"
+      }
+    },
+    {
+      "key": "snapdragon",
+      "label": "Snapdragon",
+      "parent": "material",
+      "description": "Snapdragon herb family",
+      "match": {
+        "nameRegex": "\\bsnapdragon\\b"
+      }
+    },
+    {
+      "key": "cadantine",
+      "label": "Cadantine",
+      "parent": "material",
+      "description": "Cadantine herb family",
+      "match": {
+        "nameRegex": "\\bcadantine\\b"
+      }
+    },
+    {
+      "key": "lantadyme",
+      "label": "Lantadyme",
+      "parent": "material",
+      "description": "Lantadyme herb family",
+      "match": {
+        "nameRegex": "\\blantadyme\\b"
+      }
+    },
+    {
+      "key": "dwarf-weed",
+      "label": "Dwarf weed",
+      "parent": "material",
+      "description": "Dwarf weed herb family",
+      "match": {
+        "nameRegex": "\\bdwarf weed\\b"
+      }
+    },
+    {
+      "key": "torstol",
+      "label": "Torstol",
+      "parent": "material",
+      "description": "Torstol herb family",
+      "match": {
+        "nameRegex": "\\btorstol\\b"
+      }
+    },
+    {
+      "key": "flax",
+      "label": "Flax",
+      "parent": "material",
+      "description": "Flax family: seed, flax, bales, linen",
+      "match": {
+        "nameRegex": "\\bflax\\b|^Linen yarn$"
+      }
+    },
+    {
+      "key": "hemp",
+      "label": "Hemp",
+      "parent": "material",
+      "description": "Hemp family: seed, hemp, yarn",
+      "match": {
+        "nameRegex": "\\bhemp\\b"
+      }
+    },
+    {
+      "key": "cotton",
+      "label": "Cotton",
+      "parent": "material",
+      "description": "Cotton family: seed, bolls, yarn, cloth",
+      "match": {
+        "nameRegex": "\\bcotton\\b"
+      }
+    },
+    {
+      "key": "seaweed",
+      "label": "Seaweed",
+      "parent": "material",
+      "description": "Seaweed family: spores, giant seaweed, seaweed",
+      "match": {
+        "nameRegex": "\\bseaweed\\b"
+      }
+    },
+    {
+      "key": "coral",
+      "label": "Coral",
+      "parent": "material",
+      "description": "Coral nursery family: elkhorn, pillar and umbral frags and coral",
+      "match": {
+        "nameRegex": "^(Elkhorn|Pillar|Umbral) (frag|coral)$"
+      }
+    },
+    {
+      "key": "hunter",
+      "label": "Hunter",
+      "parent": "skilling",
+      "description": "Hunter catches, drops, traps and gear",
+      "match": {
+        "categoriesAny": [
+          "Hunter",
+          "Chinchompas",
+          "Hunter creatures",
+          "Hunter Guild"
+        ],
+        "excludeNameRegex": "^Unlit torch$"
+      }
+    },
+    {
+      "key": "impling-jar",
+      "label": "Impling jars",
+      "parent": "hunter",
+      "description": "Caught implings (baby ... dragon) and empty impling jars",
+      "match": {
+        "nameRegex": "impling jar$"
+      }
+    },
+    {
+      "key": "chinchompa",
+      "label": "Chinchompas",
+      "parent": "hunter",
+      "description": "Grey, red and black chinchompas",
+      "match": {
+        "categoriesAny": [
+          "Chinchompas"
+        ]
+      }
+    },
+    {
+      "key": "bird-house",
+      "label": "Bird houses",
+      "parent": "hunter",
+      "description": "Bird houses from regular to redwood",
+      "match": {
+        "nameRegex": "\\bbird house$"
+      }
+    },
+    {
+      "key": "hunter-drop",
+      "label": "Hunter drops",
+      "parent": "hunter",
+      "description": "What Hunter creatures yield: furs, kebbit parts, antlers, feathers, meat, caught butterflies",
+      "match": {
+        "categoriesAny": [
+          "Hunter creatures"
+        ],
+        "nameRegex": "^(Kebbit spike|Long kebbit spike|Kebbit teeth|Kebbit teeth dust|Kebbit claws|Jerboa tail|Sunlight antelope antler|Moonlight antelope antler|Rabbit foot|Strung rabbit foot|Stripy feather|Red feather|Blue feather|Yellow feather|Orange feather|Raw bird meat|Raw beast meat|Raw barb-tailed kebbit|Raw wild kebbit|Raw dashing kebbit|Raw graahk|Raw larupia|Raw kyatt)$"
+      }
+    },
+    {
+      "key": "fur",
+      "label": "Furs",
+      "parent": "hunter-drop",
+      "description": "Animal furs (kebbit, larupia, graahk, kyatt, antelope, fox, bear, wolf ...)",
+      "match": {
+        "categoriesAny": [
+          "Fur"
+        ]
+      }
+    },
+    {
+      "key": "hunter-tool",
+      "label": "Hunter tools",
+      "parent": "hunter",
+      "description": "Traps and tools: snares, box traps, nets, noose wand, teasing stick, jars",
+      "match": {
+        "nameRegex": "^(Bird snare|Box trap|Butterfly net|Butterfly jar|Magic box|Teasing stick|Rabbit snare|Noose wand|Net trap|Impling jar|Quetzal feed)$|quetzal whistle blueprint$"
+      }
+    },
+    {
+      "key": "hunter-gear",
+      "label": "Hunter gear",
+      "parent": "hunter",
+      "description": "Hunter outfits, camouflage, spotted capes, hunter crossbows and bolts",
+      "match": {
+        "nameRegex": "^(Kyatt|Larupia|Graahk) (legs|top|hat|headdress)$|camo (top|legs)|^Spott(ed|ier) cape$|^Gloves of silence$|^Mixed hide (top|legs|boots|cape|base)$|^Hunters' (sunlight )?crossbow$|kebbit bolts$|antler bolts$|^Hunter spear tips$"
+      }
+    },
+    {
+      "key": "kebbit",
+      "label": "Kebbit",
+      "parent": "material",
+      "description": "Kebbit family: furs, spikes, teeth, claws, bolts, meat",
+      "match": {
+        "nameRegex": "\\bkebbit\\b"
+      }
+    },
+    {
+      "key": "larupia",
+      "label": "Larupia",
+      "parent": "material",
+      "description": "Larupia family: fur, outfit, meat",
+      "match": {
+        "nameRegex": "\\blarupia\\b"
+      }
+    },
+    {
+      "key": "graahk",
+      "label": "Graahk",
+      "parent": "material",
+      "description": "Graahk family: fur, outfit, meat",
+      "match": {
+        "nameRegex": "\\bgraahk\\b"
+      }
+    },
+    {
+      "key": "kyatt",
+      "label": "Kyatt",
+      "parent": "material",
+      "description": "Kyatt family: fur, outfit, meat",
+      "match": {
+        "nameRegex": "\\bkyatt\\b"
+      }
+    },
+    {
+      "key": "antelope",
+      "label": "Antelope",
+      "parent": "material",
+      "description": "Sunlight and moonlight antelope: antlers, fur, antler bolts, crossbow",
+      "match": {
+        "nameRegex": "\\bantelope\\b|^(Sunlight|Moonlight) antler bolts$|^Hunters' sunlight crossbow$"
+      }
+    },
+    {
+      "key": "woodcutting",
+      "label": "Woodcutting",
+      "parent": "skilling",
+      "description": "Woodcutting tools and finds"
+    },
+    {
+      "key": "axe",
+      "label": "Axes",
+      "parent": "woodcutting",
+      "description": "Woodcutting axes, bronze to 3rd age",
+      "match": {
+        "categoriesAny": [
+          "Axes"
+        ]
+      }
+    },
+    {
+      "key": "felling-axe",
+      "label": "Felling axes",
+      "parent": "axe",
+      "description": "Two-handed Forestry felling axes",
+      "match": {
+        "nameRegex": "felling axe$"
+      }
+    },
+    {
+      "key": "bird-nest",
+      "label": "Birds' nests",
+      "parent": "woodcutting",
+      "description": "Birds' nests from woodcutting, and crushed nests",
+      "match": {
+        "nameRegex": "^(Bird nest.*|Crushed nest)$"
+      }
+    },
+    {
+      "key": "forestry",
+      "label": "Forestry",
+      "parent": "woodcutting",
+      "description": "Forestry event rewards and supplies",
+      "match": {
+        "categoriesAny": [
+          "Forestry"
+        ],
+        "excludeNameRegex": "axe$"
+      }
+    },
+    {
+      "key": "mining",
+      "label": "Mining",
+      "parent": "skilling",
+      "description": "Mining tools and finds"
+    },
+    {
+      "key": "pickaxe",
+      "label": "Pickaxes",
+      "parent": "mining",
+      "description": "Pickaxes, bronze to 3rd age",
+      "match": {
+        "categoriesAny": [
+          "Pickaxes"
+        ]
+      }
+    },
+    {
+      "key": "fishing",
+      "label": "Fishing",
+      "parent": "skilling",
+      "description": "Fishing tools, bait and catches"
+    },
+    {
+      "key": "fishing-tool",
+      "label": "Fishing tools",
+      "parent": "fishing",
+      "description": "Nets, rods, harpoons, lobster pots, karambwan vessels",
+      "match": {
+        "categoriesAny": [
+          "Fishing equipment"
+        ],
+        "excludeNameRegex": "bait$|worms?$|^Feather$|offcuts$|^Shark lure$"
+      }
+    },
+    {
+      "key": "fishing-bait",
+      "label": "Fishing bait",
+      "parent": "fishing",
+      "description": "Bait, feathers, worms, offcuts and lures",
+      "match": {
+        "nameRegex": "^(Fishing bait|Dark fishing bait|Feather|King worm|Sandworms|Diabolic worms|Shark lure|Fish offcuts|Fine fish offcuts|Fish chunks)$"
+      }
+    }
+  ]
+}

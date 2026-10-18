@@ -1,5 +1,6 @@
-// Item icons, cached in localStorage as LZString-compressed data URLs so each icon is fetched
-// from the image server once per browser rather than on every page load. Icons are only
+// Item icons, cached in sessionStorage as LZString-compressed data URLs so each icon is fetched
+// from the image server once per tab session rather than on every page load. sessionStorage
+// rather than localStorage so icons don't eat into the quota the tracker data needs. Icons are only
 // requested once they scroll near the viewport, a few at a time.
 // They come from the OSRS wiki because it allows CORS; the GE's obj_big.gif doesn't, so its
 // bytes can't be read for caching. The GE image is the fallback when the wiki fetch fails.
@@ -18,7 +19,7 @@ let iconStorageFull = false;
 
 const readCachedIcon = (id) => {
     try {
-        const stored = localStorage.getItem(ICON_CACHE_PREFIX + id);
+        const stored = sessionStorage.getItem(ICON_CACHE_PREFIX + id);
         return stored ? LZString.decompressFromUTF16(stored) : null;
     } catch (e) {
         return null;
@@ -29,7 +30,7 @@ const readCachedIcon = (id) => {
 const writeCachedIcon = (id, dataUrl) => {
     if (iconStorageFull) return;
     try {
-        localStorage.setItem(ICON_CACHE_PREFIX + id, LZString.compressToUTF16(dataUrl));
+        sessionStorage.setItem(ICON_CACHE_PREFIX + id, LZString.compressToUTF16(dataUrl));
     } catch (e) {
         iconStorageFull = true;
         console.warn('Icon cache is full; new icons will not be persisted.', e);
@@ -101,9 +102,21 @@ const unobserveItemIcon = (el) => {
     iconObserver.unobserve(el);
 };
 
+const removeCachedIcons = (storage) => {
+    const iconKeys = Object.keys(storage).filter(key => key.startsWith(ICON_CACHE_PREFIX));
+    for (const key of iconKeys) {
+        storage.removeItem(key);
+    }
+};
+
 const clearIconCache = () => {
-    Object.keys(localStorage)
-        .filter(key => key.startsWith(ICON_CACHE_PREFIX))
-        .forEach(key => localStorage.removeItem(key));
+    removeCachedIcons(sessionStorage);
     iconStorageFull = false;
 };
+
+// Icons used to be cached in localStorage; free that space for anyone who still has them.
+try {
+    removeCachedIcons(localStorage);
+} catch (e) {
+    console.warn('Could not remove old icons from localStorage.', e);
+}

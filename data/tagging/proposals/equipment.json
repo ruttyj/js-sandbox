@@ -1,0 +1,1494 @@
+{
+  "domain": "equipment",
+  "notes": "Weapon types, armour pieces and gear families are name-based where the wiki has no category (there are no Sword/Scimitar/... categories). Weapon type tags require 'Equipable items', so unstrung bows, tips and unfinished ammo are left to the fletching/smithing domains; ammo kind tags (arrow, bolt, javelin) likewise cover finished ammo only. Weapon types sit under their combat style (bow under ranged-weapon, staff under magic-weapon), so a type implies the style; stab/slash/crush come straight from the wiki attack-type categories. Salamander tars carry weapon categories on the wiki and are excluded from weapon tags. Metal tiers and gem families use the wiki's material categories, so they also cover ores, bars, uncut gems and bolt tips (shared with the smithing/crafting domains; keys follow the README). The 'dragon' tier uses the wiki category 'Orikalkum' (the wiki's current name for dragon metal) plus name rules; the 'Rune' category's cosmetic dragonstone armour is excluded. 'white' = White Knight equipment. Dragonhide colour tags include leather and hides so the crafting chain shares a colour. God tags are name-based and include god pages, hilts, ornament kits and sets, excluding potions. boss-drop/raid-unique use the boss and raid wiki categories minus potions and teleports, so they include non-equipment uniques (jars, sigils, contracts, Huasca seed). item-set sits under misc because it also holds potion and page sets. The shared roots (equipment, weapon, armour, jewellery, ammunition, material, source, misc) are repeated here so the tree validates on its own. Unresolved: cosmetic clothing, tiaras, blessings and holy symbols are left to the misc/prayer/runecraft domains and only get slot tags here; whips, scythes and ballistae (1-2 GE items each) have no type tag of their own.",
+  "tags": [
+    {
+      "key": "equipment",
+      "label": "Equipment",
+      "parent": null,
+      "description": "Anything worn or wielded"
+    },
+    {
+      "key": "weapon",
+      "label": "Weapons",
+      "parent": "equipment",
+      "description": "Anything wielded to attack",
+      "match": {
+        "categoriesAny": [
+          "Weapons"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": " tar$"
+      }
+    },
+    {
+      "key": "armour",
+      "label": "Armour",
+      "parent": "equipment",
+      "description": "Worn protective gear"
+    },
+    {
+      "key": "jewellery",
+      "label": "Jewellery",
+      "parent": "equipment",
+      "description": "Rings, amulets, necklaces and bracelets",
+      "match": {
+        "categoriesAny": [
+          "Jewellery"
+        ]
+      }
+    },
+    {
+      "key": "ammunition",
+      "label": "Ammunition",
+      "parent": "equipment",
+      "description": "Arrows, bolts, javelins, cannonballs and other ammo",
+      "match": {
+        "categoriesAny": [
+          "Ammunition"
+        ],
+        "nameRegex": "cannonball$|^Atlatl dart$"
+      }
+    },
+    {
+      "key": "material",
+      "label": "Materials",
+      "parent": null,
+      "description": "Material / family root"
+    },
+    {
+      "key": "source",
+      "label": "Sources",
+      "parent": null,
+      "description": "Where an item comes from"
+    },
+    {
+      "key": "misc",
+      "label": "Miscellaneous",
+      "parent": null,
+      "description": "Anything else"
+    },
+    {
+      "key": "melee-weapon",
+      "label": "Melee weapons",
+      "parent": "weapon",
+      "description": "Weapons that attack with Attack / Strength",
+      "match": {
+        "categoriesAny": [
+          "Melee weapons"
+        ],
+        "nameRegex": "Scythe of Vitur|Voidwaker|blackjack",
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": " tar$"
+      }
+    },
+    {
+      "key": "stab-weapon",
+      "label": "Stab weapons",
+      "parent": "melee-weapon",
+      "description": "Melee weapons whose main attack style is stab",
+      "match": {
+        "categoriesAny": [
+          "Stab weapons"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "slash-weapon",
+      "label": "Slash weapons",
+      "parent": "melee-weapon",
+      "description": "Melee weapons whose main attack style is slash",
+      "match": {
+        "categoriesAny": [
+          "Slash weapons"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": " tar$"
+      }
+    },
+    {
+      "key": "crush-weapon",
+      "label": "Crush weapons",
+      "parent": "melee-weapon",
+      "description": "Melee weapons whose main attack style is crush",
+      "match": {
+        "categoriesAny": [
+          "Crush weapons"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "dagger",
+      "label": "Daggers",
+      "parent": "melee-weapon",
+      "description": "Daggers, including poisoned variants (bronze .. dragon, abyssal, bone)",
+      "match": {
+        "nameRegex": "\\bdagger\\b",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "sword",
+      "label": "Swords",
+      "parent": "melee-weapon",
+      "description": "One-handed swords and rapiers (bronze .. dragon sword, Ghrazi rapier, Blade of Saeldor)",
+      "match": {
+        "nameRegex": "^\\S+ sword$|^Leaf-bladed sword$|rapier|Blade of Saeldor|^Katana$|^Swift blade$|Voidwaker|^The dogsword$",
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "^Saradomin sword$"
+      }
+    },
+    {
+      "key": "longsword",
+      "label": "Longswords",
+      "parent": "melee-weapon",
+      "description": "Longswords (bronze .. dragon, Vesta's, 3rd Age)",
+      "match": {
+        "nameRegex": "longsword",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "scimitar",
+      "label": "Scimitars",
+      "parent": "melee-weapon",
+      "description": "Scimitars and sabres",
+      "match": {
+        "nameRegex": "scimitar|sabre",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "two-handed-sword",
+      "label": "Two-handed swords",
+      "parent": "melee-weapon",
+      "description": "2h swords, godswords and the Saradomin sword",
+      "match": {
+        "nameRegex": "2h sword|godsword|^Saradomin sword$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "godsword",
+      "label": "Godswords",
+      "parent": "two-handed-sword",
+      "description": "Armadyl, Bandos, Saradomin, Zamorak and Ancient godswords",
+      "match": {
+        "nameRegex": "godsword",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "battleaxe",
+      "label": "Battleaxes",
+      "parent": "melee-weapon",
+      "description": "Battleaxes and greataxes (not woodcutting axes)",
+      "match": {
+        "nameRegex": "battleaxe|greataxe|^Soulreaper axe$|^Zombie axe$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "warhammer",
+      "label": "Warhammers",
+      "parent": "melee-weapon",
+      "description": "Warhammers, mjolnirs and other combat hammers",
+      "match": {
+        "nameRegex": "warhammer|hammers?$|mjolnir",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "mace",
+      "label": "Maces",
+      "parent": "melee-weapon",
+      "description": "Maces, chainmaces, flails, clubs and cudgels",
+      "match": {
+        "nameRegex": "\\bmace\\b|chainmace|flail|cudgel| club$|^Tzhaar-ket-em$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "maul",
+      "label": "Mauls",
+      "parent": "melee-weapon",
+      "description": "Two-handed mauls and the abyssal bludgeon",
+      "match": {
+        "nameRegex": "maul$|bludgeon|^Tzhaar-ket-om$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "spear",
+      "label": "Spears",
+      "parent": "melee-weapon",
+      "description": "Spears, hastae and lances, including poisoned variants",
+      "match": {
+        "nameRegex": "spear\\b|hasta|lance$",
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "^Hunter's spear$"
+      }
+    },
+    {
+      "key": "halberd",
+      "label": "Halberds",
+      "parent": "melee-weapon",
+      "description": "Halberds (bronze .. dragon, noxious)",
+      "match": {
+        "nameRegex": "halberd",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "claws",
+      "label": "Claws",
+      "parent": "melee-weapon",
+      "description": "Claws (bronze .. dragon, burning claws)",
+      "match": {
+        "nameRegex": "claws$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "ranged-weapon",
+      "label": "Ranged weapons",
+      "parent": "weapon",
+      "description": "Bows, crossbows, thrown weapons and other ranged weapons",
+      "match": {
+        "categoriesAny": [
+          "Ranged weapons"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": " tar$"
+      }
+    },
+    {
+      "key": "bow",
+      "label": "Bows",
+      "parent": "ranged-weapon",
+      "description": "Shortbows, longbows, composite bows and unique bows (strung only)",
+      "match": {
+        "nameRegex": "\\bbow\\b|shortbow|longbow|^Seercull$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "crossbow",
+      "label": "Crossbows",
+      "parent": "ranged-weapon",
+      "description": "Crossbows (bronze .. dragon, Karil's, Armadyl, Zaryte, ...)",
+      "match": {
+        "nameRegex": "crossbow",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "blowpipe",
+      "label": "Blowpipes",
+      "parent": "ranged-weapon",
+      "description": "Toxic blowpipe and the Sailing blowpipes",
+      "match": {
+        "categoriesAny": [
+          "Blowpipes"
+        ]
+      }
+    },
+    {
+      "key": "thrown-weapon",
+      "label": "Thrown weapons",
+      "parent": "ranged-weapon",
+      "description": "Darts, throwing knives, thrownaxes, chinchompas, obsidian throwing rings",
+      "match": {
+        "categoriesAny": [
+          "Chinchompas"
+        ],
+        "nameRegex": "^Toktz-xil-ul$"
+      }
+    },
+    {
+      "key": "dart",
+      "label": "Darts",
+      "parent": "thrown-weapon",
+      "description": "Darts, including poisoned variants",
+      "match": {
+        "categoriesAny": [
+          "Darts"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "throwing-knife",
+      "label": "Throwing knives",
+      "parent": "thrown-weapon",
+      "description": "Throwing knives, including poisoned variants",
+      "match": {
+        "categoriesAny": [
+          "Throwing knives"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "thrownaxe",
+      "label": "Thrownaxes",
+      "parent": "thrown-weapon",
+      "description": "Thrownaxes (bronze .. dragon, Morrigan's)",
+      "match": {
+        "nameRegex": "thrownaxe|throwing axe",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "magic-weapon",
+      "label": "Magic weapons",
+      "parent": "weapon",
+      "description": "Staves, wands and other weapons for casting",
+      "match": {
+        "categoriesAny": [
+          "Magic weapons"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": " tar$"
+      }
+    },
+    {
+      "key": "staff",
+      "label": "Staves",
+      "parent": "magic-weapon",
+      "description": "Staves, battlestaves and croziers",
+      "match": {
+        "nameRegex": "staff|crozier",
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "hiking staff"
+      }
+    },
+    {
+      "key": "battlestaff",
+      "label": "Battlestaves & mystic staves",
+      "parent": "staff",
+      "description": "Elemental battlestaves and mystic staves",
+      "match": {
+        "nameRegex": "battlestaff|^Mystic \\w+ staff$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "powered-staff",
+      "label": "Powered staves",
+      "parent": "magic-weapon",
+      "description": "Weapons with a built-in spell: tridents, Sanguinesti staff, Tumeken's shadow, sceptres",
+      "match": {
+        "nameRegex": "trident|Sanguinesti staff|Tumeken's shadow|Warped sceptre|Accursed sceptre|Thammaron's sceptre|Eye of Ayak",
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "^Merfolk trident$"
+      }
+    },
+    {
+      "key": "wand",
+      "label": "Wands",
+      "parent": "magic-weapon",
+      "description": "Wands (MTA wands, Kodai, 3rd Age, dragon hunter)",
+      "match": {
+        "nameRegex": "\\bwand\\b",
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "^Noose wand$"
+      }
+    },
+    {
+      "key": "special-attack-weapon",
+      "label": "Special attack weapons",
+      "parent": "weapon",
+      "description": "Weapons (and tools) with a special attack",
+      "match": {
+        "categoriesAny": [
+          "Weapons with Special attacks"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "poisoned",
+      "label": "Poisoned",
+      "parent": "equipment",
+      "description": "Poisoned weapon and ammo variants: (p), (p+), (p++)",
+      "match": {
+        "nameRegex": "\\s?\\(p\\+{0,2}\\)$"
+      }
+    },
+    {
+      "key": "melee-armour",
+      "label": "Melee armour",
+      "parent": "armour",
+      "description": "Armour for melee combat (plate, chain, ...)",
+      "match": {
+        "categoriesAny": [
+          "Melee armour"
+        ]
+      }
+    },
+    {
+      "key": "ranged-armour",
+      "label": "Ranged armour",
+      "parent": "armour",
+      "description": "Armour for ranged combat (leather, d'hide, ...)",
+      "match": {
+        "categoriesAny": [
+          "Ranged armour"
+        ]
+      }
+    },
+    {
+      "key": "magic-armour",
+      "label": "Magic armour",
+      "parent": "armour",
+      "description": "Armour for magic combat (robes, ...)",
+      "match": {
+        "categoriesAny": [
+          "Magic armour"
+        ]
+      }
+    },
+    {
+      "key": "helm",
+      "label": "Helms",
+      "parent": "armour",
+      "description": "Full helms, med helms and other combat helmets",
+      "match": {
+        "categoriesAny": [
+          "Helmets"
+        ]
+      }
+    },
+    {
+      "key": "platebody",
+      "label": "Platebodies",
+      "parent": "armour",
+      "description": "Platebodies and chestplates",
+      "match": {
+        "categoriesAny": [
+          "Platebodies"
+        ]
+      }
+    },
+    {
+      "key": "chainbody",
+      "label": "Chainbodies",
+      "parent": "armour",
+      "description": "Chainbodies (bronze .. dragon, white, gilded)",
+      "match": {
+        "categoriesAny": [
+          "Chainbodies"
+        ]
+      }
+    },
+    {
+      "key": "platelegs",
+      "label": "Platelegs",
+      "parent": "armour",
+      "description": "Platelegs",
+      "match": {
+        "categoriesAny": [
+          "Platelegs"
+        ]
+      }
+    },
+    {
+      "key": "plateskirt",
+      "label": "Plateskirts",
+      "parent": "armour",
+      "description": "Plateskirts",
+      "match": {
+        "categoriesAny": [
+          "Plateskirts"
+        ]
+      }
+    },
+    {
+      "key": "shield",
+      "label": "Shields",
+      "parent": "armour",
+      "description": "Shields, defenders, wards and bulwarks",
+      "match": {
+        "categoriesAny": [
+          "Shields",
+          "Kiteshields",
+          "Square shields"
+        ],
+        "nameRegex": "shield\\b|ward$|bulwark|buckler|^Antler guard$",
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "kiteshield",
+      "label": "Kiteshields",
+      "parent": "shield",
+      "description": "Kiteshields, including (h1..h5) heraldic shields",
+      "match": {
+        "categoriesAny": [
+          "Kiteshields"
+        ]
+      }
+    },
+    {
+      "key": "sq-shield",
+      "label": "Square shields",
+      "parent": "shield",
+      "description": "Square shields, anti-dragon and dragonfire shields",
+      "match": {
+        "categoriesAny": [
+          "Square shields"
+        ]
+      }
+    },
+    {
+      "key": "spirit-shield",
+      "label": "Spirit shields",
+      "parent": "shield",
+      "description": "Spirit, blessed, arcane, spectral and elysian spirit shields",
+      "match": {
+        "nameRegex": "spirit shield$"
+      }
+    },
+    {
+      "key": "boots",
+      "label": "Boots",
+      "parent": "armour",
+      "description": "Boots with combat stats or effects",
+      "match": {
+        "categoriesAny": [
+          "Boots"
+        ]
+      }
+    },
+    {
+      "key": "vambraces",
+      "label": "Vambraces",
+      "parent": "armour",
+      "description": "Vambraces and bracers",
+      "match": {
+        "categoriesAny": [
+          "Vambraces"
+        ]
+      }
+    },
+    {
+      "key": "cape",
+      "label": "Capes",
+      "parent": "armour",
+      "description": "Capes and cloaks",
+      "match": {
+        "categoriesAny": [
+          "Capes"
+        ]
+      }
+    },
+    {
+      "key": "equipment-slot",
+      "label": "Equipment slots",
+      "parent": "equipment",
+      "description": "The slot an item is worn in"
+    },
+    {
+      "key": "head-slot",
+      "label": "Head slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the head slot (wiki \"Head slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Head slot items"
+        ]
+      }
+    },
+    {
+      "key": "cape-slot",
+      "label": "Cape slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the cape slot (wiki \"Cape slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Cape slot items"
+        ]
+      }
+    },
+    {
+      "key": "neck-slot",
+      "label": "Neck slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the neck slot (wiki \"Neck slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Neck slot items"
+        ]
+      }
+    },
+    {
+      "key": "ammo-slot",
+      "label": "Ammo slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the ammo slot (wiki \"Ammunition slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Ammunition slot items"
+        ]
+      }
+    },
+    {
+      "key": "weapon-slot",
+      "label": "Weapon slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the weapon slot (wiki \"Weapon slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Weapon slot items"
+        ]
+      }
+    },
+    {
+      "key": "two-handed",
+      "label": "Two-handed items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the two-handed (wiki \"Two-handed slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Two-handed slot items"
+        ]
+      }
+    },
+    {
+      "key": "body-slot",
+      "label": "Body slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the body slot (wiki \"Body slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Body slot items"
+        ]
+      }
+    },
+    {
+      "key": "shield-slot",
+      "label": "Shield slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the shield slot (wiki \"Shield slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Shield slot items"
+        ]
+      }
+    },
+    {
+      "key": "legs-slot",
+      "label": "Legs slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the legs slot (wiki \"Legs slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Legs slot items"
+        ]
+      }
+    },
+    {
+      "key": "hands-slot",
+      "label": "Hands slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the hands slot (wiki \"Hands slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Hands slot items"
+        ]
+      }
+    },
+    {
+      "key": "feet-slot",
+      "label": "Feet slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the feet slot (wiki \"Feet slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Feet slot items"
+        ]
+      }
+    },
+    {
+      "key": "ring-slot",
+      "label": "Ring slot items",
+      "parent": "equipment-slot",
+      "description": "Items worn in the ring slot (wiki \"Ring slot items\")",
+      "match": {
+        "categoriesAny": [
+          "Ring slot items"
+        ]
+      }
+    },
+    {
+      "key": "arrow",
+      "label": "Arrows",
+      "parent": "ammunition",
+      "description": "Arrows, brutal arrows and seeking arrows (finished, equipable)",
+      "match": {
+        "categoriesAny": [
+          "Arrows"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "^Atlatl dart$"
+      }
+    },
+    {
+      "key": "bolt",
+      "label": "Bolts",
+      "parent": "ammunition",
+      "description": "Crossbow bolts (finished, equipable), including gem and dragon bolts",
+      "match": {
+        "categoriesAny": [
+          "Bolts"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ],
+        "excludeNameRegex": "^Mith grapple"
+      }
+    },
+    {
+      "key": "enchanted-bolt",
+      "label": "Enchanted bolts",
+      "parent": "bolt",
+      "description": "Enchanted gem bolts with special effects: (e)",
+      "match": {
+        "nameRegex": "bolts \\(e\\)$"
+      }
+    },
+    {
+      "key": "javelin",
+      "label": "Javelins",
+      "parent": "ammunition",
+      "description": "Javelins for ballistae (finished, equipable)",
+      "match": {
+        "categoriesAny": [
+          "Javelins"
+        ],
+        "categoriesAll": [
+          "Equipable items"
+        ]
+      }
+    },
+    {
+      "key": "cannonball",
+      "label": "Cannonballs",
+      "parent": "ammunition",
+      "description": "Dwarf multicannon and ship cannon ammo",
+      "match": {
+        "nameRegex": "cannonball$"
+      }
+    },
+    {
+      "key": "ring",
+      "label": "Rings",
+      "parent": "jewellery",
+      "description": "Rings",
+      "match": {
+        "categoriesAny": [
+          "Rings"
+        ]
+      }
+    },
+    {
+      "key": "amulet",
+      "label": "Amulets",
+      "parent": "jewellery",
+      "description": "Amulets, including unstrung (u)",
+      "match": {
+        "categoriesAny": [
+          "Amulets"
+        ]
+      }
+    },
+    {
+      "key": "necklace",
+      "label": "Necklaces",
+      "parent": "jewellery",
+      "description": "Necklaces",
+      "match": {
+        "categoriesAny": [
+          "Necklace"
+        ]
+      }
+    },
+    {
+      "key": "bracelet",
+      "label": "Bracelets",
+      "parent": "jewellery",
+      "description": "Bracelets",
+      "match": {
+        "categoriesAny": [
+          "Bracelets"
+        ]
+      }
+    },
+    {
+      "key": "bronze",
+      "label": "Bronze",
+      "parent": "material",
+      "description": "Bronze-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Bronze"
+        ],
+        "nameRegex": "^Bronze (chainshot |incendiary )?cannonball$"
+      }
+    },
+    {
+      "key": "iron",
+      "label": "Iron",
+      "parent": "material",
+      "description": "Iron-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Iron"
+        ],
+        "nameRegex": "^Iron (chainshot |incendiary )?cannonball$"
+      }
+    },
+    {
+      "key": "steel",
+      "label": "Steel",
+      "parent": "material",
+      "description": "Steel-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Steel"
+        ],
+        "nameRegex": "^Steel (chainshot |incendiary )?cannonball$"
+      }
+    },
+    {
+      "key": "black",
+      "label": "Black",
+      "parent": "material",
+      "description": "Black-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Black"
+        ],
+        "nameRegex": "^Black (chainshot |incendiary )?cannonball$"
+      }
+    },
+    {
+      "key": "mithril",
+      "label": "Mithril",
+      "parent": "material",
+      "description": "Mithril-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Mithril"
+        ],
+        "nameRegex": "^Mithril (chainshot |incendiary )?cannonball$"
+      }
+    },
+    {
+      "key": "adamant",
+      "label": "Adamant",
+      "parent": "material",
+      "description": "Adamant-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Adamant"
+        ],
+        "nameRegex": "^Adamant (chainshot |incendiary )?cannonball$"
+      }
+    },
+    {
+      "key": "rune",
+      "label": "Rune",
+      "parent": "material",
+      "description": "Rune-tier items: equipment, ammo, bars, ores and sets",
+      "match": {
+        "categoriesAny": [
+          "Rune"
+        ],
+        "nameRegex": "^Rune (chainshot |incendiary )?cannonball$",
+        "excludeNameRegex": "^Dragonstone"
+      }
+    },
+    {
+      "key": "white",
+      "label": "White",
+      "parent": "material",
+      "description": "White Knight equipment (White dagger .. White platebody)",
+      "match": {
+        "categoriesAny": [
+          "White Knight equipment"
+        ]
+      }
+    },
+    {
+      "key": "dragon",
+      "label": "Dragon",
+      "parent": "material",
+      "description": "Dragon-metal equipment, ammo and components (wiki category \"Orikalkum\")",
+      "match": {
+        "categoriesAny": [
+          "Orikalkum"
+        ],
+        "nameRegex": "^Dragon ((chainshot |incendiary )?cannonball|limbs|crossbow \\(u\\)|metal sheet|keel parts|cannon barrel)$",
+        "excludeNameRegex": "^Orikalkum gravel$"
+      }
+    },
+    {
+      "key": "amethyst",
+      "label": "Amethyst",
+      "parent": "material",
+      "description": "Amethyst ammunition and components",
+      "match": {
+        "nameRegex": "^(Amethyst|Seeking amethyst)\\b"
+      }
+    },
+    {
+      "key": "opal",
+      "label": "Opal",
+      "parent": "material",
+      "description": "Opal gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Opal"
+        ]
+      }
+    },
+    {
+      "key": "jade",
+      "label": "Jade",
+      "parent": "material",
+      "description": "Jade gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Jade"
+        ]
+      }
+    },
+    {
+      "key": "red-topaz",
+      "label": "Red topaz",
+      "parent": "material",
+      "description": "Red topaz gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Red topaz"
+        ]
+      }
+    },
+    {
+      "key": "sapphire",
+      "label": "Sapphire",
+      "parent": "material",
+      "description": "Sapphire gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Sapphire"
+        ],
+        "nameRegex": "^Sapphire (dragon )?bolt"
+      }
+    },
+    {
+      "key": "emerald",
+      "label": "Emerald",
+      "parent": "material",
+      "description": "Emerald gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Emerald"
+        ]
+      }
+    },
+    {
+      "key": "ruby",
+      "label": "Ruby",
+      "parent": "material",
+      "description": "Ruby gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Ruby"
+        ]
+      }
+    },
+    {
+      "key": "diamond",
+      "label": "Diamond",
+      "parent": "material",
+      "description": "Diamond gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Diamond"
+        ]
+      }
+    },
+    {
+      "key": "dragonstone",
+      "label": "Dragonstone",
+      "parent": "material",
+      "description": "Dragonstone gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Dragonstone"
+        ]
+      }
+    },
+    {
+      "key": "onyx",
+      "label": "Onyx",
+      "parent": "material",
+      "description": "Onyx gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Onyx"
+        ]
+      }
+    },
+    {
+      "key": "zenyte",
+      "label": "Zenyte",
+      "parent": "material",
+      "description": "Zenyte gems, jewellery and bolts",
+      "match": {
+        "categoriesAny": [
+          "Zenyte"
+        ]
+      }
+    },
+    {
+      "key": "dragonhide",
+      "label": "Dragonhide",
+      "parent": "material",
+      "description": "Dragonhide armour, leather and hides",
+      "match": {
+        "nameRegex": "d'hide|dragonhide|dragon leather"
+      }
+    },
+    {
+      "key": "green-dragonhide",
+      "label": "Green dragonhide",
+      "parent": "dragonhide",
+      "description": "Green d'hide armour, leather and hides",
+      "match": {
+        "nameRegex": "^Green (d'hide|dragonhide|dragon leather)"
+      }
+    },
+    {
+      "key": "blue-dragonhide",
+      "label": "Blue dragonhide",
+      "parent": "dragonhide",
+      "description": "Blue d'hide armour, leather and hides",
+      "match": {
+        "nameRegex": "^Blue (d'hide|dragonhide|dragon leather)"
+      }
+    },
+    {
+      "key": "red-dragonhide",
+      "label": "Red dragonhide",
+      "parent": "dragonhide",
+      "description": "Red d'hide armour, leather and hides",
+      "match": {
+        "nameRegex": "^Red (d'hide|dragonhide|dragon leather)"
+      }
+    },
+    {
+      "key": "black-dragonhide",
+      "label": "Black dragonhide",
+      "parent": "dragonhide",
+      "description": "Black d'hide armour, leather and hides",
+      "match": {
+        "nameRegex": "^Black (d'hide|dragonhide|dragon leather)"
+      }
+    },
+    {
+      "key": "gear-family",
+      "label": "Gear families",
+      "parent": "equipment",
+      "description": "Named armour and weapon families"
+    },
+    {
+      "key": "barrows",
+      "label": "Barrows",
+      "parent": "gear-family",
+      "description": "Barrows brothers' equipment and sets",
+      "match": {
+        "categoriesAny": [
+          "Barrows equipment"
+        ],
+        "excludeNameRegex": "^Bolt rack$"
+      }
+    },
+    {
+      "key": "ahrim",
+      "label": "Ahrim's",
+      "parent": "barrows",
+      "description": "Ahrim's equipment and armour set",
+      "match": {
+        "nameRegex": "^Ahrim's"
+      }
+    },
+    {
+      "key": "dharok",
+      "label": "Dharok's",
+      "parent": "barrows",
+      "description": "Dharok's equipment and armour set",
+      "match": {
+        "nameRegex": "^Dharok's"
+      }
+    },
+    {
+      "key": "guthan",
+      "label": "Guthan's",
+      "parent": "barrows",
+      "description": "Guthan's equipment and armour set",
+      "match": {
+        "nameRegex": "^Guthan's"
+      }
+    },
+    {
+      "key": "karil",
+      "label": "Karil's",
+      "parent": "barrows",
+      "description": "Karil's equipment and armour set",
+      "match": {
+        "nameRegex": "^Karil's"
+      }
+    },
+    {
+      "key": "torag",
+      "label": "Torag's",
+      "parent": "barrows",
+      "description": "Torag's equipment and armour set",
+      "match": {
+        "nameRegex": "^Torag's"
+      }
+    },
+    {
+      "key": "verac",
+      "label": "Verac's",
+      "parent": "barrows",
+      "description": "Verac's equipment and armour set",
+      "match": {
+        "nameRegex": "^Verac's"
+      }
+    },
+    {
+      "key": "god-aligned",
+      "label": "God-aligned",
+      "parent": "gear-family",
+      "description": "Items aligned with a god (vestments, blessed d'hide, god armour, godswords, ...)"
+    },
+    {
+      "key": "saradomin",
+      "label": "Saradomin",
+      "parent": "god-aligned",
+      "description": "Saradomin-aligned items",
+      "match": {
+        "nameRegex": "^Saradomin\\b|\\(Saradomin\\)",
+        "excludeNameRegex": "brew|'s (tear|light)"
+      }
+    },
+    {
+      "key": "zamorak",
+      "label": "Zamorak",
+      "parent": "god-aligned",
+      "description": "Zamorak-aligned items",
+      "match": {
+        "nameRegex": "^Zamorak(ian)?\\b|\\(Zamorak\\)",
+        "excludeNameRegex": "brew|mix|'s grapes"
+      }
+    },
+    {
+      "key": "guthix",
+      "label": "Guthix",
+      "parent": "god-aligned",
+      "description": "Guthix-aligned items",
+      "match": {
+        "nameRegex": "^Guthix\\b|\\(Guthix\\)",
+        "excludeNameRegex": "rest|balance"
+      }
+    },
+    {
+      "key": "armadyl",
+      "label": "Armadyl",
+      "parent": "god-aligned",
+      "description": "Armadyl-aligned items",
+      "match": {
+        "nameRegex": "^Armadyl|^Corrupted armadyl",
+        "excludeNameRegex": "brew"
+      }
+    },
+    {
+      "key": "bandos",
+      "label": "Bandos",
+      "parent": "god-aligned",
+      "description": "Bandos-aligned items",
+      "match": {
+        "nameRegex": "^Bandos"
+      }
+    },
+    {
+      "key": "zaros",
+      "label": "Zaros (Ancient)",
+      "parent": "god-aligned",
+      "description": "Zarosian \"Ancient\" items: vestments, d'hide, rune armour, ceremonial robes, godsword",
+      "match": {
+        "nameRegex": "^Ancient (robe|cloak|crozier|stole|mitre|platebody|platelegs|plateskirt|full helm|kiteshield|bracers|d'hide|chaps|coif|page|rune armour set|dragonhide set|blessing|godsword|hilt|ceremonial)|^Zaryte"
+      }
+    },
+    {
+      "key": "mystic",
+      "label": "Mystic",
+      "parent": "gear-family",
+      "description": "Mystic robes (blue, light, dark, dusk) and sets",
+      "match": {
+        "nameRegex": "^Mystic (hat|robe|gloves|boots|set)"
+      }
+    },
+    {
+      "key": "third-age",
+      "label": "3rd Age",
+      "parent": "gear-family",
+      "description": "3rd Age equipment",
+      "match": {
+        "categoriesAny": [
+          "3rd Age equipment"
+        ]
+      }
+    },
+    {
+      "key": "crystal",
+      "label": "Crystal",
+      "parent": "gear-family",
+      "description": "Crystal equipment and the seeds it is made from",
+      "match": {
+        "nameRegex": "^Crystal (armour|weapon|tool) seed$|^Enhanced crystal weapon seed$|^Crystal 2h axe$|Blade of Saeldor|Bow of Faerdhinen"
+      }
+    },
+    {
+      "key": "obsidian",
+      "label": "Obsidian",
+      "parent": "gear-family",
+      "description": "TzHaar obsidian weapons and armour",
+      "match": {
+        "categoriesAny": [
+          "Obsidian equipment"
+        ]
+      }
+    },
+    {
+      "key": "granite",
+      "label": "Granite",
+      "parent": "gear-family",
+      "description": "Granite armour and weapons",
+      "match": {
+        "categoriesAny": [
+          "Granite equipment"
+        ]
+      }
+    },
+    {
+      "key": "ancient-warrior",
+      "label": "Ancient warriors'",
+      "parent": "gear-family",
+      "description": "Vesta's, Statius's, Morrigan's and Zuriel's PvP equipment",
+      "match": {
+        "categoriesAny": [
+          "Ancient Warriors' equipment"
+        ]
+      }
+    },
+    {
+      "key": "fremennik",
+      "label": "Fremennik",
+      "parent": "gear-family",
+      "description": "Fremennik helms, rock-shell, spined, skeletal and yak-hide armour, Fremennik clothing",
+      "match": {
+        "categoriesAny": [
+          "Fremennik armour"
+        ]
+      }
+    },
+    {
+      "key": "splitbark",
+      "label": "Splitbark",
+      "parent": "gear-family",
+      "description": "Splitbark, bloodbark and swampbark armour",
+      "match": {
+        "categoriesAny": [
+          "Splitbark armour"
+        ]
+      }
+    },
+    {
+      "key": "moon-armour",
+      "label": "Moon armour",
+      "parent": "gear-family",
+      "description": "Perilous Moons armour (Blood, Blue and Eclipse Moon)",
+      "match": {
+        "nameRegex": "^(Blood|Blue|Eclipse) Moon"
+      }
+    },
+    {
+      "key": "raid-unique",
+      "label": "Raid uniques",
+      "parent": "source",
+      "description": "Unique rewards from the three raids"
+    },
+    {
+      "key": "cox-unique",
+      "label": "Chambers of Xeric uniques",
+      "parent": "raid-unique",
+      "description": "Chambers of Xeric unique rewards",
+      "match": {
+        "categoriesAny": [
+          "Chambers of Xeric"
+        ],
+        "excludeNameRegex": "potion|remedy|anti-venom|\\(\\d\\)$|teleport|^Vial of blood$|^Lily of the Sands$|t-bone steak|^Fedora$|^Zombie pirate key$"
+      }
+    },
+    {
+      "key": "tob-unique",
+      "label": "Theatre of Blood uniques",
+      "parent": "raid-unique",
+      "description": "Theatre of Blood unique rewards",
+      "match": {
+        "categoriesAny": [
+          "Theatre of Blood"
+        ],
+        "excludeNameRegex": "potion|remedy|anti-venom|\\(\\d\\)$|teleport|^Vial of blood$|^Lily of the Sands$|t-bone steak|^Fedora$|^Zombie pirate key$"
+      }
+    },
+    {
+      "key": "toa-unique",
+      "label": "Tombs of Amascut uniques",
+      "parent": "raid-unique",
+      "description": "Tombs of Amascut unique rewards",
+      "match": {
+        "categoriesAny": [
+          "Tombs of Amascut"
+        ],
+        "excludeNameRegex": "potion|remedy|anti-venom|\\(\\d\\)$|teleport|^Vial of blood$|^Lily of the Sands$|t-bone steak|^Fedora$|^Zombie pirate key$"
+      }
+    },
+    {
+      "key": "boss-drop",
+      "label": "Boss drops",
+      "parent": "source",
+      "description": "Unique drops from bosses (Zulrah, Corp, Cerberus, Hydra, Nightmare, wilderness bosses, ...)",
+      "match": {
+        "categoriesAny": [
+          "Zulrah",
+          "Corporeal Beast",
+          "Cerberus",
+          "Alchemical Hydra",
+          "The Nightmare",
+          "Araxxor",
+          "Vorkath",
+          "Yama",
+          "Doom of Mokhaiotl",
+          "The Hueycoatl",
+          "Royal Titans",
+          "Phantom Muspah",
+          "Abyssal Sire",
+          "Grotesque Guardians",
+          "Kraken Cove",
+          "The Forgotten Four",
+          "Wilderness",
+          "Fortis Colosseum",
+          "Brutus"
+        ],
+        "nameRegex": "^(Craw's bow|Thammaron's sceptre|Viggora's chainmace)",
+        "excludeNameRegex": "potion|remedy|anti-venom|\\(\\d\\)$|teleport|^Vial of blood$|^Lily of the Sands$|t-bone steak|^Fedora$|^Zombie pirate key$"
+      }
+    },
+    {
+      "key": "god-wars-unique",
+      "label": "God Wars Dungeon uniques",
+      "parent": "boss-drop",
+      "description": "God Wars Dungeon and Nex drops (godswords, Bandos, Armadyl, Torva, ...)",
+      "match": {
+        "categoriesAny": [
+          "God Wars Dungeon"
+        ],
+        "excludeNameRegex": "^Steam battlestaff$"
+      }
+    },
+    {
+      "key": "item-set",
+      "label": "Item sets",
+      "parent": "misc",
+      "description": "Grand Exchange item sets (armour sets, potion sets, page sets) that unpack into their pieces",
+      "match": {
+        "categoriesAny": [
+          "Item sets"
+        ]
+      }
+    }
+  ]
+}

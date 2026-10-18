@@ -1,7 +1,7 @@
 // Variable evaluation, the Global Vars tab, and item-ref insertion/copying.
 // Globals are edited as one block of code (stored as `globalsCode`), the same way a scope's
 // code is; see useScopes.
-const useVariables = ({ store, items, evaluation, selectedScope, scopesApi, showToast }) => {
+const useVariables = ({ store, items, itemTagsApi, evaluation, selectedScope, scopesApi, showToast }) => {
     const { globalVariables, globalsCode, saveData } = store;
 
     // Evaluation (see useEvaluation)
@@ -63,40 +63,39 @@ const useVariables = ({ store, items, evaluation, selectedScope, scopesApi, show
         if (item) scopesApi.insertIntoScopeCode(buildItemRef(item, type));
     };
 
-    // Item lookup on the Scopes tab: any GE item by name or ID. Best matches first (exact ID or
-    // name, then names starting with the text, then containing it); items in the scope's groups
-    // keep their color.
-    const ITEM_LOOKUP_LIMIT = 25;
+    // Item lookup on the Scopes tab: any GE item by name or ID, narrowed by item tags written as
+    // "tag:<key>" (see parseItemSearch). Items show in the scope's colors with their tags.
+    const ITEM_LOOKUP_LIMIT = 50;
     const itemLookupText = ref('');
 
+    const itemLookupSearch = computed(() => parseItemSearch(itemLookupText.value));
+
+    // Tags in the search that don't exist, so the panel can say why nothing matched.
+    const itemLookupUnknownTags = computed(() => itemLookupSearch.value.tags.filter(key => !itemTagsApi.isItemTag(key)));
+
     const itemLookupMatches = computed(() => {
-        const query = itemLookupText.value.trim().toLowerCase();
-        if (!query) return [];
-        const isId = /^\d+$/.test(query);
-        const rank = (item) => {
-            const name = item.name.toLowerCase();
-            const id = String(item.id);
-            if (isId && id === query) return 0;
-            if (name === query) return 1;
-            if (name.startsWith(query)) return 2;
-            if (isId && id.startsWith(query)) return 3;
-            if (name.includes(query)) return 4;
-            return -1;
-        };
-        return Object.values(items.value)
-            .map(item => ({ item, rank: rank(item) }))
-            .filter(m => m.rank >= 0)
-            .sort((a, b) => a.rank - b.rank || a.item.name.localeCompare(b.item.name))
-            .map(m => m.item);
+        const search = itemLookupSearch.value;
+        const isEmpty = !search.text && !search.tags.length;
+        if (isEmpty || itemLookupUnknownTags.value.length) {
+            return [];
+        }
+        const candidates = Object.values(items.value)
+            .filter(item => search.tags.every(key => itemTagsApi.hasItemTag(item.id, key)));
+        return rankItemsByText(candidates, search.text);
     });
 
-    const itemLookupResults = computed(() => {
-        const groupColors = new Map(scopesApi.scopeItems.value.map(item => [String(item.id), item.color]));
-        return itemLookupMatches.value.slice(0, ITEM_LOOKUP_LIMIT)
-            .map(item => ({ ...item, color: groupColors.get(String(item.id)) || UNDECLARED_COLOR }));
-    });
+    const itemLookupResults = computed(() => itemLookupMatches.value.slice(0, ITEM_LOOKUP_LIMIT).map(item => ({
+        ...item,
+        color: scopesApi.scopeItemColor(item.id),
+        tags: itemTagsApi.itemTagsOf(item.id),
+    })));
 
     const itemLookupTotal = computed(() => itemLookupMatches.value.length);
+
+    // Clicking a tag chip searches for that tag.
+    const searchItemTag = (key) => {
+        itemLookupText.value = `tag:${key} `;
+    };
 
     const copyToClipboard = async (text) => {
         try {
@@ -111,5 +110,6 @@ const useVariables = ({ store, items, evaluation, selectedScope, scopesApi, show
         getVariableValue, getGlobalVariableValue, scopeCodeValueOf, globalsCodeValueOf,
         globalsCodeErrors, globalValues, onGlobalsCodeInput, onGlobalsCodeBlur,
         insertPriceRef, copyToClipboard, itemLookupText, itemLookupResults, itemLookupTotal,
+        itemLookupUnknownTags, searchItemTag,
     };
 };

@@ -18,6 +18,8 @@
 //   formula/sourceScan.js  scanLiteralOrComment, matchParen, OPENING_BRACKETS, CLOSING_BRACKETS
 //   formula/functions.js   FORMULA_FUNCTIONS
 //   formula/itemRefs.js    ITEM_LOOKUP_FN, itemNameKey, findItem, buildItemLookup, buildItemRef
+//   formula/itemQuery.js   ITEM_QUERY_FN
+//   formula/itemGraph.js   RECIPE_QUERY_FN, LINK_QUERY_FN
 //   formula/engine.js      SCOPE_IMPORT_FN
 //
 // Sections: formulas <-> expressions -> generating code -> legacy item refs -> variable colors ->
@@ -119,6 +121,9 @@ const ScopeCode = (() => {
         ...reservedKeys,
         ...Object.keys(FORMULA_FUNCTIONS),
         ITEM_LOOKUP_FN,
+        ITEM_QUERY_FN,
+        RECIPE_QUERY_FN,
+        LINK_QUERY_FN,
         SCOPE_IMPORT_FN,
     ].map(k => k.toUpperCase()));
 
@@ -199,6 +204,10 @@ const ScopeCode = (() => {
         }
         return unescapeQuoted(match[2]);
     };
+
+    // Every getOsrsItem argument in a block of code (names or IDs), in order, repeats included.
+    // Lookups inside comments and strings count too; they only decide which items get a color.
+    const itemArgsInCode = (code) => [...(code || '').matchAll(ITEM_LOOKUP_CALL)].map(itemLookupArg);
 
     // The item a variable holds, when its initial value is a single getOsrsItem(...) call.
     // "=getOsrsItem('Magic seed')" -> 'Magic seed'; "=getOsrsItem(5316);" -> '5316'.
@@ -555,6 +564,7 @@ const ScopeCode = (() => {
         migrateLegacyItemRefs,
         autoVariableColors,
         formulaItemArg,
+        itemArgsInCode,
         unescapeQuoted,
     });
 })();
@@ -569,5 +579,6 @@ const {
     migrateLegacyItemRefs,
     autoVariableColors,
     formulaItemArg,
+    itemArgsInCode,
     unescapeQuoted,
 } = ScopeCode;
