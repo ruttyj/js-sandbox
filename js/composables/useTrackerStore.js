@@ -4,18 +4,6 @@ const STORAGE_KEY = 'osrs-ge-tracker-data';
 const OLD_GROUPS_KEY = 'osrs-ge-tracker-groups';
 const OLD_GLOBALS_KEY = 'osrs-ge-tracker-globals';
 
-// JSON stored under key, or null when it's missing or can't be parsed.
-const readStoredJson = (key, label) => {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    try {
-        return JSON.parse(raw);
-    } catch (e) {
-        console.error(`Failed to parse ${label}`, e);
-        return null;
-    }
-};
-
 // The raw saved data: { data: { groups, scopes, globals, globalsCode, tags, itemTags, itemTagEdits },
 // fromOldKeys, failed }. groups and itemTagEdits only exist in data saved by older versions.
 // globalsCode is null when none was saved. Data saved before everything shared one key is read
@@ -68,7 +56,7 @@ const useTrackerStore = ({ showToast }) => {
             tags: tags.value,
             itemTags: itemTags.value,
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        writeStoredJson(STORAGE_KEY, data);
     };
 
     // Loads the saved data and brings anything saved by an older version up to date; if anything

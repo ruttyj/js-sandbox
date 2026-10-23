@@ -10,7 +10,7 @@ const editorSettings = reactive({
 });
 
 try {
-    const stored = JSON.parse(localStorage.getItem(EDITOR_SETTINGS_KEY) || '{}');
+    const stored = readStoredJson(EDITOR_SETTINGS_KEY, 'editor settings') || {};
     Object.keys(editorSettings).forEach(key => {
         if (typeof stored[key] === 'boolean') editorSettings[key] = stored[key];
     });
@@ -18,6 +18,6 @@ try {
 
 watch(editorSettings, () => {
     try {
-        localStorage.setItem(EDITOR_SETTINGS_KEY, JSON.stringify(editorSettings));
+        writeStoredJson(EDITOR_SETTINGS_KEY, editorSettings);
     } catch (e) { console.error(e); }
 });

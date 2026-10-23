@@ -7,15 +7,14 @@ const useDashboard = ({ store, evaluation, getVariableValue, getGlobalVariableVa
     const dashboardFilterTags = ref([]);
 
     const loadDashboardFilter = () => {
-        const stored = localStorage.getItem(DASHBOARD_FILTER_KEY);
-        if (!stored) return;
-        try {
-            dashboardFilterTags.value = JSON.parse(stored);
-        } catch (e) { console.error(e); }
+        const stored = readStoredJson(DASHBOARD_FILTER_KEY, 'dashboard filter');
+        if (stored) {
+            dashboardFilterTags.value = stored;
+        }
     };
 
     watch(dashboardFilterTags, () => {
-        localStorage.setItem(DASHBOARD_FILTER_KEY, JSON.stringify(dashboardFilterTags.value));
+        writeStoredJson(DASHBOARD_FILTER_KEY, dashboardFilterTags.value);
     }, { deep: true });
 
     const tagLabel = (key) => tags.value.find(t => t.key === key)?.label || key;
