@@ -1,5 +1,7 @@
 // Short messages in the corner. A toast can carry one action button (e.g. Undo); toasts with
 // an action stay up longer so there's time to use it.
+// A sticky toast stays up until it's closed (its × button) or dismissed by its key; there's one
+// per key, and showing another with the same key updates it in place instead of stacking.
 const UNDO_TOAST_DURATION = 8000;
 
 const useToasts = () => {
@@ -12,7 +14,7 @@ const useToasts = () => {
     // action: { label, run } for a button on the toast, or null.
     const showToast = (message, type = 'info', duration = 3000, action = null) => {
         const id = Date.now() + Math.random();
-        toasts.value.push({ id, message, type, action });
+        toasts.value.push({ id, message, type, action, sticky: false });
         setTimeout(() => dismissToast(id), duration);
     };
 
@@ -21,10 +23,46 @@ const useToasts = () => {
         showToast(message, 'success', UNDO_TOAST_DURATION, { label: 'Undo', run: undo });
     };
 
-    const runToastAction = (toast) => {
+    /**
+     * Shows the sticky toast for key, or updates the one already showing.
+     * @param {string} key
+     * @param {string} message
+     * @param {Object} [options]
+     * @param {string} [options.type] 'error' (the default), 'info' or 'success'.
+     * @param {{ label: string, run: function }|null} [options.action] A button that leaves the
+     *     toast up when used.
+     * @param {(function(): void)|null} [options.onClose] Called when the user closes it.
+     */
+    const showStickyToast = (key, message, { type = 'error', action = null, onClose = null } = {}) => {
+        const fields = { message, type, action, onClose };
+        const existing = toasts.value.find(t => t.sticky && t.key === key);
+        if (existing) {
+            Object.assign(existing, fields);
+            return;
+        }
+
+        const id = Date.now() + Math.random();
+        toasts.value.push({ id, key, sticky: true, ...fields });
+    };
+
+    const dismissStickyToast = (key) => {
+        toasts.value = toasts.value.filter(t => !(t.sticky && t.key === key));
+    };
+
+    const closeToast = (toast) => {
         dismissToast(toast.id);
+        if (toast.onClose) {
+            toast.onClose();
+        }
+    };
+
+    // A sticky toast stays up, so its action can be used again (e.g. Go to line).
+    const runToastAction = (toast) => {
+        if (!toast.sticky) {
+            dismissToast(toast.id);
+        }
         toast.action.run();
     };
 
-    return { toasts, showToast, showUndoToast, runToastAction };
+    return { toasts, showToast, showUndoToast, showStickyToast, dismissStickyToast, closeToast, runToastAction };
 };

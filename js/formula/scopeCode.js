@@ -124,6 +124,7 @@ const ScopeCode = (() => {
         ITEM_QUERY_FN,
         RECIPE_QUERY_FN,
         LINK_QUERY_FN,
+        UI_LIBRARY_FN,
         SCOPE_IMPORT_FN,
     ].map(k => k.toUpperCase()));
 

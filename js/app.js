@@ -1,12 +1,15 @@
 // Wires the composables together. Dependencies flow one way:
-// toasts/modals -> store -> items -> item tags -> evaluation -> scopes -> variables -> dashboard / import-export / url.
+// toasts/modals -> store -> items -> item tags -> evaluation -> scopes -> variables -> code error
+// toasts / tags / dashboard / import-export / url.
 createApp({
     components: {
         'formula-input': FormulaInput,
         'tag-multi-select': TagMultiSelect,
         'item-ref-list': ItemRefList,
         'item-icon': ItemIcon,
-        'editor-view-toggles': EditorViewToggles,
+        'editor-insert-menu': EditorInsertMenu,
+        'editor-view-menu': EditorViewMenu,
+        'scope-ui-panel': ScopeUiPanel,
     },
     setup() {
         const activeTab = ref('market');
@@ -56,6 +59,24 @@ createApp({
             showToast,
         });
 
+        useCodeErrorToasts({
+            activeTab,
+            editors: {
+                globals: {
+                    label: () => 'globals.js',
+                    errors: variablesApi.globalsCodeErrors,
+                    editorRef: variablesApi.globalsCodeEditorRef,
+                },
+                scopes: {
+                    label: () => scopesApi.selectedScope.value?.name || 'Scope',
+                    errors: scopesApi.scopeCodeErrors,
+                    editorRef: scopesApi.scopeCodeEditorRef,
+                },
+            },
+            showStickyToast: toastApi.showStickyToast,
+            dismissStickyToast: toastApi.dismissStickyToast,
+        });
+
         const tagsApi = useTags({ store, showToast });
 
         const dashboardApi = useDashboard({
@@ -95,6 +116,7 @@ createApp({
             ...dashboardApi,
             ...importExportApi,
             formatVarValue,
+            editorSettings,
             formulaFunctionReference: FORMULA_FUNCTION_REFERENCE,
             // Values panels: entries are split by whether the code's `return { ... }` exposes them.
             publicEntries: (entries) => entries.filter(e => !e.private),

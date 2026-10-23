@@ -53,9 +53,10 @@
 
     <!-- Toast Container -->
     <div class="toast-container">
-        <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type]">
+        <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type, { sticky: toast.sticky }]">
             <span>{{ toast.message }}</span>
             <button v-if="toast.action" class="toast-action" @click="runToastAction(toast)">{{ toast.action.label }}</button>
+            <button v-if="toast.sticky" class="toast-close" title="Close" @click="closeToast(toast)">✕</button>
         </div>
     </div>
 
@@ -354,6 +355,15 @@
             <div v-if="activeTab === 'globals'" class="tab-panel">
                 <div class="code-tab-layout">
 
+                    <!-- UI section: full width above the editor, unless moved to the sidebar -->
+                    <scope-ui-panel
+                        v-if="globalsUiPanels.length && !editorSettings.uiInSidebar"
+                        class="ui-panel-top"
+                        :panels="globalsUiPanels"
+                        :item-catalog="itemCatalog"
+                        :run-error="globalsRunError"
+                    ></scope-ui-panel>
+
                     <!-- Globals Code Editor -->
                     <div class="var-panel">
                         <div class="section-header">
@@ -365,14 +375,19 @@
 
                         <div class="editor-toolbar">
                             <span class="editor-toolbar-title">globals.js</span>
-                            <editor-view-toggles></editor-view-toggles>
+                            <div class="editor-toolbar-actions">
+                                <editor-insert-menu @insert="insertSnippetIntoGlobalsCode"></editor-insert-menu>
+                                <editor-view-menu></editor-view-menu>
+                            </div>
                         </div>
                         <formula-input
+                            ref="globalsCodeEditorRef"
                             class="code-editor"
                             v-model="globalsCode"
                             :variables="globalVariables"
                             :item-catalog="itemCatalog"
                             :value-for-key="globalsCodeValueOf"
+                            :errors="globalsCodeErrors"
                             placeholder="const GE_TAX = 0.02;"
                             color-editable
                             @set-color="setGlobalVariableColor"
@@ -389,12 +404,19 @@
                                 <li>Written the same way as scopes: the code runs top to bottom, and each top-level <code>const</code> / <code>let</code> is one global. Declare a global before using it.</li>
                                 <li><code>//</code> comment lines directly above a declaration become its description. Use <code>// @tags: A, B</code> to tag it for the Dashboard.</li>
                                 <li><code>getOsrsItem('Oathplate helm').lowPrice</code> works here too.</li>
+                                <li><code>ui.table(...)</code>, <code>ui.items(...)</code> and the rest work here too (see the Scopes tab's tips); they show in a UI section at the top of this tab.</li>
                                 <li>End with <code>return { A, B };</code> to make only <code>A</code> and <code>B</code> visible to scopes and the Dashboard; the rest stay private. Without a <code>return</code>, every global is public.</li>
                             </ul>
                         </div>
                     </div>
 
                     <div class="code-sidebar">
+                    <scope-ui-panel
+                        v-if="globalsUiPanels.length && editorSettings.uiInSidebar"
+                        :panels="globalsUiPanels"
+                        :item-catalog="itemCatalog"
+                        :run-error="globalsRunError"
+                    ></scope-ui-panel>
                     <div class="scope-panel">
                         <h4>Values</h4>
                         <div v-if="globalValues.length === 0" class="muted-note">No globals declared yet.</div>
@@ -425,6 +447,16 @@
                     <button class="scope-new-btn" @click="createScope">+ Create your first scope</button>
                 </div>
                 <div v-else class="code-tab-layout">
+
+                    <!-- UI section: full width above the editor, unless moved to the sidebar -->
+                    <scope-ui-panel
+                        v-if="scopeUiPanels.length && !editorSettings.uiInSidebar"
+                        :key="'top-' + selectedScopeId"
+                        class="ui-panel-top"
+                        :panels="scopeUiPanels"
+                        :item-catalog="itemCatalog"
+                        :run-error="scopeRunError"
+                    ></scope-ui-panel>
 
                     <!-- Scope Code Editor -->
                     <div class="var-panel">
@@ -512,7 +544,10 @@
                             </details>
                             <div class="editor-toolbar">
                                 <span class="editor-toolbar-title">{{ selectedScope.name }}</span>
-                                <editor-view-toggles></editor-view-toggles>
+                                <div class="editor-toolbar-actions">
+                                    <editor-insert-menu allow-imports @insert="insertSnippetIntoScopeCode"></editor-insert-menu>
+                                    <editor-view-menu></editor-view-menu>
+                                </div>
                             </div>
                             <formula-input
                                 ref="scopeCodeEditorRef"
@@ -522,6 +557,7 @@
                                 :items="scopeItems"
                                 :item-catalog="itemCatalog"
                                 :value-for-key="scopeCodeValueOf"
+                                :errors="scopeCodeErrors"
                                 placeholder="const Name = expression;"
                                 color-editable
                                 @set-color="setScopeVariableColor"
@@ -544,6 +580,11 @@
                                     <li><code>queryOsrsItems().tagged('seed', 'maple').sortBy('highPrice', 'desc').list()</code> searches every GE item. Filters: <code>tagged</code>, <code>taggedAny</code>, <code>notTagged</code>, <code>nameMatches</code> (text or /regex/), <code>members</code>, <code>priceBetween(min, max)</code>, <code>where(item =&gt; ...)</code>; then <code>sortBy</code>, <code>limit</code>, and <code>list()</code>, <code>first()</code>, <code>count()</code> or <code>ids()</code>.</li>
                                     <li><code>queryOsrsItemRecipes().producing('Yew longbow').list()</code> lists the wiki's recipes: each has <code>output</code> and <code>materials</code> (<code>{ id, name, quantity, item }</code>, <code>item</code> as from <code>getOsrsItem</code> or null when untradeable), <code>skills</code>, <code>tools</code>, <code>facilities</code> and <code>method</code>. Filters: <code>producing</code>, <code>using</code>, <code>producingTagged</code>, <code>usingTagged</code>, <code>skill</code>, <code>members</code>, <code>onlyTradeable()</code>, <code>where</code>; <code>expandIntermediates()</code> follows untradeable steps (Yew sapling → Yew seed + Filled plant pot); then <code>list()</code>, <code>first()</code> or <code>count()</code>.</li>
                                     <li><code>queryOsrsItemLinks('grows-into').fromTagged('hardwood-seed').list()</code> gives <code>{ from, to }</code> item pairs. Types: <code>ingredient-of</code>, <code>made-from</code>, <code>grows-into</code>, <code>grown-from</code>. Filters: <code>from</code>, <code>to</code>, <code>fromTagged</code>, <code>toTagged</code>, <code>where</code>; then <code>list()</code>, <code>sources()</code>, <code>targets()</code> or <code>count()</code>.</li>
+                                    <li><code>ui</code> shows things in the UI section at the top of the tab (its button moves it to the sidebar and back), in call order (the Insert menu has examples):
+                                        <code>ui.items(list, { title, shape: 'square' | 'portrait' })</code> a scrolling strip of items;
+                                        <code>ui.table(rows, { title, columns, sortBy, sortDir })</code> with columns like <code>{ label: 'Margin', type: 'signedPrice', value: row =&gt; ..., total: 'sum' }</code> (or <code>key: 'name'</code> instead of <code>value</code>);
+                                        <code>ui.stats({ Profit, Margin }, { types: { Margin: 'percent' } })</code>, <code>ui.heading(text)</code> and <code>ui.text(text)</code>.
+                                        Column types: <code>price</code>, <code>signedPrice</code>, <code>number</code> (<code>decimals</code>), <code>percent</code> (0.12 → 12%), <code>text</code>, <code>item</code> (an item, ID or name), <code>items</code> (a list of them, shown as a row of icons), <code>boolean</code>, and <code>auto</code> (the default). Totals: <code>sum</code>, <code>avg</code>, <code>min</code>, <code>max</code>. Click a header to sort; hover an item for its details.</li>
                                 </ul>
                                 <details class="scope-globals function-reference">
                                     <summary>Built-in functions</summary>
@@ -568,6 +609,13 @@
                     </div>
 
                     <div class="code-sidebar">
+                    <scope-ui-panel
+                        v-if="scopeUiPanels.length && editorSettings.uiInSidebar"
+                        :key="'side-' + selectedScopeId"
+                        :panels="scopeUiPanels"
+                        :item-catalog="itemCatalog"
+                        :run-error="scopeRunError"
+                    ></scope-ui-panel>
                     <div class="scope-panel">
                         <h4>Values</h4>
                         <div v-if="scopeValues.locals.length === 0" class="muted-note">No variables declared yet.</div>
@@ -703,15 +751,17 @@
 <script src="js/formula/itemRefs.js"></script>
 <script src="js/formula/itemQuery.js"></script>
 <script src="js/formula/itemGraph.js"></script>
+<script src="js/formula/uiLibrary.js"></script>
 <script src="js/formula/engine.js"></script>
 <script src="js/formula/scopeCode.js"></script>
 <script src="js/composables/useEditorSettings.js"></script>
 
 <script src="js/components/useFindReplace.js"></script>
-<script src="js/components/EditorViewToggles.js"></script>
+<script src="js/components/EditorToolbarMenus.js"></script>
 <script src="js/components/ItemIcon.js"></script>
 <script src="js/components/FormulaTooltip.js"></script>
 <script src="js/components/FormulaInput.js"></script>
+<script src="js/components/ScopeUiPanel.js"></script>
 <script src="js/components/TagMultiSelect.js"></script>
 <script src="js/components/ItemRefList.js"></script>
 
@@ -728,6 +778,7 @@
 <script src="js/composables/useDashboard.js"></script>
 <script src="js/composables/useImportExport.js"></script>
 <script src="js/composables/useUrlState.js"></script>
+<script src="js/composables/useCodeErrorToasts.js"></script>
 
 <script src="js/app.js"></script>
 

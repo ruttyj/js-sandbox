@@ -9,6 +9,8 @@
 //   queryOsrsItems()     -> a query builder over every GE item (see itemQuery.js)
 //   queryOsrsItemRecipes(), queryOsrsItemLinks(type)
 //                        -> query builders over recipes and the links between items (itemGraph.js)
+//   ui.table(...), ui.items(...), ...
+//                        -> panels for the UI section beside the editor (uiLibrary.js)
 //   I_<id>_H / I_<id>_L  -> legacy refs to an item's high / low price, still evaluated
 //   global variable keys -> their values, read-only (a scope's own declarations override them)
 //   MIN, MAX, SUM, ...   -> the library in functions.js
@@ -22,6 +24,7 @@
 //   formula/itemRefs.js    ITEM_LOOKUP_FN, isItemIdArg, findItem, toCodeItem
 //   formula/itemQuery.js   ITEM_QUERY_FN, createItemQuery, untaggedItemSource
 //   formula/itemGraph.js   RECIPE_QUERY_FN, LINK_QUERY_FN, createItemRecipeQuery, createItemLinkQuery
+//   formula/uiLibrary.js   UI_LIBRARY_FN, createUiLibrary
 //
 // Sections: shared types -> loop guards -> error lines -> the code's environment -> result
 // values -> running a program -> reading a run's result -> public API.
@@ -54,6 +57,8 @@ const FormulaEngine = (() => {
      * @property {string|null} error The run's error message, or null if it finished.
      * @property {Set<string>|null} exports The keys of a top-level `return { ... }`, or null when
      *     there was none (every declaration is then public).
+     * @property {UiPanel[]} ui The panels the code's ui calls made, in call order (see
+     *     uiLibrary.js). If the run threw, the ones made before it did.
      */
 
     /**
@@ -296,6 +301,7 @@ const FormulaEngine = (() => {
      * @property {function(): Object} queryOsrsItems
      * @property {function(): Object} queryOsrsItemRecipes
      * @property {function(string): Object} queryOsrsItemLinks
+     * @property {Object} ui This run's ui object (see createUiLibrary).
      */
 
     /**
@@ -373,6 +379,7 @@ const FormulaEngine = (() => {
             || name === ITEM_QUERY_FN
             || name === RECIPE_QUERY_FN
             || name === LINK_QUERY_FN
+            || name === UI_LIBRARY_FN
             || isScopeImport(env, name);
     };
 
@@ -409,6 +416,9 @@ const FormulaEngine = (() => {
         if (name === LINK_QUERY_FN) {
             return env.queryOsrsItemLinks;
         }
+        if (name === UI_LIBRARY_FN) {
+            return env.ui;
+        }
         if (isScopeImport(env, name)) {
             return env.importScope;
         }
@@ -423,9 +433,10 @@ const FormulaEngine = (() => {
      * code's own declarations shadow it. It's read-only: assigning to one of its names throws.
      * Non-string names are symbols such as Symbol.unscopables, which `with` reads; they're never ours.
      * @param {Required<RunContext>} context
+     * @param {Object} ui This run's ui object (see createUiLibrary).
      * @returns {Proxy}
      */
-    const createScopeProxy = ({ items, itemsByName, globals, importScope, itemQuerySource }) => {
+    const createScopeProxy = ({ items, itemsByName, globals, importScope, itemQuerySource }, ui) => {
         const querySource = itemQuerySource || untaggedItemSource(items);
         const graphContext = { itemsById: items, itemsByName, source: querySource };
         const env = {
@@ -436,6 +447,7 @@ const FormulaEngine = (() => {
             queryOsrsItems: () => createItemQuery(querySource),
             queryOsrsItemRecipes: () => createItemRecipeQuery(graphContext),
             queryOsrsItemLinks: (type) => createItemLinkQuery(graphContext, type),
+            ui,
         };
 
         return new Proxy({}, {
@@ -621,20 +633,22 @@ const FormulaEngine = (() => {
     const runScopeCode = (code, keys, context) => {
         const { items = {}, itemsByName = new Map(), globals = new Map(), importScope = null, itemQuerySource = null } = context;
 
-        const scope = createScopeProxy({ items, itemsByName, globals, importScope, itemQuerySource });
+        // A fresh ui object per run, so each run (an imported scope's included) shows only its own panels.
+        const ui = createUiLibrary({ itemsById: items, itemsByName });
+        const scope = createScopeProxy({ items, itemsByName, globals, importScope, itemQuerySource }, ui.api);
         const runtime = createRuntime();
         const { returned, error } = executeProgram(buildProgram(code, keys), scope, runtime);
 
         const values = readDeclaredValues(keys, runtime.read, error);
         if (!isObjectLiteral(returned)) {
-            return { values, error, exports: null };
+            return { values, error, exports: null, ui: ui.panels };
         }
 
         const exports = new Set(Object.keys(returned));
         for (const key of exports) {
             values.set(key, roundResult(returned[key]));
         }
-        return { values, error, exports };
+        return { values, error, exports, ui: ui.panels };
     };
 
 

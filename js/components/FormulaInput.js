@@ -241,15 +241,87 @@ const gutterDigits = (text) => {
     return Math.max(MIN_GUTTER_DIGITS, String(lineCount).length);
 };
 
-// An empty row holds a <br> so it is still one line tall.
-const lineNumberGutterHtml = (text) => {
+// An empty row holds a <br> so it is still one line tall. errorLines: the line numbers (from 1)
+// whose number is marked as having an error.
+const lineNumberGutterHtml = (text, errorLines) => {
     let html = '';
     const lines = text.split('\n');
     for (let i = 0; i < lines.length; i++) {
         const lineHtml = lines[i] === '' ? '<br>' : escapeHtml(lines[i]);
-        html += `<div class="gutter-row"><span class="gutter-num">${i + 1}</span>${lineHtml}</div>`;
+        const rowClass = errorLines.has(i + 1) ? 'gutter-row has-error' : 'gutter-row';
+        html += `<div class="${rowClass}"><span class="gutter-num">${i + 1}</span>${lineHtml}</div>`;
     }
     return html;
+};
+
+
+// --- Error lines ------------------------------------------------------------------------------
+// Code errors read "Line 3: x is not defined" (see parseScopeCode and formatRunError in
+// engine.js). The lines they name are marked in a layer behind the code, built row by row like
+// the gutter so a wrapped line's mark covers all of it.
+
+// "Line 3: ..." -> 3. Anchored at the start, so the line in "Scope "A" has an error: Line 3: ..."
+// (which is in the other scope's code) isn't taken for one of this code's lines.
+const CODE_ERROR_LINE = /^Line (\d+):/;
+
+// The line a code error names, or null when it doesn't name one (e.g. "Unclosed bracket").
+const codeErrorLine = (message) => {
+    const match = CODE_ERROR_LINE.exec(message);
+    if (!match) {
+        return null;
+    }
+    return Number(match[1]);
+};
+
+const codeErrorLines = (errors) => {
+    const lines = new Set();
+    for (const message of errors) {
+        const line = codeErrorLine(message);
+        if (line !== null) {
+            lines.add(line);
+        }
+    }
+    return lines;
+};
+
+// An error row underlines its code (the text is transparent; the wavy underline isn't), leaving
+// out the indentation and trailing spaces so the squiggle starts where the code does.
+const errorRowHtml = (line) => {
+    const code = line.trim();
+    if (code === '') {
+        return '<div class="error-row"><br></div>';
+    }
+
+    const leading = line.slice(0, line.indexOf(code));
+    return `<div class="error-row">${escapeHtml(leading)}<span class="error-squiggle">${escapeHtml(code)}</span></div>`;
+};
+
+const errorLayerHtml = (text, errorLines) => {
+    let html = '';
+    const lines = text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        if (errorLines.has(i + 1)) {
+            html += errorRowHtml(lines[i]);
+        } else {
+            const lineHtml = lines[i] === '' ? '<br>' : escapeHtml(lines[i]);
+            html += `<div class="error-layer-row">${lineHtml}</div>`;
+        }
+    }
+    return html;
+};
+
+// Where line lineNo (from 1) starts and ends in text, newline excluded; null past the last line.
+const lineRange = (text, lineNo) => {
+    const lines = text.split('\n');
+    if (lineNo < 1 || lineNo > lines.length) {
+        return null;
+    }
+
+    let start = 0;
+    for (let i = 0; i < lineNo - 1; i++) {
+        start += lines[i].length + 1;
+    }
+    return { start, end: start + lines[lineNo - 1].length };
 };
 
 
@@ -408,6 +480,7 @@ const buildTip = (tc, span, rect) => {
 // colorEditable: the hover tooltip's swatch is a color picker, which emits set-color(key, color).
 // items: the scope's colored items, for tinting item refs. itemCatalog: { byId, byName } over
 // every GE item, for item tooltips. valueForKey: key -> the variable's current value, for tooltips.
+// errors: the code's error messages; the lines they name are highlighted (see "Error lines").
 const FormulaInput = {
     components: { 'formula-tooltip': FormulaTooltip },
     // Flags are typed as Boolean so a bare attribute (`readonly`, `color-editable`) is true (untyped, it would be "").
@@ -415,6 +488,7 @@ const FormulaInput = {
         modelValue: null, variables: null, placeholder: null, items: null,
         itemCatalog: Object,
         valueForKey: Function,
+        errors: Array,
         readonly: Boolean,
         colorEditable: Boolean,
     },
@@ -423,6 +497,7 @@ const FormulaInput = {
         const textareaRef = ref(null);
         const backdropRef = ref(null);
         const gutterRef = ref(null);
+        const errorLayerRef = ref(null);
         const containerRef = ref(null);
         let resizeObserver = null;
 
@@ -589,8 +664,11 @@ const FormulaInput = {
         });
 
         // The layers that mirror the textarea: the highlight backdrop, the line-number gutter when
-        // shown and, while find is open, its matches.
-        const mirrorLayers = () => [backdropRef.value, gutterRef.value, find.findLayerRef.value].filter(Boolean);
+        // shown, the error lines when there are any and, while find is open, its matches.
+        const mirrorLayers = () => {
+            const layers = [backdropRef.value, gutterRef.value, errorLayerRef.value, find.findLayerRef.value];
+            return layers.filter(Boolean);
+        };
 
         // Matches the layers' right padding to the textarea's scrollbar, so lines wrap at the same width.
         const syncStyles = () => {
@@ -691,12 +769,24 @@ const FormulaInput = {
             itemsByName: itemLookup.value.byName,
         }));
 
+        const errorLines = computed(() => codeErrorLines(props.errors || []));
+
         const gutterHTML = computed(() => {
             if (!editorSettings.lineNumbers) {
                 return '';
             }
-            return lineNumberGutterHtml(props.modelValue || '');
+            return lineNumberGutterHtml(props.modelValue || '', errorLines.value);
         });
+
+        const errorLayerHTML = computed(() => {
+            if (!errorLines.value.size) {
+                return '';
+            }
+            return errorLayerHtml(props.modelValue || '', errorLines.value);
+        });
+
+        // The error layer appears and disappears with the errors, so it needs syncing when it does.
+        watch(() => errorLines.value.size > 0, () => nextTick(syncAll));
 
         // The gutter's width, as a CSS variable the layers use to make room for it. In ch, so it
         // follows the code font's digit width.
@@ -709,7 +799,43 @@ const FormulaInput = {
 
         const focus = () => textareaRef.value?.focus();
 
-        expose({ focus, textareaRef });
+        // Scrolls the textarea so a row of a mirrored layer is in view, then the page (the editor
+        // grows with its code, so the row can be below the window), the way find reveals a match.
+        const scrollRowIntoView = (row) => {
+            const ta = textareaRef.value;
+            const top = row.offsetTop;
+            const bottom = top + row.offsetHeight;
+            if (top < ta.scrollTop || bottom > ta.scrollTop + ta.clientHeight) {
+                ta.scrollTop = Math.max(0, top - ta.clientHeight / 3);
+            }
+            syncScroll();
+
+            const probe = find.findProbeRef.value;
+            if (probe) {
+                probe.style.top = `${top - ta.scrollTop}px`;
+                probe.style.height = `${row.offsetHeight}px`;
+                probe.scrollIntoView({ block: 'nearest' });
+            }
+        };
+
+        // Selects line lineNo (from 1) and scrolls to it, e.g. for an error toast's Go to line.
+        const revealLine = (lineNo) => {
+            const ta = textareaRef.value;
+            const range = lineRange(props.modelValue || '', lineNo);
+            if (!ta || !range) {
+                return;
+            }
+
+            ta.focus({ preventScroll: true });
+            ta.setSelectionRange(range.start, range.end);
+
+            const row = errorLayerRef.value?.children[lineNo - 1];
+            if (row) {
+                scrollRowIntoView(row);
+            }
+        };
+
+        expose({ focus, textareaRef, revealLine });
 
         const handleScroll = () => {
             syncScroll();
@@ -720,7 +846,7 @@ const FormulaInput = {
             ...find,
             editorSettings,
             textareaRef, backdropRef, containerRef, handleInput, handleKeydown, handleScroll, highlightedHTML,
-            gutterRef, gutterHTML, containerStyle,
+            gutterRef, gutterHTML, containerStyle, errorLayerRef, errorLayerHTML,
             tip, handleMouseMove, hideTipSoon, dismissTip, handleTipEnter, handleTipLeave,
             handleColorInput, handlePickerClosed, handleReplaceCall,
             openPicker: () => { pickerOpen = true; },
@@ -732,6 +858,7 @@ const FormulaInput = {
              :style="containerStyle"
              ref="containerRef">
             <div v-if="editorSettings.lineNumbers" class="formula-backdrop formula-gutter" ref="gutterRef" aria-hidden="true" v-html="gutterHTML"></div>
+            <div v-if="errorLayerHTML" class="formula-backdrop formula-error-layer" ref="errorLayerRef" aria-hidden="true" v-html="errorLayerHTML"></div>
             <div class="formula-backdrop" ref="backdropRef" v-html="highlightedHTML"></div>
             <div v-if="findOpen" class="formula-backdrop formula-find-layer" ref="findLayerRef" v-html="findLayerHTML"></div>
             <div class="formula-find-probe" ref="findProbeRef"></div>

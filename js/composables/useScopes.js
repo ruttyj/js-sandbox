@@ -20,6 +20,50 @@ const insertIntoCodeEditor = (editorRef, codeRef, text) => {
     }
 };
 
+// Where a snippet goes, for a caret (or selection) between start and end: on a blank line it
+// goes at the caret; otherwise on a new line after the line the caret is on, so it never splits
+// a statement. Returns { index, text }: text (the snippet, after a newline when needed) is
+// inserted at index.
+const snippetPlacement = (code, end, snippet) => {
+    const lineStart = code.lastIndexOf('\n', end - 1) + 1;
+    let lineEnd = code.indexOf('\n', end);
+    if (lineEnd === -1) {
+        lineEnd = code.length;
+    }
+
+    const lineIsBlank = code.slice(lineStart, lineEnd).trim() === '';
+    if (lineIsBlank) {
+        return { index: end, text: snippet };
+    }
+    return { index: lineEnd, text: '\n' + snippet };
+};
+
+// Inserts a snippet (see EDITOR_SNIPPET_GROUPS) into a FormulaInput, on its own line(s) near the
+// caret, then selects its placeholder (snippet.select) so typing replaces it. codeRef: a
+// writable ref/computed holding the code.
+const insertSnippetIntoCodeEditor = (editorRef, codeRef, snippet) => {
+    const el = editorRef.value?.textareaRef;
+    const code = codeRef.value || '';
+    const end = el ? el.selectionEnd : code.length;
+    const { index, text } = snippetPlacement(code, end, snippet.code);
+    codeRef.value = code.slice(0, index) + text + code.slice(index);
+    if (!el) {
+        return;
+    }
+
+    let selectStart = index + text.length;
+    let selectEnd = selectStart;
+    const placeholderAt = snippet.select ? text.indexOf(snippet.select) : -1;
+    if (placeholderAt !== -1) {
+        selectStart = index + placeholderAt;
+        selectEnd = selectStart + snippet.select.length;
+    }
+    nextTick(() => {
+        el.focus();
+        el.setSelectionRange(selectStart, selectEnd);
+    });
+};
+
 const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToast, showConfirmModal, showInputModal }) => {
     const { scopes, globalVariables, globalsCode, tags, saveData } = store;
 
@@ -283,6 +327,14 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
         applyScopeCode();
     };
 
+    const insertSnippetIntoScopeCode = (snippet) => {
+        if (!selectedScope.value) {
+            return;
+        }
+        insertSnippetIntoCodeEditor(scopeCodeEditorRef, scopeCode, snippet);
+        applyScopeCode();
+    };
+
     // Variable colors, set from the editors' hover picker. A "// @color: #rrggbb" line in the
     // code takes precedence over a color set here.
     const findVariable = (variables, key) => (variables || []).find(v => v.key === key);
@@ -363,6 +415,16 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
         return { locals, globals };
     });
 
+    // The panels the selected scope's ui calls made, and its run error (see ScopeUiPanel).
+    const selectedScopeResult = computed(() => {
+        if (!selectedScope.value) {
+            return null;
+        }
+        return evaluation.getScopeResult(selectedScope.value);
+    });
+    const scopeUiPanels = computed(() => selectedScopeResult.value?.ui || []);
+    const scopeRunError = computed(() => selectedScopeResult.value?.error || null);
+
     const impliedScopeCode = computed(() => generateImpliedCode(
         scopeValues.value.globals.map(g => ({ variable: g.variable, value: g.value, overridden: g.overridden }))
     ));
@@ -371,7 +433,8 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
         selectedScopeId, selectedScope, createScope, renameScope, deleteScope,
         scopeItemTagKeys, scopeItemTagSections, scopeItems, scopeItemColor, setScopeItemColor, rerollScopeItemColors,
         scopeCode, scopeCodeErrors, scopeCodeEditorRef, scopeValues, impliedScopeCode, visibleGlobalVariables,
-        onScopeCodeInput, onScopeCodeBlur, insertIntoScopeCode, registerVariableTags, isErrorValue,
+        scopeUiPanels, scopeRunError,
+        onScopeCodeInput, onScopeCodeBlur, insertIntoScopeCode, insertSnippetIntoScopeCode, registerVariableTags, isErrorValue,
         setGlobalVariableColor, setScopeVariableColor, autoColorScopeVariables,
     };
 };
