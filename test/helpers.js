@@ -10,12 +10,15 @@ import { createKnex, runMigrations } from '../server/db/knex.js';
 export const API_HEADER = { 'X-Requested-With': 'ge-tracker' };
 
 // fetchImpl: stands in for fetch when the server downloads icons.
-export const createTestApp = async ({ fetchImpl } = {}) => {
+// verifyApiKey: stands in for checking API keys with their provider (by default, accepts any).
+// createAiClients: { anthropic, gemini } stand-ins for the clients the chat uses.
+// env: extra environment settings.
+export const createTestApp = async ({ fetchImpl, verifyApiKey = async () => {}, createAiClients, env = {} } = {}) => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ge-tracker-test-'));
-    const config = loadConfig({ DATA_DIR: dataDir, DEV_LOGIN: 'true' });
+    const config = loadConfig({ DATA_DIR: dataDir, DEV_LOGIN: 'true', ...env });
     const knex = createKnex(config.databaseFile);
     await runMigrations(knex);
-    const { app, close } = createApp({ knex, config, fetchImpl });
+    const { app, close } = createApp({ knex, config, fetchImpl, verifyApiKey, createAiClients });
 
     const destroy = async () => {
         close();

@@ -32,15 +32,16 @@ const vueStub = () => ({
  * @param {object} [browser]
  * @param {object} [browser.localStorage]  This tab's localStorage (none by default).
  * @param {object} [browser.LZString]  Preloaded, as if the app had already fetched it from the CDN.
- * @returns {object} The tab's { useTrackerStore, useImportExport, editorSettings, ApiError }.
+ * @param {string[]} [browser.exportNames]  More of the scripts' top-level names to hand out.
+ * @returns {object} The tab's { useTrackerStore, useImportExport, editorSettings, ApiError, ...exportNames }.
  */
-export const openTab = (baseUrl, cookie, { localStorage, LZString } = {}) => {
+export const openTab = (baseUrl, cookie, { localStorage, LZString, exportNames = [] } = {}) => {
     const tabFetch = (url, options = {}) => fetch(baseUrl + url, {
         ...options,
         headers: { ...options.headers, cookie },
     });
     const context = vm.createContext({
-        console, setTimeout, clearTimeout, URL, URLSearchParams,
+        console, setTimeout, clearTimeout, setInterval, clearInterval, URL, URLSearchParams, TextDecoder, AbortController, structuredClone, performance,
         Vue: vueStub(),
         IntersectionObserver: class { observe() {} unobserve() {} },
         window: {
@@ -58,7 +59,8 @@ export const openTab = (baseUrl, cookie, { localStorage, LZString } = {}) => {
         source += fs.readFileSync(path.join(publicDir, src), 'utf8') + '\n;\n';
     }
     // Top-level const/let aren't properties of the context, so the ones tests use are handed out.
-    source += 'globalThis.exports = { useTrackerStore, useImportExport, editorSettings, ApiError };';
+    const names = ['useTrackerStore', 'useImportExport', 'editorSettings', 'ApiError', ...exportNames];
+    source += `globalThis.exports = { ${names.join(', ')} };`;
     vm.runInContext(source, context, { filename: 'browser-scripts.js' });
     return context.exports;
 };

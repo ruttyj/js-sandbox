@@ -31,10 +31,12 @@ const useToasts = () => {
      * @param {string} [options.type] 'error' (the default), 'info' or 'success'.
      * @param {{ label: string, run: function }|null} [options.action] A button that leaves the
      *     toast up when used.
+     * @param {{ label: string, run: function }|null} [options.secondaryAction] A second button,
+     *     which also leaves the toast up.
      * @param {(function(): void)|null} [options.onClose] Called when the user closes it.
      */
-    const showStickyToast = (key, message, { type = 'error', action = null, onClose = null } = {}) => {
-        const fields = { message, type, action, onClose };
+    const showStickyToast = (key, message, { type = 'error', action = null, secondaryAction = null, onClose = null } = {}) => {
+        const fields = { message, type, action, secondaryAction, onClose };
         const existing = toasts.value.find(t => t.sticky && t.key === key);
         if (existing) {
             Object.assign(existing, fields);
@@ -64,5 +66,10 @@ const useToasts = () => {
         toast.action.run();
     };
 
-    return { toasts, showToast, showUndoToast, showStickyToast, dismissStickyToast, closeToast, runToastAction };
+    // Only sticky toasts have one (see showStickyToast).
+    const runToastSecondaryAction = (toast) => {
+        toast.secondaryAction.run();
+    };
+
+    return { toasts, showToast, showUndoToast, showStickyToast, dismissStickyToast, closeToast, runToastAction, runToastSecondaryAction };
 };

@@ -1,6 +1,6 @@
 // Wires the composables together. Dependencies flow one way:
 // toasts/modals -> session / store -> items -> item tags -> evaluation -> scopes -> variables ->
-// code error toasts / tags / dashboard / import-export / sharing / url.
+// AI account / AI chat -> code error toasts / tags / dashboard / import-export / sharing / url.
 
 // How the header shows the store's saveStatus; a missing entry ('loading') hides it.
 const SAVE_STATUS_PILLS = {
@@ -94,6 +94,21 @@ createApp({
             showToast,
         });
 
+        const aiAccountApi = useAiAccount({ showToast });
+
+        const agentChatApi = useAgentChat({
+            store,
+            itemTagsApi,
+            evaluation,
+            scopesApi,
+            variablesApi,
+            aiAccountApi,
+            activeTab,
+            showToast,
+            showUndoToast: toastApi.showUndoToast,
+            showConfirmModal: modalApi.showConfirmModal,
+        });
+
         useCodeErrorToasts({
             activeTab,
             editors: {
@@ -110,6 +125,11 @@ createApp({
             },
             showStickyToast: toastApi.showStickyToast,
             dismissStickyToast: toastApi.dismissStickyToast,
+            fixWithAssistant: {
+                isAvailable: () => aiAccountApi.aiStatus.value.connected,
+                name: () => aiAccountApi.assistantName.value,
+                ask: agentChatApi.askAssistantToFix,
+            },
         });
 
         const tagsApi = useTags({ store, showToast });
@@ -153,6 +173,9 @@ createApp({
             if (loaded) {
                 initFromUrl();
             }
+            if (sessionApi.currentUser.value && !sharingApi.isSharedView) {
+                aiAccountApi.loadAiStatus();
+            }
         });
 
         return {
@@ -169,6 +192,8 @@ createApp({
             ...importExportApi,
             ...sessionApi,
             ...sharingApi,
+            ...aiAccountApi,
+            ...agentChatApi,
             showSignInScreen,
             saveStatusPill,
             signOutOfApp,

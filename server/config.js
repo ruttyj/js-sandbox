@@ -22,6 +22,12 @@ export const loadConfig = (env = process.env) => {
         throw new Error('SESSION_SECRET must be set to at least 32 characters in production.');
     }
 
+    // Production without it leaves the Claude features off; set too short, it's refused.
+    const aiKeySecret = env.AI_KEY_SECRET || '';
+    if (isProduction && aiKeySecret !== '' && aiKeySecret.length < 32) {
+        throw new Error('AI_KEY_SECRET must be at least 32 characters in production.');
+    }
+
     return {
         isProduction,
         port: Number(env.PORT) || 3000,
@@ -43,5 +49,7 @@ export const loadConfig = (env = process.env) => {
         },
         // "Sign in as dev user" without Google. Never available in production.
         devLogin: !isProduction && readBoolean(env.DEV_LOGIN, false),
+        // Encrypts the Anthropic API keys users connect. '' turns the Claude features off.
+        aiKeySecret: aiKeySecret || (isProduction ? '' : 'dev-only-ai-key-secret-change-me'),
     };
 };

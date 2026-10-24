@@ -54,6 +54,11 @@
             <div v-if="currentUser" class="user-menu">
                 <img v-if="currentUser.avatarUrl" class="user-avatar" :src="currentUser.avatarUrl" alt="" referrerpolicy="no-referrer">
                 <span class="user-name" :title="currentUser.email">{{ currentUser.name || currentUser.email }}</span>
+                <button v-if="aiStatus.available && !isSharedView" class="btn claude-btn" :class="{ 'is-connected': aiStatus.connected, 'is-open': isChatOpen }" @click="onAiButtonClick"
+                        :title="aiStatus.connected ? 'Chat with ' + assistantName : 'Connect a Claude or Gemini API key to use the AI chat'">
+                    <span class="status-dot"></span>
+                    AI Chat
+                </button>
                 <button class="btn" @click="signOutOfApp">Sign out</button>
             </div>
         </div>
@@ -100,11 +105,111 @@
         <a class="btn" href="/">Go to my data</a>
     </div>
 
+    <!-- AI chat (Claude or Gemini): a drawer on the right. Proposed changes wait here for Apply / Reject. -->
+    <aside v-if="isChatOpen && !isSharedView" class="chat-drawer" aria-label="AI chat">
+        <header class="chat-header">
+            <div class="chat-heading">
+                <span class="chat-title" :title="chatTitle">{{ chatTitle || assistantName }}</span>
+                <span v-if="chatCostUsd > 0" class="chat-cost" title="Estimated from token usage. Your Anthropic bill is the real figure.">~{{ formatChatCost(chatCostUsd) }}</span>
+            </div>
+            <div class="chat-header-actions">
+                <select class="chat-model" :value="aiStatus.model" :disabled="chatBusy" title="Model" @change="setAiModel($event.target.value)">
+                    <optgroup v-for="group in aiModelGroups" :key="group.provider" :label="group.label">
+                        <option v-for="model in group.models" :key="model.id" :value="model.id" :disabled="!model.available"
+                                :title="model.available ? model.description : 'Connect a ' + group.label + ' key to use this'">{{ model.label }}</option>
+                    </optgroup>
+                </select>
+                <button class="chat-icon-btn" :class="{ active: isChatHistoryOpen }" title="Saved chats" @click="toggleChatHistory">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 3"/></svg>
+                </button>
+                <button class="chat-icon-btn" title="New chat" :disabled="chatBusy" @click="startNewChat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                </button>
+                <button class="chat-icon-btn" title="API keys" @click="openAiModal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3"/><path d="M17 6l3 3"/></svg>
+                </button>
+                <button class="chat-icon-btn" title="Close" @click="closeChat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div v-if="isChatHistoryOpen" class="chat-history">
+            <p v-if="!chatHistory.length" class="chat-empty-note">No saved chats yet.</p>
+            <div v-for="chat in chatHistory" :key="chat.id" class="chat-history-row">
+                <button class="chat-history-open" @click="openSavedChat(chat.id)">
+                    <span class="chat-history-title">{{ chat.title }}</span>
+                    <span class="chat-history-meta">{{ formatChatDate(chat.updatedAt) }} · ~{{ formatChatCost(chat.costUsd) }}</span>
+                </button>
+                <button class="chat-icon-btn" title="Delete this chat" @click="deleteSavedChat(chat)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div v-else ref="chatScrollRef" class="chat-log">
+            <div v-if="!chatEntries.length" class="chat-welcome">
+                <p>Ask about items and prices, or ask {{ assistantName }} to change your scopes and globals. It tests its code first, and nothing changes until you apply it.</p>
+                <button v-for="example in chatExamples" :key="example" class="chat-example" @click="sendChatMessage(example)">{{ example }}</button>
+            </div>
+
+            <template v-for="entry in chatEntries" :key="entry.key">
+                <div v-if="entry.kind === 'user'" class="chat-msg is-user">{{ entry.text }}</div>
+                <div v-else-if="entry.kind === 'assistant'" class="chat-msg is-assistant" v-html="entry.html"></div>
+                <div v-else-if="entry.kind === 'note'" class="chat-note">{{ entry.text }}</div>
+                <details v-else-if="entry.kind === 'tool'" class="chat-tool" :class="'is-' + entry.state">
+                    <summary>
+                        <span class="chat-tool-label">{{ entry.label }}</span>
+                        <span class="chat-tool-detail">{{ chatToolStatusText(entry) }}</span>
+                    </summary>
+                    <pre v-if="entry.raw" class="chat-tool-raw">{{ entry.raw }}</pre>
+                </details>
+                <div v-else-if="entry.kind === 'proposal'" class="chat-proposal" :class="'is-' + entry.state">
+                    <div class="chat-proposal-head">
+                        <strong>{{ entry.isCreate ? 'New scope' : 'Change' }}: {{ entry.title }}</strong>
+                        <span v-if="entry.diff" class="chat-diff-counts">
+                            <span class="is-add">+{{ entry.diff.added }}</span>
+                            <span class="is-remove">-{{ entry.diff.removed }}</span>
+                        </span>
+                    </div>
+                    <p v-if="entry.summary" class="chat-proposal-summary">{{ entry.summary }}</p>
+                    <div v-if="entry.diff" class="chat-diff">
+                        <div v-for="(row, rowIndex) in entry.diff.rows" :key="rowIndex" class="chat-diff-row" :class="'is-' + row.type">
+                            <span class="chat-diff-line">{{ chatDiffLineNumber(row) }}</span>
+                            <span class="chat-diff-sign">{{ chatDiffSign(row) }}</span>
+                            <span class="chat-diff-text">{{ chatDiffText(row) }}</span>
+                        </div>
+                    </div>
+                    <div v-if="entry.state === 'waiting'" class="chat-proposal-actions">
+                        <input v-model="chatRejectReasons[entry.id]" class="field chat-reject-reason" placeholder="Why not? (optional)">
+                        <button class="btn" @click="rejectProposal(entry.id)">Reject</button>
+                        <button class="btn btn-primary" @click="applyProposal(entry.id)">{{ entry.isCreate ? 'Create' : 'Apply' }}</button>
+                    </div>
+                    <p v-else class="chat-proposal-state">{{ chatProposalStateText(entry) }}</p>
+                </div>
+            </template>
+
+            <div v-if="chatBusy" class="chat-working"><span class="status-dot"></span> {{ assistantName }} is working…</div>
+            <div v-if="chatNotice" class="chat-notice" :class="{ 'is-waiting': chatNotice.waiting }">
+                <span>{{ chatNotice.text }}</span>
+                <button v-if="chatNotice.needsKey" class="btn" @click="openAiModal">Connect a key</button>
+            </div>
+        </div>
+
+        <form class="chat-compose" @submit.prevent="sendChatMessage()">
+            <textarea ref="chatInputRef" v-model="chatInput" class="field chat-input" rows="3"
+                      :placeholder="'Ask ' + assistantName + '… (Enter to send, Shift+Enter for a new line)'" @keydown="onChatInputKeydown"></textarea>
+            <button v-if="chatBusy" type="button" class="btn" @click="stopChat">Stop</button>
+            <button v-else type="submit" class="btn btn-primary" :disabled="!chatInput.trim()">Send</button>
+        </form>
+    </aside>
+
     <!-- Toast Container -->
     <div class="toast-container">
         <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type, { sticky: toast.sticky }]">
             <span>{{ toast.message }}</span>
             <button v-if="toast.action" class="toast-action" @click="runToastAction(toast)">{{ toast.action.label }}</button>
+            <button v-if="toast.secondaryAction" class="toast-action" @click="runToastSecondaryAction(toast)">{{ toast.secondaryAction.label }}</button>
             <button v-if="toast.sticky" class="toast-close" title="Close" @click="closeToast(toast)">✕</button>
         </div>
     </div>
@@ -130,6 +235,35 @@
                 <button @click="cancelImport" class="cancel-btn">Cancel</button>
                 <button @click="confirmImport('overwrite')" class="overwrite-btn">Overwrite</button>
                 <button @click="confirmImport('merge')" class="merge-btn">Merge</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI chat keys: connect or disconnect the user's own Claude and Gemini API keys -->
+    <div v-if="isAiModalVisible" class="modal-backdrop" @click.self="closeAiModal">
+        <div class="modal-content claude-modal">
+            <h2>AI chat keys</h2>
+            <p class="claude-modal-note">Connect either or both; the chat's model picker lists the models of each one connected. Keys are stored encrypted on this server and never shown again.</p>
+            <form v-for="provider in aiProviders" :key="provider.id" class="ai-key-section" @submit.prevent="connectAiKey(provider.id)">
+                <div class="ai-key-head">
+                    <strong>{{ provider.label }}</strong>
+                    <span v-if="aiStatus.providers[provider.id]?.connected" class="ai-key-status is-connected">Connected · key ending <code>{{ aiStatus.providers[provider.id].keyHint }}</code></span>
+                    <span v-else class="ai-key-status">Not connected</span>
+                </div>
+                <p class="claude-modal-note">Get a key from
+                    <a :href="provider.keyUrl" target="_blank" rel="noopener noreferrer">{{ provider.keySite }}</a>. {{ provider.note }}</p>
+                <div class="ai-key-row">
+                    <input v-model="aiKeyInputs[provider.id]" type="password" class="field ai-key-input" :placeholder="provider.placeholder"
+                           autocomplete="off" spellcheck="false" :disabled="savingAiProvider === provider.id">
+                    <button type="submit" class="btn btn-primary" :disabled="!aiKeyInputs[provider.id].trim() || savingAiProvider !== null">
+                        {{ aiKeyButtonLabel(provider.id) }}
+                    </button>
+                    <button v-if="aiStatus.providers[provider.id]?.connected" type="button" class="btn" @click="disconnectAiKey(provider.id)">Disconnect</button>
+                </div>
+                <p v-if="aiKeyErrors[provider.id]" class="claude-modal-error">{{ aiKeyErrors[provider.id] }}</p>
+            </form>
+            <div class="modal-actions">
+                <button type="button" class="cancel-btn" @click="closeAiModal">Close</button>
             </div>
         </div>
     </div>
@@ -830,6 +964,10 @@
 <script src="js/components/ScopeUiPanel.js"></script>
 <script src="js/components/TagMultiSelect.js"></script>
 <script src="js/components/ItemRefList.js"></script>
+<script src="js/ai/lineDiff.js"></script>
+<script src="js/ai/chatFormat.js"></script>
+<script src="js/ai/agentTools.js"></script>
+<script src="js/ai/chatClient.js"></script>
 
 <script src="js/composables/useToasts.js"></script>
 <script src="js/composables/useModals.js"></script>
@@ -848,6 +986,8 @@
 <script src="js/composables/useCodeErrorToasts.js"></script>
 <script src="js/composables/useSession.js"></script>
 <script src="js/composables/useSharing.js"></script>
+<script src="js/composables/useAiAccount.js"></script>
+<script src="js/composables/useAgentChat.js"></script>
 
 <script src="js/app.js"></script>
 

@@ -313,6 +313,25 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
 
     const onScopeCodeInput = () => applyScopeCode();
 
+    // Code written for a scope from elsewhere (the Claude chat), saved like an edit in the editor.
+    const replaceScopeCode = (scope, code) => {
+        scope.code = code;
+        syncScopeVariables(scope, parseScopeCode(code));
+        registerVariableTags(scope.variables);
+        saveData();
+    };
+
+    // A new scope with code already in it (from the Claude chat), selected. Returns it.
+    const createScopeWithCode = (name, code) => {
+        const scope = normalizeScope({ id: Date.now(), name, itemTagKeys: [], code });
+        syncScopeVariables(scope, parseScopeCode(code));
+        scopes.value.push(scope);
+        selectedScopeId.value = scope.id;
+        registerVariableTags(scope.variables);
+        saveData();
+        return scopes.value.find(s => s.id === scope.id);
+    };
+
     // Tags typed in code are registered on blur rather than per keystroke, so half-typed
     // tag names don't end up in the tag list.
     const registerVariableTags = (variables) => {
@@ -435,7 +454,7 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
         scopeItemTagKeys, scopeItemTagSections, scopeItems, scopeItemColor, setScopeItemColor, rerollScopeItemColors,
         scopeCode, scopeCodeErrors, scopeCodeEditorRef, scopeValues, impliedScopeCode, visibleGlobalVariables,
         scopeUiPanels, scopeRunError, scopeUiInputs,
-        onScopeCodeInput, onScopeCodeBlur, insertIntoScopeCode, insertSnippetIntoScopeCode, registerVariableTags, isErrorValue,
+        onScopeCodeInput, onScopeCodeBlur, replaceScopeCode, createScopeWithCode, insertIntoScopeCode, insertSnippetIntoScopeCode, registerVariableTags, isErrorValue,
         setGlobalVariableColor, setScopeVariableColor, autoColorScopeVariables,
     };
 };

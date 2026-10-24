@@ -64,6 +64,28 @@ const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
         return scopeResults.get(scope).value;
     };
 
+    /**
+     * Runs code that isn't saved anywhere (a draft from the Claude chat) the way the globals' or a
+     * scope's code runs: a scope draft sees the globals and can import scopes. Nothing is cached.
+     * @param {string} code
+     * @param {{ asGlobals: boolean, scope: Object|null }} options  scope: whose ui inputs it
+     *     reads; null for none.
+     * @returns {RunResult}
+     */
+    const runDraft = (code, { asGlobals, scope }) => {
+        if (asGlobals) {
+            return runScopeCode(code, declaredKeys(code), {
+                items: items.value, itemsByName: itemsByName.value, itemQuerySource,
+                inputs: uiInputsFor(UI_INPUTS_GLOBALS),
+            });
+        }
+        return runScopeCode(code, declaredKeys(code), {
+            items: items.value, itemsByName: itemsByName.value, itemQuerySource,
+            globals: exportedValues(runGlobals()), importScope,
+            inputs: scope ? uiInputsFor(scope.id) : null,
+        });
+    };
+
     // '' for a key the last run didn't declare (e.g. the code changed and has errors).
     const valueOf = (result, key) => (result.values.has(key) ? result.values.get(key) : '');
 
@@ -73,5 +95,5 @@ const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
     const isGlobalPublic = (key) => isExported(globalsResult.value, key);
     const isScopeKeyPublic = (scope, key) => isExported(getScopeResult(scope), key);
 
-    return { globalsResult, getScopeResult, getGlobalValue, getScopeValue, isGlobalPublic, isScopeKeyPublic };
+    return { globalsResult, getScopeResult, getGlobalValue, getScopeValue, isGlobalPublic, isScopeKeyPublic, runDraft };
 };

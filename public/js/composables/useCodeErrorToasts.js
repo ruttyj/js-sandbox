@@ -3,6 +3,8 @@
 // change and goes away once the code is fixed. "Go to line" selects the line the error names.
 // It waits for a pause in the errors changing, so it doesn't flicker on and off while typing.
 // Closing it keeps it away until the code has no errors, or another editor's code is shown.
+// While an AI provider is connected it also offers "Fix with Claude" (or Gemini), which asks the
+// chat to fix it.
 //
 // Uses codeErrorLine from components/FormulaInput.js.
 
@@ -50,13 +52,33 @@ const goToErrorLineAction = (editor, firstError) => {
 };
 
 /**
+ * A "Fix with Claude" (or Gemini) button, or null while no AI provider is connected.
+ * @param {Object} fixWithAssistant  See useCodeErrorToasts.
+ * @param {ErrorToastEditor} editor
+ * @param {string[]} errors
+ * @returns {{ label: string, run: function(): void }|null}
+ */
+const fixWithAssistantAction = (fixWithAssistant, editor, errors) => {
+    if (!fixWithAssistant.isAvailable()) {
+        return null;
+    }
+    return {
+        label: `Fix with ${fixWithAssistant.name()}`,
+        run: () => fixWithAssistant.ask(editor.label(), errors),
+    };
+};
+
+/**
  * @param {Object} options
  * @param {Ref<string>} options.activeTab
  * @param {Object<string, ErrorToastEditor>} options.editors By the tab they're on.
  * @param {function} options.showStickyToast From useToasts.
  * @param {function} options.dismissStickyToast From useToasts.
+ * @param {{ isAvailable: function(): boolean, name: function(): string, ask: function(string, string[]): void }} options.fixWithAssistant
+ *     Whether an AI provider is connected, the assistant's name, and asking it to fix the errors
+ *     (from useAgentChat).
  */
-const useCodeErrorToasts = ({ activeTab, editors, showStickyToast, dismissStickyToast }) => {
+const useCodeErrorToasts = ({ activeTab, editors, showStickyToast, dismissStickyToast, fixWithAssistant }) => {
     let showTimer = null;
     let closedByUser = false;
 
@@ -73,6 +95,7 @@ const useCodeErrorToasts = ({ activeTab, editors, showStickyToast, dismissSticky
     const show = ({ editor, errors }) => {
         showStickyToast(CODE_ERROR_TOAST_KEY, codeErrorToastMessage(editor.label(), errors), {
             action: goToErrorLineAction(editor, errors[0]),
+            secondaryAction: fixWithAssistantAction(fixWithAssistant, editor, errors),
             onClose: () => {
                 closedByUser = true;
             },

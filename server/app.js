@@ -3,8 +3,10 @@
 import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
+import { buildSystemPrompt } from './ai/systemPrompt.js';
 import { createPassport } from './auth/passport.js';
 import { KnexSessionStore } from './auth/KnexSessionStore.js';
+import { createAiController } from './controllers/aiController.js';
 import { createAuthController } from './controllers/authController.js';
 import { createIconController } from './controllers/iconController.js';
 import { createCollectionController, createDocumentController, createStateController } from './controllers/recordControllers.js';
@@ -36,7 +38,7 @@ const contentSecurityPolicy = (config) => ({
     },
 });
 
-const createControllers = (managers, { config, passport }) => ({
+const createControllers = (managers, { config, passport, createAiClients }) => ({
     auth: createAuthController({ config, users: managers.users, passport }),
     state: createStateController(managers),
     scopes: createCollectionController(managers.scopes),
@@ -46,6 +48,7 @@ const createControllers = (managers, { config, passport }) => ({
     settings: createDocumentController(managers.settings),
     shares: createShareController(managers),
     icons: createIconController(managers),
+    ai: createAiController(managers, { systemPrompt: buildSystemPrompt(config.publicDir), createAiClients }),
 });
 
 const createSessionMiddleware = ({ knex, config }) => {
@@ -73,12 +76,16 @@ const createSessionMiddleware = ({ knex, config }) => {
  * @param {import('knex').Knex} options.knex  Already migrated.
  * @param {ReturnType<import('./config.js').loadConfig>} options.config
  * @param {typeof fetch} [options.fetchImpl]  Replaced in tests so icons aren't downloaded.
+ * @param {function(string, string): Promise<void>} [options.verifyApiKey]  Replaced in tests so
+ *     API keys aren't checked with their provider.
+ * @param {{ anthropic?: function, gemini?: function }} [options.createAiClients]  Replaced in
+ *     tests so the chat doesn't call Anthropic or Google.
  * @returns {{ app: import('express').Express, close: function(): void }}
  */
-export const createApp = ({ knex, config, fetchImpl }) => {
-    const managers = createManagers({ knex, config, fetchImpl });
+export const createApp = ({ knex, config, fetchImpl, verifyApiKey, createAiClients }) => {
+    const managers = createManagers({ knex, config, fetchImpl, verifyApiKey });
     const passport = createPassport({ config, users: managers.users });
-    const controllers = createControllers(managers, { config, passport });
+    const controllers = createControllers(managers, { config, passport, createAiClients });
     const sessions = createSessionMiddleware({ knex, config });
 
     const app = express();

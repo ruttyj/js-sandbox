@@ -34,6 +34,8 @@ Data goes in `storage/` (git-ignored).
    - `DOMAIN` and `ACME_EMAIL` (for the Let's Encrypt certificate)
    - `SESSION_SECRET` to a long random string: `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (below)
+   - `AI_KEY_SECRET` to another long random string, so users can connect their own Anthropic API
+     key to use Claude (it encrypts the stored keys). Leave it empty to turn Claude off.
 3. Start the app and Traefik:
 
    ```sh
@@ -79,6 +81,18 @@ tools/              scripts that rebuild public/data/ from the OSRS wiki
 - **Icons.** `/icons/<name>` downloads each item icon from the OSRS wiki once and serves it from
   the data volume afterwards.
 - **Prices.** Still fetched by the browser straight from the OSRS wiki's prices API.
+- **AI chat (Claude and Gemini).** Each user connects their own Anthropic and/or Google Gemini API
+  key (the **AI Chat** button in the header), stored encrypted with `AI_KEY_SECRET`, and picks a
+  model in the chat drawer. The drawer sends the conversation to `/api/ai/chat`, which adds the
+  system prompt and streams the reply back in one shape for both providers
+  (`server/ai/anthropicChat.js`, `server/ai/geminiChat.js`). Conversations can switch provider
+  midway: `server/ai/transcript.js` converts them. Rate limits (common on Gemini's free tier) are
+  waited out and retried automatically. The system prompt
+  is built at start-up from the formula files' header comments and `functions.js`'s docs
+  (`server/ai/systemPrompt.js`), so document new scope functions there. The model's tools (item
+  search, reading and test-running code, proposing edits) run in the browser
+  (`public/js/ai/agentTools.js`; the server declares them in `server/ai/tools.js`). An edit only
+  happens when the user clicks Apply. Chats are saved per user.
 
 ### Database migrations
 

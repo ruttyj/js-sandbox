@@ -45,6 +45,13 @@ const useVariables = ({ store, items, itemTagsApi, evaluation, selectedScope, sc
 
     const onGlobalsCodeInput = () => applyGlobalsCode();
 
+    // Code written for the globals from elsewhere (the Claude chat), saved like an edit in the editor.
+    const replaceGlobalsCode = (code) => {
+        globalsCode.value = code;
+        applyGlobalsCode();
+        scopesApi.registerVariableTags(globalVariables.value);
+    };
+
     // The panels the globals' ui calls made, and the run error (see ScopeUiPanel).
     const globalsUiPanels = computed(() => evaluation.globalsResult.value.ui);
     const globalsRunError = computed(() => evaluation.globalsResult.value.error);
@@ -119,7 +126,7 @@ const useVariables = ({ store, items, itemTagsApi, evaluation, selectedScope, sc
 
     return {
         getVariableValue, getGlobalVariableValue, scopeCodeValueOf, globalsCodeValueOf,
-        globalsCodeErrors, globalValues, onGlobalsCodeInput, onGlobalsCodeBlur,
+        globalsCodeErrors, globalValues, onGlobalsCodeInput, onGlobalsCodeBlur, replaceGlobalsCode,
         globalsCodeEditorRef, insertSnippetIntoGlobalsCode, globalsUiPanels, globalsRunError, globalsUiInputs,
         insertPriceRef, copyToClipboard, itemLookupText, itemLookupResults, itemLookupTotal,
         itemLookupUnknownTags, searchItemTag,
