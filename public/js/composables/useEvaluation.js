@@ -4,7 +4,8 @@
 // Code that returns an object only exposes the returned keys (see runScopeCode): scopes only see
 // the public globals, and the Dashboard only lists public variables.
 // A scope can also read another scope's public values with importScope('Name'); that scope runs
-// (or reuses its cached result) first. Circular imports are an error.
+// (or reuses its cached result) first. Circular imports are an error. A live output (a ref the
+// code returned) is read at import, so the importing scope re-runs when it changes.
 // itemQuerySource: what queryOsrsItems() searches, with item tags (see useItemTags).
 const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
     const { globalsCode, scopes } = store;
@@ -40,7 +41,7 @@ const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
         const result = getScopeResult(target);
         if (result.error) throw new Error(`Scope "${target.name}" has an error: ${result.error}`);
         const values = {};
-        exportedValues(result).forEach((value, key) => { values[key] = copyValue(value); });
+        exportedValues(result).forEach((value, key) => { values[key] = copyValue(resolveRunValue(value)); });
         return Object.freeze(values);
     };
 
@@ -86,8 +87,9 @@ const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
         });
     };
 
-    // '' for a key the last run didn't declare (e.g. the code changed and has errors).
-    const valueOf = (result, key) => (result.values.has(key) ? result.values.get(key) : '');
+    // '' for a key the last run didn't declare (e.g. the code changed and has errors). A live
+    // output is read here, so only what shows it updates when it changes.
+    const valueOf = (result, key) => (result.values.has(key) ? resolveRunValue(result.values.get(key)) : '');
 
     const getGlobalValue = (key) => valueOf(globalsResult.value, key);
     const getScopeValue = (scope, key) => valueOf(getScopeResult(scope), key);

@@ -252,6 +252,21 @@ const EDITOR_SNIPPET_GROUPS = [
                 ].join('\n'),
                 select: 'Magic logs',
             },
+            {
+                label: 'Live panels (refs)',
+                code: [
+                    "const item = getOsrsItem('Magic logs');",
+                    "const qty = ui.input.numberRef('Quantity', { default: 1000, min: 1, integer: true });",
+                    'const cost = ui.computed(() => qty.value * item.lowPrice);',
+                    '',
+                    '// Only this panel redraws when Quantity changes; the code doesn\'t re-run.',
+                    'ui.stats(() => ({ Quantity: qty.value, Cost: cost.value }), {',
+                    "    title: () => `Buying ${qty.value}`,",
+                    "    types: { Cost: 'price' },",
+                    '});',
+                ].join('\n'),
+                select: 'Magic logs',
+            },
         ],
     },
     {

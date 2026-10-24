@@ -1,4 +1,5 @@
-// Pure code evaluation, independent of Vue.
+// Code evaluation, independent of Vue's components. It only uses Vue's refs, for the live ui
+// panels and live outputs a run can make (see uiLibrary.js and resolveRunValue).
 //
 // A block of code (the globals' or a scope's) runs as one JavaScript program, top to bottom, so
 // loops, counters and reassignment (let x = 1; x = 2;) work, and a name must be declared before
@@ -18,6 +19,7 @@
 // is what it holds when the program finishes. RS shorthand like "10k" is expanded first.
 //
 // Uses globals from scripts loaded before it:
+//   vue-globals.js         isRef
 //   utils/format.js        convertRunescapeNumbers
 //   formula/sourceScan.js  scanLiteralOrComment, matchParen
 //   formula/functions.js   FORMULA_FUNCTIONS, isFormulaFunction
@@ -55,7 +57,8 @@ const FormulaEngine = (() => {
      * The result of runScopeCode.
      * @typedef {Object} RunResult
      * @property {Map<string, *>} values Each key's final value; an "#ERROR: ..." string for keys
-     *     the run never reached.
+     *     the run never reached. A value can be a ref (a live output); read values through
+     *     resolveRunValue.
      * @property {string|null} error The run's error message, or null if it finished.
      * @property {Set<string>|null} exports The keys of a top-level `return { ... }`, or null when
      *     there was none (every declaration is then public).
@@ -271,11 +274,17 @@ const FormulaEngine = (() => {
      * An error thrown by the code, as a message: "Line 3: x is not defined", or just the message
      * when the line is unknown.
      * @param {*} error Anything the code threw, not only an Error.
+     * @param {Error|null} [callSite] Where to take the line from when error has none: a live ui
+     *     panel's call (see createLivePanel in uiLibrary.js), whose builder errors aren't thrown
+     *     from the code.
      * @returns {string}
      */
-    const formatRunError = (error) => {
+    const formatRunError = (error, callSite = null) => {
         const message = error instanceof Error ? error.message : String(error);
-        const line = errorLine(error);
+        let line = errorLine(error);
+        if (!line && callSite) {
+            line = errorLine(callSite);
+        }
         if (!line) {
             return message;
         }
@@ -404,7 +413,7 @@ const FormulaEngine = (() => {
         }
 
         if (env.globals.has(name)) {
-            return env.globals.get(name);
+            return resolveRunValue(env.globals.get(name));
         }
         if (name === ITEM_LOOKUP_FN) {
             return env.getOsrsItem;
@@ -496,6 +505,25 @@ const FormulaEngine = (() => {
         return parseFloat(result.toFixed(2));
     };
 
+    /**
+     * A value from RunResult.values as the page and other code see it. A ref (a live output, e.g.
+     * a ui.computed the code returned) reads as its current value, so whatever reads it follows
+     * its changes without the code re-running.
+     * @param {*} value
+     * @returns {*} The value, rounded for a ref; an "#ERROR: ..." string if reading the ref threw.
+     */
+    const resolveRunValue = (value) => {
+        if (!isRef(value)) {
+            return value;
+        }
+
+        try {
+            return roundResult(value.value);
+        } catch (e) {
+            return `#ERROR: ${formatRunError(e)}`;
+        }
+    };
+
 
     // --- Running a program ------------------------------------------------------------------------
 
@@ -504,16 +532,19 @@ const FormulaEngine = (() => {
      * @typedef {Object} Runtime
      * @property {Object<string, function(): *>} read Each key's reader, returning its current
      *     value. Filled in by the program itself (see buildProgram).
-     * @property {function(): true} tick The loop guard: throws once the run has taken longer than
-     *     LOOP_TIME_LIMIT_MS.
+     * @property {function(): true} tick The loop guard: throws once the guarded call has taken
+     *     longer than LOOP_TIME_LIMIT_MS.
+     * @property {function(function(): *): *} guarded Calls a function of the code's under the
+     *     loop guard: the run itself, and later a live ui panel's functions (see uiLibrary.js).
      */
 
     /**
-     * Creates the runtime for one run; its time limit starts now.
+     * Creates the runtime for one run.
      * @returns {Runtime}
      */
     const createRuntime = () => {
-        const deadline = performance.now() + LOOP_TIME_LIMIT_MS;
+        let deadline = 0;
+        let depth = 0;
         let ticks = 0;
 
         const tick = () => {
@@ -529,9 +560,26 @@ const FormulaEngine = (() => {
             return true;
         };
 
+        // The time limit starts with the outermost guarded call. A live panel built after the run
+        // gets its own full limit, but a ui.computed read during the run (or a panel) counts
+        // against the call already going, so re-reading one in a loop can't keep the clock young.
+        const guarded = (fn) => {
+            if (depth === 0) {
+                deadline = performance.now() + LOOP_TIME_LIMIT_MS;
+            }
+
+            depth++;
+            try {
+                return fn();
+            } finally {
+                depth--;
+            }
+        };
+
         return {
             read: {},
             tick,
+            guarded,
         };
     };
 
@@ -567,7 +615,7 @@ const FormulaEngine = (() => {
     const executeProgram = (program, scope, runtime) => {
         try {
             const run = new Function('__scope', '__ge', program);
-            const returned = run(scope, runtime);
+            const returned = runtime.guarded(() => run(scope, runtime));
             return { returned, error: null };
         } catch (e) {
             return { returned: undefined, error: formatRunError(e) };
@@ -639,9 +687,10 @@ const FormulaEngine = (() => {
         const getOsrsItem = createItemLookup(items, itemsByName, querySource);
 
         // A fresh ui object per run, so each run (an imported scope's included) shows only its own panels.
-        const ui = createUiLibrary({ itemsById: items, itemsByName, inputs, getOsrsItem });
-        const scope = createScopeProxy({ items, itemsByName, globals, importScope }, querySource, getOsrsItem, ui.api);
         const runtime = createRuntime();
+        const guard = { run: runtime.guarded, formatError: formatRunError };
+        const ui = createUiLibrary({ itemsById: items, itemsByName, inputs, getOsrsItem, guard });
+        const scope = createScopeProxy({ items, itemsByName, globals, importScope }, querySource, getOsrsItem, ui.api);
         const { returned, error } = executeProgram(buildProgram(code, keys), scope, runtime);
 
         const values = readDeclaredValues(keys, runtime.read, error);
@@ -711,6 +760,7 @@ const FormulaEngine = (() => {
         exportedValues,
         returnedOnlyKeys,
         isErrorValue,
+        resolveRunValue,
 
         // A name the code's environment supplies (scopeCode.js treats it as known)
         SCOPE_IMPORT_FN,
@@ -725,5 +775,6 @@ const {
     exportedValues,
     returnedOnlyKeys,
     isErrorValue,
+    resolveRunValue,
     SCOPE_IMPORT_FN,
 } = FormulaEngine;

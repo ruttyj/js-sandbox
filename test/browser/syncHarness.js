@@ -14,12 +14,20 @@ const scriptPaths = () => {
 };
 
 // Enough of Vue for the store: refs are plain boxes and watchers never fire, so tests call
-// saveData() themselves after each edit, as the app's code does.
+// saveData() themselves after each edit, as the app's code does. Computeds recompute on every read
+// and count as refs (isRef), as the ui library's live panels and Ref inputs need.
 const vueStub = () => ({
     createApp: () => ({ mount: () => {} }),
     ref: (value) => ({ value }),
     reactive: (object) => object,
-    computed: (getter) => ({ get value() { return getter(); } }),
+    computed: (getterOrOptions) => {
+        const get = typeof getterOrOptions === 'function' ? getterOrOptions : getterOrOptions.get;
+        const set = typeof getterOrOptions === 'function' ? () => {} : getterOrOptions.set;
+        return { __v_isRef: true, get value() { return get(); }, set value(next) { set(next); } };
+    },
+    isRef: (value) => Boolean(value && value.__v_isRef),
+    unref: (value) => (value && value.__v_isRef ? value.value : value),
+    markRaw: (object) => object,
     watch: () => {},
     onMounted: () => {},
     onBeforeUnmount: () => {},

@@ -12,7 +12,8 @@
 // Uses globals from scripts loaded before it:
 //   formula/itemQuery.js   createItemQuery
 //   formula/scopeCode.js   parseScopeCode
-//   formula/engine.js      exportedValues
+//   formula/uiLibrary.js   currentUiPanel
+//   formula/engine.js      exportedValues, resolveRunValue
 //   ai/lineDiff.js         diffLines, collapseDiffContext, countDiffChanges
 
 // --- Limits -------------------------------------------------------------------------------------
@@ -65,11 +66,11 @@ const summarizeAgentValue = (value) => {
     return `${json.slice(0, AGENT_MAX_VALUE_CHARS)}... [cut short: ${json.length} characters in all]`;
 };
 
-// A run's values (a Map) as an object of summarized values.
+// A run's values (a Map) as an object of summarized values. A live output reads as its current value.
 const summarizeAgentValues = (values) => {
     const summary = {};
     for (const [key, value] of values) {
-        summary[key] = summarizeAgentValue(value);
+        summary[key] = summarizeAgentValue(resolveRunValue(value));
     }
     return summary;
 };
@@ -79,8 +80,13 @@ const numberAgentCodeLines = (code) => {
     return code.split('\n').map((line, index) => `${String(index + 1).padStart(4)}| ${line}`).join('\n');
 };
 
-// What a ui panel shows, briefly: enough for the model to tell whether the code drew what it meant to.
-const summarizeAgentPanel = (panel) => {
+// What a ui panel shows, briefly: enough for the model to tell whether the code drew what it meant
+// to. A live panel is built (as it would be drawn) and summarized as what it shows now.
+const summarizeAgentPanel = (uiPanel) => {
+    const panel = currentUiPanel(uiPanel);
+    if (panel.kind === 'error') {
+        return { kind: 'error', message: panel.message };
+    }
     if (panel.kind === 'heading' || panel.kind === 'text') {
         return { kind: panel.kind, text: panel.text };
     }

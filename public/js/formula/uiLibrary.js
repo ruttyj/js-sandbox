@@ -36,9 +36,25 @@
 // A value that breaks a rule isn't returned: the code gets the default and the field shows why.
 // A default that breaks its own rules is an error in the code. Typed values last for the session.
 //
+// Live panels: each input also has a Ref version (numberRef, priceRef, itemRef, selectRef,
+// checkboxRef; same arguments) that returns a read-only Vue ref, read with .value. Pass a ui
+// call a function (as its data or any top-level option) or a ref, and its panel is live: it's
+// built when drawn, and a change to a ref it reads rebuilds only that panel, without re-running
+// the code. Reading .value anywhere else (at the top level, in a column's value function) re-runs
+// the code, as plain inputs do. ui.computed shares a worked-out value between live panels:
+//   const qty  = ui.input.numberRef('Quantity', { default: 1000, min: 1 });
+//   const cost = ui.computed(() => qty.value * item.lowPrice);
+//   ui.stats(() => ({ Cost: cost.value, Each: item.lowPrice }));
+//   ui.table(rows, { title: () => `Buying ${qty.value}`, columns: () => [...] });
+//   ui.stats({ Quantity: qty });          a ref one or two levels into the data is read the same way
+// Input options (default, min, choices...) can't be functions. Functions that already mean
+// something (a column's value, search.text, validate) are unchanged. Returning a ref from the code
+// (return { cost }) makes a live output: the Values panel and importing code read its current value.
+//
 // Each call adds a panel, in call order. A panel is plain data (numbers, strings and { id, name }
 // item refs): column value functions run here, inside the run, so drawing or sorting a panel
-// never runs user code again, and the loop guard and error line numbers cover them.
+// never runs user code again, and the loop guard and error line numbers cover them. A live panel
+// runs its functions when it's (re)built instead, under the same loop guard and error lines.
 //
 // Panel shapes (UiPanel):
 //   { kind: 'heading' | 'text', text }
@@ -53,6 +69,8 @@
 //       default; error: the broken rule's message, or null.
 //       number / price add min, max, step and choices ([{ label, value }] or null); item adds
 //       choices ([ItemRef] or null for any item); select adds choices ([{ label, value }]).
+//   A live panel: { kind, key (inputs only), live }, where live is a Vue computed holding one of
+//   the shapes above, or { kind: 'error', message } when building it threw (see currentUiPanel).
 // ItemRef: { id, name }; id is null for items looked up before the item list loaded.
 // UiColumn: { label, type, align, decimals }. type is never 'auto' here; see resolveAutoType.
 // UiSearch: { placeholder, texts: [string] }, texts holding each row's searched text, lowercase.
@@ -60,10 +78,11 @@
 // array of ItemRefs (items), or a boolean.
 //
 // Uses globals from scripts loaded before it:
+//   vue-globals.js         computed, isRef, unref, markRaw
 //   formula/itemRefs.js    findItem
 //
 // Sections: limits and types -> checking arguments -> items -> cells -> table search -> tables
-// -> other panels -> inputs -> public API.
+// -> other panels -> inputs -> live panels -> public API.
 //
 // Everything is private to the UiLibrary closure except the names in its returned object (see
 // "Public API" at the bottom), which are also exposed as globals for the other scripts.
@@ -464,15 +483,15 @@ const UiLibrary = (() => {
         };
     };
 
-    // One column's raw value for a row.
+    // One column's raw value for a row. A ref reads as its value.
     const readColumnValue = (column, row, rowIndex) => {
         if (column.value) {
-            return column.value(row, rowIndex);
+            return unref(column.value(row, rowIndex));
         }
         if (row === null || row === undefined) {
             return undefined;
         }
-        return row[column.key];
+        return unref(row[column.key]);
     };
 
     const defaultAlign = (type) => (NUMERIC_TYPES.has(type) ? 'right' : 'left');
@@ -530,7 +549,7 @@ const UiLibrary = (() => {
             throw uiError('table', 'columns must be an array');
         }
 
-        const keptRows = rows.slice(0, MAX_TABLE_ROWS);
+        const keptRows = rows.slice(0, MAX_TABLE_ROWS).map(row => unref(row));
         const columnSpecs = options.columns || (rows.length ? inferColumns(rows[0]) : []);
         const columns = columnSpecs.map(normalizeColumn);
         const rawByColumn = readRawValues(columns, keptRows);
@@ -579,7 +598,8 @@ const UiLibrary = (() => {
 
         // Empty entries are skipped, e.g. a query's first() that found nothing.
         const items = [];
-        for (const entry of list) {
+        for (const listed of list) {
+            const entry = unref(listed);
             if (entry !== null && entry !== undefined) {
                 items.push(resolveItem(ctx, 'items', entry));
             }
@@ -594,13 +614,14 @@ const UiLibrary = (() => {
     };
 
     // stats({ Profit, Margin }) or stats([{ label, value, type }]) -> [{ label, value, type }].
+    // A ref value reads as its value.
     const statSpecs = (values, options) => {
         if (Array.isArray(values)) {
             return values.map((entry, index) => {
                 if (!isPlainObject(entry)) {
                     throw uiError('stats', `entry ${index + 1} must be an object like { label, value, type }`);
                 }
-                return { label: valueToText(entry.label), value: entry.value, type: entry.type };
+                return { label: valueToText(entry.label), value: unref(entry.value), type: entry.type };
             });
         }
         if (!isPlainObject(values)) {
@@ -611,7 +632,7 @@ const UiLibrary = (() => {
         if (!isPlainObject(types)) {
             throw uiError('stats', 'types must be an object like { Margin: "percent" }');
         }
-        return Object.keys(values).map(label => ({ label, value: values[label], type: types[label] }));
+        return Object.keys(values).map(label => ({ label, value: unref(values[label]), type: types[label] }));
     };
 
     const buildStats = (ctx, values, options) => {
@@ -629,6 +650,10 @@ const UiLibrary = (() => {
     // rules, otherwise the default. Entered values live in ctx.inputs (see useUiInputs.js); reading
     // them here, inside the run, is what makes changing one re-run the code. Rules are checked here
     // too, so a validate function runs inside the run like the code's other functions.
+    //
+    // Each prepare*Input checks the call (its options and default) and returns the field's
+    // resolver: () => { panel, value }. A plain input resolves once, during the run; a Ref input
+    // resolves inside a computed, so only what reads it follows a change (see addInputRef).
 
     // ctx.inputs for a run that has none: every field reads its default.
     const NO_INPUTS = Object.freeze({ has: () => false, get: () => undefined });
@@ -816,32 +841,34 @@ const UiLibrary = (() => {
 
     // ui.input.number / ui.input.price: a number box (a dropdown with choices) that takes RS
     // shorthand like 1.5m.
-    const buildNumberInput = (ctx, inputType, field, options) => {
+    const prepareNumberInput = (ctx, inputType, field, options) => {
         const method = `input.${inputType}`;
         const rules = readNumberRules(method, options);
         const defaultValue = readNumberDefault(method, options, rules);
         checkDefault(method, ruleNumberText(defaultValue), numberRuleError(method, rules, defaultValue));
-
-        const resolved = resolveInputValue(ctx.inputs, field.key, defaultValue, (entered) => {
-            return numberRuleError(method, rules, entered);
-        });
 
         let choices = null;
         if (rules.choices) {
             choices = rules.choices.map(value => ({ label: ruleNumberText(value), value }));
         }
 
-        const panel = {
-            kind: 'input',
-            input: inputType,
-            ...field,
-            ...resolved,
-            min: rules.min,
-            max: rules.max,
-            step: rules.step,
-            choices,
+        return () => {
+            const resolved = resolveInputValue(ctx.inputs, field.key, defaultValue, (entered) => {
+                return numberRuleError(method, rules, entered);
+            });
+
+            const panel = {
+                kind: 'input',
+                input: inputType,
+                ...field,
+                ...resolved,
+                min: rules.min,
+                max: rules.max,
+                step: rules.step,
+                choices,
+            };
+            return { panel, value: resolved.value };
         };
-        return { panel, value: resolved.value };
     };
 
     // Whether two ItemRefs are the same item. Stand-ins (id null, before the item list loads) only
@@ -902,38 +929,40 @@ const UiLibrary = (() => {
 
     // ui.input.item: an item picker. The field stores the chosen item's ID; the code gets the item
     // as getOsrsItem returns it.
-    const buildItemInput = (ctx, field, options) => {
+    const prepareItemInput = (ctx, field, options) => {
         const method = 'input.item';
         const choices = readItemChoices(ctx, method, options.choices);
         const validate = readValidate(method, options);
         const defaultRef = readItemDefault(ctx, method, options, choices);
         checkDefault(method, JSON.stringify(defaultRef.name), itemRuleError(ctx, method, choices, validate, defaultRef));
 
-        let enteredRef = null;
-        const resolved = resolveInputValue(ctx.inputs, field.key, defaultRef, (enteredId) => {
-            enteredRef = enteredItemRef(ctx, enteredId);
-            if (!enteredRef) {
-                return 'Unknown item';
+        return () => {
+            let enteredRef = null;
+            const resolved = resolveInputValue(ctx.inputs, field.key, defaultRef, (enteredId) => {
+                enteredRef = enteredItemRef(ctx, enteredId);
+                if (!enteredRef) {
+                    return 'Unknown item';
+                }
+                return itemRuleError(ctx, method, choices, validate, enteredRef);
+            });
+
+            // resolved.value is the entered ID when it's used; the panel and the code want the item.
+            let valueRef = defaultRef;
+            if (resolved.edited && !resolved.error) {
+                valueRef = enteredRef;
             }
-            return itemRuleError(ctx, method, choices, validate, enteredRef);
-        });
 
-        // resolved.value is the entered ID when it's used; the panel and the code want the item.
-        let valueRef = defaultRef;
-        if (resolved.edited && !resolved.error) {
-            valueRef = enteredRef;
-        }
-
-        const panel = {
-            kind: 'input',
-            input: 'item',
-            ...field,
-            ...resolved,
-            value: valueRef,
-            entered: enteredRef,
-            choices,
+            const panel = {
+                kind: 'input',
+                input: 'item',
+                ...field,
+                ...resolved,
+                value: valueRef,
+                entered: enteredRef,
+                choices,
+            };
+            return { panel, value: codeItemOf(ctx, valueRef) };
         };
-        return { panel, value: codeItemOf(ctx, valueRef) };
     };
 
     // A select choice as { label, value }: 'Fast' and 2 are their own label.
@@ -956,7 +985,7 @@ const UiLibrary = (() => {
     };
 
     // ui.input.select: a dropdown of fixed choices, returning the chosen one's value.
-    const buildSelectInput = (ctx, field, choiceList, options) => {
+    const prepareSelectInput = (ctx, field, choiceList, options) => {
         const method = 'input.select';
         if (!Array.isArray(choiceList) || !choiceList.length) {
             throw uiError(method, "choices must be a non-empty list like ['Fast', 'Slow']");
@@ -973,16 +1002,18 @@ const UiLibrary = (() => {
             throw uiError(method, `default ${JSON.stringify(defaultValue)} isn't one of the choices`);
         }
 
-        const resolved = resolveInputValue(ctx.inputs, field.key, defaultValue, (entered) => {
-            return isChoice(entered) ? null : 'No longer one of the choices';
-        });
+        return () => {
+            const resolved = resolveInputValue(ctx.inputs, field.key, defaultValue, (entered) => {
+                return isChoice(entered) ? null : 'No longer one of the choices';
+            });
 
-        const panel = { kind: 'input', input: 'select', ...field, ...resolved, choices };
-        return { panel, value: resolved.value };
+            const panel = { kind: 'input', input: 'select', ...field, ...resolved, choices };
+            return { panel, value: resolved.value };
+        };
     };
 
     // ui.input.checkbox: a true / false toggle.
-    const buildCheckboxInput = (ctx, field, options) => {
+    const prepareCheckboxInput = (ctx, field, options) => {
         const method = 'input.checkbox';
         let defaultValue = false;
         if (options.default !== undefined) {
@@ -992,12 +1023,132 @@ const UiLibrary = (() => {
             throw uiError(method, 'default must be true or false');
         }
 
-        const resolved = resolveInputValue(ctx.inputs, field.key, defaultValue, (entered) => {
-            return typeof entered === 'boolean' ? null : 'Not true or false';
-        });
+        return () => {
+            const resolved = resolveInputValue(ctx.inputs, field.key, defaultValue, (entered) => {
+                return typeof entered === 'boolean' ? null : 'Not true or false';
+            });
 
-        const panel = { kind: 'input', input: 'checkbox', ...field, ...resolved };
-        return { panel, value: resolved.value };
+            const panel = { kind: 'input', input: 'checkbox', ...field, ...resolved };
+            return { panel, value: resolved.value };
+        };
+    };
+
+
+    // --- Live panels ------------------------------------------------------------------------------
+    // A live panel is built inside its own Vue computed when it's drawn, not during the run, so the
+    // refs its functions read rebuild only it (see the header). Its user code runs through
+    // ctx.guard, the engine's loop guard and error lines, since the run has finished by then.
+
+    // How deep into a ui call's data a ref makes the panel live: stats({ Qty: ref }) is one level,
+    // table([{ price: ref }]) and stats([{ value: ref }]) are two. Deeper refs are still read, but
+    // during the run, so they re-run the code.
+    const LIVE_DATA_DEPTH = 2;
+
+    const isLiveArgument = (value) => typeof value === 'function' || isRef(value);
+
+    // Whether value is a ref, or holds one within depth levels of arrays and plain objects.
+    const holdsRef = (value, depth) => {
+        if (isRef(value)) {
+            return true;
+        }
+        if (depth === 0) {
+            return false;
+        }
+
+        let members = null;
+        if (Array.isArray(value)) {
+            members = value;
+        } else if (isPlainObject(value)) {
+            members = Object.values(value);
+        }
+        if (!members) {
+            return false;
+        }
+        return members.some(member => holdsRef(member, depth - 1));
+    };
+
+    // Whether a ui call makes a live panel: its data is a function or holds a ref, or its options
+    // (or one of their top-level fields) are a function or a ref.
+    const isLiveCall = (data, options) => {
+        if (typeof data === 'function' || holdsRef(data, LIVE_DATA_DEPTH)) {
+            return true;
+        }
+        if (isLiveArgument(options)) {
+            return true;
+        }
+        if (!isPlainObject(options)) {
+            return false;
+        }
+        return Object.values(options).some(isLiveArgument);
+    };
+
+    // A live argument's current value: a function's result, a ref's value, anything else as it is.
+    const readLiveArgument = (value) => {
+        if (typeof value === 'function') {
+            return value();
+        }
+        return unref(value);
+    };
+
+    // The options with each top-level field's current value. An options function gives the whole
+    // object. Anything that isn't an object is returned for readOptions to report.
+    const readLiveOptions = (options) => {
+        const current = readLiveArgument(options);
+        if (!isPlainObject(current)) {
+            return current;
+        }
+
+        const read = {};
+        for (const name of Object.keys(current)) {
+            read[name] = readLiveArgument(current[name]);
+        }
+        return read;
+    };
+
+    /**
+     * A live panel (see the header's panel shapes). markRaw, so Vue never wraps it in a reactive
+     * proxy, which would unwrap `live` into its value.
+     * @param {Object} ctx
+     * @param {string} kind The kind of panel it builds.
+     * @param {function(): UiPanel} build
+     * @param {Object} [fields] More fields for the wrapper, e.g. an input's key.
+     */
+    const createLivePanel = (ctx, kind, build, fields = {}) => {
+        // Made now, while the code's ui call is on the stack: a UiError thrown later only has the
+        // builder's frames, so its message takes the call's line from here.
+        const callSite = new Error();
+
+        const live = computed(() => {
+            try {
+                return ctx.guard.run(build);
+            } catch (e) {
+                return { kind: 'error', message: ctx.guard.formatError(e, callSite) };
+            }
+        });
+        return markRaw({ kind, ...fields, live });
+    };
+
+    // A read-only ref of get (a Vue computed). Assigning to it throws: a field's value is set by
+    // the person using the form, and nothing else in the code runs later to set it.
+    const createReadonlyRef = (method, get) => {
+        return computed({
+            get,
+            set: () => {
+                throw uiError(method, 'the value is read-only');
+            },
+        });
+    };
+
+    /**
+     * The panel to draw for a UiPanel: a live panel's current build, any other panel as it is.
+     * @param {UiPanel} panel
+     * @returns {UiPanel}
+     */
+    const currentUiPanel = (panel) => {
+        if (panel.live) {
+            return panel.live.value;
+        }
+        return panel;
     };
 
 
@@ -1011,6 +1162,9 @@ const UiLibrary = (() => {
      * @param {Object|null} context.inputs The values typed into this code's fields (uiInputsFor),
      *     or null for none.
      * @param {function(string|number): Object} context.getOsrsItem The run's item lookup.
+     * @param {{ run: function(function(): *): *, formatError: function(*, Error): string }} context.guard
+     *     The engine's: run calls a function under the loop guard; formatError gives an error's
+     *     message with its line, taking the line from the Error passed when the error has none.
      * @returns {{ api: Object, panels: UiPanel[] }}
      */
     const createUiLibrary = (context) => {
@@ -1018,76 +1172,119 @@ const UiLibrary = (() => {
         const panels = [];
         const usedInputKeys = new Set();
 
-        // Builds a panel and adds it. A UiError is thrown again from here: the engine finds the
-        // code's line in the error's stack, and stacks only keep the innermost 10 calls, so an
-        // error made deep in a builder can lose the line of the ui call. Errors from the code's
-        // own value functions pass through unchanged, since they point at the code already.
-        const addPanel = (method, build) => {
+        const checkPanelCount = (method) => {
             if (panels.length >= MAX_PANELS) {
                 throw uiError(method, `a run can show at most ${MAX_PANELS} panels`);
             }
+        };
 
-            let panel;
+        // Runs a builder. A UiError is thrown again from here: the engine finds the code's line
+        // in the error's stack, and stacks only keep the innermost 10 calls, so an error made deep
+        // in a builder can lose the line of the ui call. Errors from the code's own value
+        // functions pass through unchanged, since they point at the code already.
+        const rethrowUiErrors = (build) => {
             try {
-                panel = build();
+                return build();
             } catch (e) {
                 if (e instanceof UiError) {
                     throw new UiError(e.message);
                 }
                 throw e;
             }
-            panels.push(panel);
         };
 
-        // Adds an input's panel and returns the field's value. build(field, options) gives
-        // { panel, value }, as the input builders do.
-        const addInput = (inputType, label, options, build) => {
-            const method = `input.${inputType}`;
-            let value;
-            addPanel(method, () => {
+        // Adds a ui call's panel: built now, or live when the call asks for it (isLiveCall).
+        // build(data, options) gets the call's arguments, with a live call's ones read.
+        const addPanel = (kind, data, options, build) => {
+            checkPanelCount(kind);
+
+            if (isLiveCall(data, options)) {
+                const buildCurrent = () => build(readLiveArgument(data), readLiveOptions(options));
+                panels.push(createLivePanel(ctx, kind, buildCurrent));
+                return;
+            }
+            panels.push(rethrowUiErrors(() => build(data, options)));
+        };
+
+        // Reads an input call's label and options and checks its rules. prepare(field, options)
+        // is one of the prepare*Input functions.
+        const prepareInput = (method, label, options, prepare) => {
+            return rethrowUiErrors(() => {
                 const readOpts = readOptions(method, options);
                 const field = readInputKey(method, label, readOpts, usedInputKeys);
-                const built = build(field, readOpts);
-                value = built.value;
-                return built.panel;
+                return { field, resolve: prepare(field, readOpts) };
             });
+        };
+
+        // Adds an input's panel and returns the field's value.
+        const addInput = (inputType, label, options, prepare) => {
+            const method = `input.${inputType}`;
+            checkPanelCount(method);
+
+            const { resolve } = prepareInput(method, label, options, prepare);
+            const { panel, value } = rethrowUiErrors(resolve);
+            panels.push(panel);
             return value;
         };
 
-        const input = Object.freeze({
-            number: (label, options) => {
-                return addInput('number', label, options, (field, opts) => buildNumberInput(ctx, 'number', field, opts));
-            },
-            price: (label, options) => {
-                return addInput('price', label, options, (field, opts) => buildNumberInput(ctx, 'price', field, opts));
-            },
-            item: (label, options) => {
-                return addInput('item', label, options, (field, opts) => buildItemInput(ctx, field, opts));
-            },
-            select: (label, choices, options) => {
-                return addInput('select', label, options, (field, opts) => buildSelectInput(ctx, field, choices, opts));
-            },
-            checkbox: (label, options) => {
-                return addInput('checkbox', label, options, (field, opts) => buildCheckboxInput(ctx, field, opts));
-            },
-        });
+        // Adds an input's live panel and returns a read-only ref of the field's value. The panel
+        // and the ref share one computed, so a change resolves the field (and runs its validate)
+        // once. Reading the ref during the run makes the run depend on the field, as addInput does.
+        const addInputRef = (inputType, label, options, prepare) => {
+            const method = `input.${inputType}Ref`;
+            checkPanelCount(method);
+
+            const { field, resolve } = prepareInput(method, label, options, prepare);
+            const state = computed(() => ctx.guard.run(resolve));
+            panels.push(createLivePanel(ctx, 'input', () => state.value.panel, { key: field.key }));
+            return createReadonlyRef(method, () => state.value.value);
+        };
+
+        // The input methods: number(label, options) and numberRef(label, options), and so on.
+        const prepareByType = {
+            number: (field, opts) => prepareNumberInput(ctx, 'number', field, opts),
+            price: (field, opts) => prepareNumberInput(ctx, 'price', field, opts),
+            item: (field, opts) => prepareItemInput(ctx, field, opts),
+            checkbox: (field, opts) => prepareCheckboxInput(ctx, field, opts),
+        };
+        const inputMethods = {};
+        for (const [inputType, prepare] of Object.entries(prepareByType)) {
+            inputMethods[inputType] = (label, options) => addInput(inputType, label, options, prepare);
+            inputMethods[`${inputType}Ref`] = (label, options) => addInputRef(inputType, label, options, prepare);
+        }
+
+        // A select also takes its choices.
+        const prepareSelect = (choices) => {
+            return (field, opts) => prepareSelectInput(ctx, field, choices, opts);
+        };
+        inputMethods.select = (label, choices, options) => addInput('select', label, options, prepareSelect(choices));
+        inputMethods.selectRef = (label, choices, options) => addInputRef('select', label, options, prepareSelect(choices));
+
+        const input = Object.freeze(inputMethods);
 
         const api = Object.freeze({
             input,
             heading: (text) => {
-                addPanel('heading', () => ({ kind: 'heading', text: valueToText(text) }));
+                addPanel('heading', text, undefined, (textNow) => ({ kind: 'heading', text: valueToText(textNow) }));
             },
             text: (text) => {
-                addPanel('text', () => ({ kind: 'text', text: valueToText(text) }));
+                addPanel('text', text, undefined, (textNow) => ({ kind: 'text', text: valueToText(textNow) }));
             },
             items: (list, options) => {
-                addPanel('items', () => buildItemStrip(ctx, list, readOptions('items', options)));
+                addPanel('items', list, options, (listNow, opts) => buildItemStrip(ctx, listNow, readOptions('items', opts)));
             },
             table: (rows, options) => {
-                addPanel('table', () => buildTable(ctx, rows, readOptions('table', options)));
+                addPanel('table', rows, options, (rowsNow, opts) => buildTable(ctx, rowsNow, readOptions('table', opts)));
             },
             stats: (values, options) => {
-                addPanel('stats', () => buildStats(ctx, values, readOptions('stats', options)));
+                addPanel('stats', values, options, (valuesNow, opts) => buildStats(ctx, valuesNow, readOptions('stats', opts)));
+            },
+            // A read-only ref of what getter returns, worked out again when a ref it reads changes.
+            computed: (getter) => {
+                if (typeof getter !== 'function') {
+                    throw uiError('computed', 'expected a function like () => qty.value * price');
+                }
+                return createReadonlyRef('computed', () => ctx.guard.run(getter));
             },
         });
 
@@ -1097,6 +1294,7 @@ const UiLibrary = (() => {
     return Object.freeze({
         UI_LIBRARY_FN,
         createUiLibrary,
+        currentUiPanel,
     });
 })();
 
@@ -1105,4 +1303,5 @@ const UiLibrary = (() => {
 const {
     UI_LIBRARY_FN,
     createUiLibrary,
+    currentUiPanel,
 } = UiLibrary;

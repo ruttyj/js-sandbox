@@ -2,15 +2,19 @@
 // uiLibrary.js for the panel shapes). Hovering an item (a tile, an item cell or an item stat)
 // shows the same FormulaTooltip card as the code editors.
 //
-// Panels are plain data, so nothing here runs user code. A table's sort, search and "show all"
-// live in its component, which is keyed by the panel's position and title, so they're kept while
-// the code re-runs on every keystroke. Consecutive input panels are drawn as one form.
+// Panels are plain data, so nothing here runs user code, except reading a live panel (see
+// currentUiPanel): that builds it through its own computed, under the engine's loop guard. Each
+// block reads its own live panel, so a ref change redraws only the blocks that read it. A table's
+// sort, search and "show all" live in its component, which is keyed by the panel's position and
+// kind, so they're kept while the code re-runs on every keystroke. Consecutive input panels are
+// drawn as one form.
 //
 // ui.input fields write what's entered through the `inputs` prop (uiInputsFor), which re-runs the
 // code; the run sends back the field's value and any broken rule in its panel.
 //
 // Uses globals from scripts loaded before it:
-//   utils/format.js            formatRSNumber, convertRunescapeNumbers, numberWithCommas
+//   formula/uiLibrary.js       currentUiPanel
+//   utils/format.js           formatRSNumber, convertRunescapeNumbers, numberWithCommas
 //   utils/itemTags.js          rankItemsByText
 //   components/ItemIcon.js     ItemIcon
 //   components/FormulaTooltip  FormulaTooltip
@@ -657,6 +661,7 @@ const UiItemField = {
 };
 
 // One form row: the label, the field, a reset button once it's changed, and the broken rule.
+// panel: the input's UiPanel; a Ref input's is live, and is read here so only this row redraws.
 const UiInputField = {
     components: {
         'ui-number-field': UiNumberField,
@@ -665,12 +670,14 @@ const UiInputField = {
     },
     props: { panel: Object, inputs: Object, catalog: Object, hover: Object },
     setup(props) {
+        const field = computed(() => currentUiPanel(props.panel));
+
         // "Not a number" from the number box, which never reaches the run.
         const typingError = ref(null);
-        const error = computed(() => typingError.value || props.panel.error);
+        const error = computed(() => typingError.value || field.value.error);
 
         const isChoiceField = computed(() => {
-            return props.panel.input === 'select' || Boolean(props.panel.choices && props.panel.input !== 'item');
+            return field.value.input === 'select' || Boolean(field.value.choices && field.value.input !== 'item');
         });
 
         const reset = () => {
@@ -678,20 +685,23 @@ const UiInputField = {
             props.inputs.reset(props.panel.key);
         };
 
-        return { typingError, error, isChoiceField, reset };
+        return { field, typingError, error, isChoiceField, reset };
     },
     template: `
-        <div class="ui-form-row" :class="{ invalid: error }">
-            <label class="ui-form-label">{{ panel.label }}</label>
+        <div v-if="field.kind === 'error'" class="ui-form-row invalid">
+            <div class="ui-input-error">{{ field.message }}</div>
+        </div>
+        <div v-else class="ui-form-row" :class="{ invalid: error }">
+            <label class="ui-form-label">{{ field.label }}</label>
             <div class="ui-form-control">
-                <ui-choice-field v-if="isChoiceField" :panel="panel" :inputs="inputs"></ui-choice-field>
-                <ui-number-field v-else-if="panel.input === 'number' || panel.input === 'price'"
-                                 :panel="panel" :inputs="inputs" @typing-error="typingError = $event"></ui-number-field>
-                <ui-item-field v-else-if="panel.input === 'item'"
-                               :panel="panel" :inputs="inputs" :catalog="catalog" :hover="hover"></ui-item-field>
-                <input v-else-if="panel.input === 'checkbox'" type="checkbox" class="ui-input-checkbox"
-                       :checked="panel.value" @change="inputs.set(panel.key, $event.target.checked)">
-                <button v-if="panel.edited" type="button" class="ui-input-reset" title="Back to the default"
+                <ui-choice-field v-if="isChoiceField" :panel="field" :inputs="inputs"></ui-choice-field>
+                <ui-number-field v-else-if="field.input === 'number' || field.input === 'price'"
+                                 :panel="field" :inputs="inputs" @typing-error="typingError = $event"></ui-number-field>
+                <ui-item-field v-else-if="field.input === 'item'"
+                               :panel="field" :inputs="inputs" :catalog="catalog" :hover="hover"></ui-item-field>
+                <input v-else-if="field.input === 'checkbox'" type="checkbox" class="ui-input-checkbox"
+                       :checked="field.value" @change="inputs.set(field.key, $event.target.checked)">
+                <button v-if="field.edited" type="button" class="ui-input-reset" title="Back to the default"
                         @click="reset">↺</button>
             </div>
             <div v-if="error" class="ui-input-error">{{ error }}</div>
@@ -699,13 +709,42 @@ const UiInputField = {
     `
 };
 
+// Any panel but an input: a heading, a text line, or a titled block. panel: its UiPanel; a live
+// one is read here, so a change to what it reads redraws only this block.
+const UiPanelBlock = {
+    components: {
+        'ui-item-strip': UiItemStrip,
+        'ui-table': UiTable,
+        'ui-stats': UiStats,
+    },
+    props: { panel: Object, catalog: Object, hover: Object },
+    setup(props) {
+        const shown = computed(() => currentUiPanel(props.panel));
+        return { shown };
+    },
+    template: `
+        <div v-if="shown.kind === 'error'" class="ui-block ui-panel-error">{{ shown.message }}</div>
+        <h5 v-else-if="shown.kind === 'heading'" class="ui-heading">{{ shown.text }}</h5>
+        <p v-else-if="shown.kind === 'text'" class="ui-text">{{ shown.text }}</p>
+        <section v-else class="ui-block">
+            <div v-if="shown.title" class="ui-block-title">{{ shown.title }}</div>
+            <ui-item-strip v-if="shown.kind === 'items'" :panel="shown" :catalog="catalog" :hover="hover"></ui-item-strip>
+            <ui-table v-else-if="shown.kind === 'table'" :panel="shown" :catalog="catalog" :hover="hover"></ui-table>
+            <ui-stats v-else-if="shown.kind === 'stats'" :panel="shown" :catalog="catalog" :hover="hover"></ui-stats>
+        </section>
+    `
+};
+
 // The panels in drawing order, with each run of consecutive inputs gathered into one form:
-// [{ form: true, key, panels }] or [{ form: false, key, panel }].
+// [{ form: true, key, panels }] or [{ form: false, key, panel }]. Only a panel's kind and an
+// input's key are read here, never a live panel's build, so a live change doesn't regroup.
 const uiGroupPanels = (panels) => {
     const blocks = [];
     panels.forEach((panel, index) => {
+        // Keyed by position and kind, not title, so a table keeps its sort and search while a
+        // live title changes.
         if (panel.kind !== 'input') {
-            blocks.push({ form: false, key: `${index}:${panel.kind}:${panel.title || ''}`, panel });
+            blocks.push({ form: false, key: `${index}:${panel.kind}`, panel });
             return;
         }
 
@@ -729,9 +768,7 @@ const uiGroupPanels = (panels) => {
 const ScopeUiPanel = {
     components: {
         'formula-tooltip': FormulaTooltip,
-        'ui-item-strip': UiItemStrip,
-        'ui-table': UiTable,
-        'ui-stats': UiStats,
+        'ui-panel-block': UiPanelBlock,
         'ui-input-field': UiInputField,
     },
     props: { panels: Array, itemCatalog: Object, runError: String, inputs: Object },
@@ -766,14 +803,7 @@ const ScopeUiPanel = {
                     <ui-input-field v-for="panel in block.panels" :key="panel.key"
                                     :panel="panel" :inputs="inputs" :catalog="itemCatalog" :hover="hover"></ui-input-field>
                 </section>
-                <h5 v-else-if="block.panel.kind === 'heading'" class="ui-heading">{{ block.panel.text }}</h5>
-                <p v-else-if="block.panel.kind === 'text'" class="ui-text">{{ block.panel.text }}</p>
-                <section v-else class="ui-block">
-                    <div v-if="block.panel.title" class="ui-block-title">{{ block.panel.title }}</div>
-                    <ui-item-strip v-if="block.panel.kind === 'items'" :panel="block.panel" :catalog="itemCatalog" :hover="hover"></ui-item-strip>
-                    <ui-table v-else-if="block.panel.kind === 'table'" :panel="block.panel" :catalog="itemCatalog" :hover="hover"></ui-table>
-                    <ui-stats v-else-if="block.panel.kind === 'stats'" :panel="block.panel" :catalog="itemCatalog" :hover="hover"></ui-stats>
-                </section>
+                <ui-panel-block v-else :panel="block.panel" :catalog="itemCatalog" :hover="hover"></ui-panel-block>
             </template>
 
             <teleport to="body">

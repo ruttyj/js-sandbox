@@ -3,7 +3,8 @@
 //
 // Values are grouped by owner: a scope's id, or UI_INPUTS_GLOBALS for the globals' code. A run
 // reads its owner's values while it runs (inside the evaluation's computed), so changing a value
-// re-runs exactly the code that reads it.
+// re-runs exactly the code that reads it. A Ref input (ui.input.numberRef, ...) is read only
+// where its .value is, so a change to one read only by live panels redraws just those panels.
 
 const UI_INPUTS_GLOBALS = 'globals';
 
