@@ -1,6 +1,7 @@
 // Wires the composables together. Dependencies flow one way:
 // toasts/modals -> session / store -> items -> item tags -> evaluation -> scopes -> variables ->
-// AI account / AI chat -> code error toasts / tags / dashboard / import-export / sharing / url.
+// AI account / AI chat -> code error toasts / tags / dashboard / import-export / sharing ->
+// command palette / shortcuts / url.
 
 // How the header shows the store's saveStatus; a missing entry ('loading') hides it.
 const SAVE_STATUS_PILLS = {
@@ -44,6 +45,7 @@ createApp({
         'editor-insert-menu': EditorInsertMenu,
         'editor-view-menu': EditorViewMenu,
         'scope-ui-panel': ScopeUiPanel,
+        'command-palette': CommandPalette,
     },
     setup() {
         const activeTab = ref('market');
@@ -157,6 +159,47 @@ createApp({
         const saveStatusPill = computed(() => SAVE_STATUS_PILLS[store.saveStatus.value] || null);
         const signOutOfApp = () => sessionApi.signOut(store.flushPendingSaves);
 
+        const saveNow = async () => {
+            await store.flushPendingSaves();
+            if (store.saveStatus.value === 'saved') {
+                showToast('All changes saved.', 'success');
+            }
+        };
+
+        const isAiChatAvailable = () => aiAccountApi.aiStatus.value.available && !sharingApi.isSharedView;
+
+        const paletteApi = useCommandPalette({
+            activeTab,
+            scopes: store.scopes,
+            selectedScopeId: scopesApi.selectedScopeId,
+            createScope: scopesApi.createScope,
+            refreshPrices: itemsApi.refreshPrices,
+            exportData: importExportApi.exportData,
+            saveNow,
+            isAiChatAvailable,
+            openAiChat: agentChatApi.onAiButtonClick,
+        });
+        useGlobalShortcuts({ openCommandPalette: paletteApi.openCommandPalette, saveNow, activeTab });
+
+        // The status bar: what's open, its errors, and where the caret is.
+        const activeTabLabel = computed(() => APP_TABS.find(tab => tab.id === activeTab.value)?.label || '');
+        const activeCodeErrorCount = computed(() => {
+            if (activeTab.value === 'scopes') {
+                return scopesApi.scopeCodeErrors.value.length;
+            }
+            if (activeTab.value === 'globals') {
+                return variablesApi.globalsCodeErrors.value.length;
+            }
+            return 0;
+        });
+        const pricesUpdatedLabel = computed(() => {
+            const updatedAt = itemsApi.pricesUpdatedAt.value;
+            if (!updatedAt) {
+                return '';
+            }
+            return updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        });
+
         const { initFromUrl } = useUrlState({
             isItemTag: itemTagsApi.isItemTag,
             scopes: store.scopes,
@@ -194,9 +237,21 @@ createApp({
             ...sharingApi,
             ...aiAccountApi,
             ...agentChatApi,
+            ...paletteApi,
             showSignInScreen,
             saveStatusPill,
             signOutOfApp,
+            appTabs: APP_TABS,
+            activeTabLabel,
+            activeCodeErrorCount,
+            pricesUpdatedLabel,
+            uiDockDrag,
+            workbenchStyle,
+            startPaneResize,
+            resetPaneWidth,
+            paneCollapsed,
+            togglePaneCollapsed,
+            editorStatus,
             formatVarValue,
             editorSettings,
             formulaFunctionReference: FORMULA_FUNCTION_REFERENCE,

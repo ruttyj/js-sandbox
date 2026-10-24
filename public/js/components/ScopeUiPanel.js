@@ -20,6 +20,7 @@
 //   components/FormulaTooltip  FormulaTooltip
 //   components/FormulaInput.js catalogItemTags, isCatalogLoaded
 //   composables/useEditorSettings.js  editorSettings (uiInSidebar)
+//   composables/useWorkbench.js       trackUiPanelDrag, uiDockDrag
 //
 // Sections: formatting cells -> sorting -> searching -> item hover card -> components -> form
 // inputs -> the section.
@@ -781,11 +782,24 @@ const ScopeUiPanel = {
             editorSettings.uiInSidebar = !editorSettings.uiInSidebar;
         };
 
-        return { tip, hover, enterCard, leaveCard, blocks, editorSettings, togglePlacement };
+        // A press on the header (not its button) starts dragging the section to another dock.
+        const startDrag = (event) => {
+            const isOnButton = event.target.closest('button');
+            if (event.button !== 0 || isOnButton) {
+                return;
+            }
+            event.preventDefault();
+            trackUiPanelDrag(event);
+        };
+
+        return { tip, hover, enterCard, leaveCard, blocks, editorSettings, togglePlacement, startDrag, uiDockDrag };
     },
     template: `
-        <div class="scope-panel ui-panel">
-            <div class="ui-panel-head">
+        <div class="scope-panel ui-panel" :class="{ 'is-being-dragged': uiDockDrag.active }">
+            <div class="ui-panel-head" title="Drag to dock it full width above the editor or in the sidebar" @pointerdown="startDrag">
+                <span class="ui-drag-grip" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+                </span>
                 <h4>UI</h4>
                 <button type="button" class="ui-placement-btn"
                         :title="editorSettings.uiInSidebar ? 'Move above the editor, full width' : 'Move to the sidebar, above Values'"

@@ -137,7 +137,8 @@ const CodeBindings = (() => {
         const name = ctx.tokens[index].text;
         let binding = scope.bindings.get(name);
         if (!binding) {
-            binding = { id: ctx.nextId++, name, isTopLevel: scope === ctx.root };
+            const declaredAt = ctx.tokens[index].start;
+            binding = { id: ctx.nextId++, name, isTopLevel: scope === ctx.root, declaredAt };
             scope.bindings.set(name, binding);
         }
         ctx.occurrences.set(index, binding);
@@ -416,10 +417,11 @@ const CodeBindings = (() => {
     /**
      * Every identifier in the code that names a declared binding.
      * @param {string} code
-     * @returns {Map<number, {id: number, name: string, isTopLevel: boolean}>} The identifier's
-     *   offset in the code -> its binding. Occurrences of the same binding share the object; id is
-     *   unique per binding. isTopLevel: declared at the top level of the code (not in a block or
-     *   function). Undeclared names (globals, other scopes' variables) aren't included.
+     * @returns {Map<number, {id: number, name: string, isTopLevel: boolean, declaredAt: number}>}
+     *   The identifier's offset in the code -> its binding. Occurrences of the same binding share
+     *   the object; id is unique per binding. isTopLevel: declared at the top level of the code
+     *   (not in a block or function). declaredAt: the offset of its first declaration. Undeclared
+     *   names (globals, other scopes' variables) aren't included.
      */
     const findCodeBindings = (code) => {
         const tokens = tokenize(code);

@@ -4,6 +4,8 @@
 // the code is colored like an IDE (see editorSettings). The backdrop must mirror the textarea's
 // size and scroll exactly. Hovering a variable or an item ref shows a FormulaTooltip with its
 // value or item details, and hovering a variable or local binding outlines its other occurrences.
+// With the caret on a variable or local, its occurrences are marked and an occurrence bar under
+// the editor steps through them (F7 / Shift+F7) or jumps to the declaration (F12).
 //
 // The pure parts (editing keys, highlighting) are plain functions above the component; the
 // component wires them to the DOM.
@@ -186,21 +188,34 @@ const renderPlainIdentifier = (hl, name, start) => {
     return syntaxToken(identifierClass(name, hl.text, start, start + name.length), name);
 };
 
-// A name declared in this code links to its declaration: a top-level declaration of a scope
-// variable shows as that variable, any other declaration (a parameter, a const inside a
-// function, ...) as a local, even when it shares a variable's name. An undeclared name is a
-// variable from elsewhere (another scope, the globals) when its key matches, else plain code.
-const renderName = (hl, name, start) => {
-    const binding = hl.bindings.get(start);
+// What a name at `start` refers to. A name declared in this code links to its declaration: a
+// top-level declaration of a scope variable is that variable, any other declaration (a
+// parameter, a const inside a function, ...) a local, even when it shares a variable's name. An
+// undeclared name is a variable from elsewhere (another scope, the globals) when its key
+// matches. Returns { kind: 'variable', variable, binding } (binding: null when not declared
+// here), { kind: 'local', binding }, or null for plain code.
+const classifyName = (hl, name, start) => {
+    const binding = hl.bindings.get(start) || null;
     const variable = hl.variableByKey.get(name.toUpperCase());
     const isScopeVariable = variable && (!binding || binding.isTopLevel);
     if (isScopeVariable) {
-        return renderVariable(hl, name, variable);
+        return { kind: 'variable', variable, binding };
     }
     if (binding) {
-        return renderLocal(hl, name, start, binding);
+        return { kind: 'local', binding };
     }
-    return renderPlainIdentifier(hl, name, start);
+    return null;
+};
+
+const renderName = (hl, name, start) => {
+    const target = classifyName(hl, name, start);
+    if (!target) {
+        return renderPlainIdentifier(hl, name, start);
+    }
+    if (target.kind === 'variable') {
+        return renderVariable(hl, name, target.variable);
+    }
+    return renderLocal(hl, name, start, target.binding);
 };
 
 // getOsrsItem ( 'Name' ) .field, each part colored; the name may itself contain parentheses.
@@ -256,24 +271,133 @@ const variablesByUpperKey = (variables) => {
     return byKey;
 };
 
+// hl plus what telling names apart needs: variableByKey and bindings. Built once per text, and
+// shared by the highlighter and the symbol index below so they always agree.
+const buildNameContext = (hl) => ({
+    ...hl,
+    variableByKey: variablesByUpperKey(hl.variables),
+    bindings: findCodeBindings(hl.text),
+});
+
 // The backdrop's HTML, built in one pass over the raw text. tint colors variables, locals and
 // item refs; syntax also colors comments, strings, numbers, keywords, ... (the textarea text is
 // then made transparent so the colored backdrop shows through). The trailing <br> keeps a final
-// empty line as tall as the textarea's.
-const highlightCode = (hl) => {
-    const ctx = {
-        ...hl,
-        variableByKey: variablesByUpperKey(hl.variables),
-        bindings: findCodeBindings(hl.text),
-    };
-    const regex = buildHighlightRegex(hl.variables.map(v => v.key));
+// empty line as tall as the textarea's. ctx: from buildNameContext.
+const highlightCode = (ctx) => {
+    const regex = buildHighlightRegex(ctx.variables.map(v => v.key));
     let html = '';
     let last = 0;
-    for (const match of hl.text.matchAll(regex)) {
-        html += escapeHtml(hl.text.slice(last, match.index)) + renderHighlightMatch(ctx, match);
+    for (const match of ctx.text.matchAll(regex)) {
+        html += escapeHtml(ctx.text.slice(last, match.index)) + renderHighlightMatch(ctx, match);
         last = match.index + match[0].length;
     }
-    return html + escapeHtml(hl.text.slice(last)) + '<br>';
+    return html + escapeHtml(ctx.text.slice(last)) + '<br>';
+};
+
+
+// --- Symbols ----------------------------------------------------------------------------------
+// Every variable and local in the code with where it occurs, for the caret's occurrence bar.
+// The scan uses the highlighter's regex and classifyName, so a symbol's ranges line up one to
+// one, in order, with the backdrop spans its selector matches.
+
+// symbol: { id, kind, name, variable, declaredAt, ranges: [{ start, end }] }. id: 'var:<key>' or
+// 'local:<binding id>'. declaredAt: the offset of its declaration in this code, or null when it's
+// declared elsewhere (a global).
+const symbolFor = (target, name) => {
+    if (target.kind === 'variable') {
+        return { id: `var:${target.variable.key}`, kind: 'variable', name: target.variable.key, variable: target.variable };
+    }
+    return { id: `local:${target.binding.id}`, kind: 'local', name, variable: null };
+};
+
+// Returns { symbols: Map id -> symbol, occurrences: [{ start, end, symbol }] } in code order.
+const collectCodeSymbols = (ctx) => {
+    const symbols = new Map();
+    const occurrences = [];
+    const regex = buildHighlightRegex(ctx.variables.map(v => v.key));
+    for (const match of ctx.text.matchAll(regex)) {
+        const name = match.groups.varKey ?? match.groups.ident;
+        const target = name ? classifyName(ctx, name, match.index) : null;
+        if (!target) {
+            continue;
+        }
+
+        const found = symbolFor(target, name);
+        if (!symbols.has(found.id)) {
+            symbols.set(found.id, { ...found, declaredAt: null, ranges: [] });
+        }
+        const symbol = symbols.get(found.id);
+        if (symbol.declaredAt === null && target.binding) {
+            symbol.declaredAt = target.binding.declaredAt;
+        }
+
+        const range = { start: match.index, end: match.index + name.length };
+        symbol.ranges.push(range);
+        occurrences.push({ ...range, symbol });
+    }
+    return { symbols, occurrences };
+};
+
+// The occurrence the selection is on: the caret touching a name (either end counts, as in VS
+// Code), or a selection lying inside one. null when it's on none.
+const symbolOccurrenceAt = (occurrences, selectionStart, selectionEnd) => {
+    for (const occurrence of occurrences) {
+        const isInside = occurrence.start <= selectionStart && selectionEnd <= occurrence.end;
+        if (isInside) {
+            return occurrence;
+        }
+    }
+    return null;
+};
+
+// The backdrop spans of a symbol (see renderVariable and renderLocal).
+const symbolSelector = (symbol) => {
+    if (symbol.kind === 'variable') {
+        return `[data-var-key="${symbol.variable.key}"]`;
+    }
+    return `[data-binding="${symbol.id.slice('local:'.length)}"]`;
+};
+
+// The line (from 1) and column (from 1) of an offset in text.
+const lineOfOffset = (text, offset) => {
+    const before = text.slice(0, offset);
+    const lineStart = before.lastIndexOf('\n') + 1;
+    return { line: before.split('\n').length, column: offset - lineStart + 1 };
+};
+
+// A variable's value as one short line for the bar, e.g. "1,234,567" or "{ a: 1, ... }".
+const OCCURRENCE_VALUE_MAX = 60;
+
+const occurrenceValuePreview = (value) => {
+    const oneLine = formatVarValue(value).replace(/\s+/g, ' ');
+    if (oneLine.length <= OCCURRENCE_VALUE_MAX) {
+        return oneLine;
+    }
+    return oneLine.slice(0, OCCURRENCE_VALUE_MAX - 1) + '…';
+};
+
+const CARET_OCCURRENCE_CLASS = 'occurrence-caret';
+const CURRENT_OCCURRENCE_CLASS = 'occurrence-current';
+
+// Marks every span of the caret's symbol, and the one the caret is on; null just clears them.
+const markCaretOccurrences = (backdrop, selector, currentIndex) => {
+    if (!backdrop) {
+        return;
+    }
+    for (const span of backdrop.querySelectorAll(`.${CARET_OCCURRENCE_CLASS}`)) {
+        span.classList.remove(CARET_OCCURRENCE_CLASS, CURRENT_OCCURRENCE_CLASS);
+    }
+    if (!selector) {
+        return;
+    }
+
+    const spans = backdrop.querySelectorAll(selector);
+    spans.forEach((span, index) => {
+        span.classList.add(CARET_OCCURRENCE_CLASS);
+        if (index === currentIndex) {
+            span.classList.add(CURRENT_OCCURRENCE_CLASS);
+        }
+    });
 };
 
 
@@ -813,6 +937,7 @@ const FormulaInput = {
             hideTip();
             emitEdit(e.target.value, e);
             syncAll();
+            readSelection();
         };
 
         // Only selects the line and lets the browser's own cut run, so the clipboard and Ctrl+Z
@@ -834,9 +959,188 @@ const FormulaInput = {
             nextTick(syncAll);
         };
 
+        // --- Caret occurrences: marks the caret's variable or local everywhere it occurs, and
+        // shows the occurrence bar under the editor to step through them.
+
+        const isFocused = ref(false);
+        const selection = ref({ start: 0, end: 0 });
+        // The symbol whose bar was closed; it stays closed until the caret is on another one.
+        const dismissedSymbolId = ref(null);
+
+        // Reports the caret to the status bar. Read-only editors (the implied code) don't.
+        const publishEditorStatus = () => {
+            if (props.readonly) {
+                return;
+            }
+            const { start, end } = selection.value;
+            const { line, column } = lineOfOffset(props.modelValue || '', end);
+            Object.assign(editorStatus, { active: isFocused.value, line, column, selected: Math.abs(end - start) });
+        };
+
+        const readSelection = () => {
+            const ta = textareaRef.value;
+            if (!ta) {
+                return;
+            }
+            selection.value = { start: ta.selectionStart, end: ta.selectionEnd };
+            publishEditorStatus();
+        };
+
+        const handleFocus = () => {
+            isFocused.value = true;
+            readSelection();
+            emit('focus');
+        };
+
+        const handleBlur = () => {
+            isFocused.value = false;
+            publishEditorStatus();
+            emit('blur');
+        };
+
+        // { symbol, index } for the occurrence the caret is on (index: into symbol.ranges), or null.
+        const caretPosition = computed(() => {
+            const { start, end } = selection.value;
+            const occurrence = symbolOccurrenceAt(codeSymbols.value.occurrences, start, end);
+            if (!occurrence) {
+                return null;
+            }
+            const index = occurrence.symbol.ranges.findIndex(range => range.start === occurrence.start);
+            return { symbol: occurrence.symbol, index };
+        });
+
+        const symbolKindLabel = (symbol) => {
+            if (symbol.kind === 'local') {
+                return 'Local';
+            }
+            return symbol.declaredAt === null ? 'Global' : 'Variable';
+        };
+
+        const symbolValueText = (symbol) => {
+            if (symbol.kind !== 'variable' || !props.valueForKey) {
+                return null;
+            }
+            return occurrenceValuePreview(props.valueForKey(symbol.variable.key));
+        };
+
+        const symbolColor = (symbol) => {
+            if (symbol.kind === 'variable') {
+                return symbol.variable.color || UNDECLARED_COLOR;
+            }
+            return localBindingColor(symbol.name);
+        };
+
+        // What the occurrence bar shows, or null when it's hidden.
+        const occurrenceBar = computed(() => {
+            const at = caretPosition.value;
+            const isShown = at && isFocused.value && !props.readonly && at.symbol.id !== dismissedSymbolId.value;
+            if (!isShown) {
+                return null;
+            }
+
+            const { symbol, index } = at;
+            return {
+                name: symbol.name,
+                kindLabel: symbolKindLabel(symbol),
+                color: symbolColor(symbol),
+                valueText: symbolValueText(symbol),
+                index,
+                total: symbol.ranges.length,
+                line: lineOfOffset(props.modelValue || '', symbol.ranges[index].start).line,
+                canGoToDefinition: symbol.declaredAt !== null,
+            };
+        });
+
+        const dismissOccurrenceBar = () => {
+            dismissedSymbolId.value = caretPosition.value?.symbol.id ?? null;
+        };
+
+        // Marks follow the caret while the editor has focus, and are put back after the backdrop
+        // re-renders (which drops them).
+        const caretMark = computed(() => {
+            if (!isFocused.value || !caretPosition.value) {
+                return null;
+            }
+            return { selector: symbolSelector(caretPosition.value.symbol), index: caretPosition.value.index };
+        });
+
+        const applyCaretMark = () => {
+            const mark = caretMark.value;
+            markCaretOccurrences(backdropRef.value, mark?.selector ?? null, mark?.index ?? -1);
+        };
+
+        const revealSymbolSpan = (symbol, index) => {
+            const span = backdropRef.value?.querySelectorAll(symbolSelector(symbol))[index];
+            if (span) {
+                scrollRowIntoView(span);
+            }
+        };
+
+        // Selects the symbol's index-th occurrence and scrolls it into view.
+        const selectOccurrence = (symbol, index) => {
+            const ta = textareaRef.value;
+            const range = symbol.ranges[index];
+            if (!ta || !range) {
+                return;
+            }
+
+            ta.focus({ preventScroll: true });
+            ta.setSelectionRange(range.start, range.end);
+            readSelection();
+            nextTick(() => revealSymbolSpan(symbol, index));
+        };
+
+        // step: 1 for the next occurrence, -1 for the previous; wraps around. Returns whether the
+        // caret was on a symbol.
+        const stepOccurrence = (step) => {
+            const at = caretPosition.value;
+            if (!at) {
+                return false;
+            }
+            const total = at.symbol.ranges.length;
+            selectOccurrence(at.symbol, (at.index + step + total) % total);
+            return true;
+        };
+
+        // Returns whether there was a declaration in this code to go to.
+        const goToDefinition = () => {
+            const symbol = caretPosition.value?.symbol;
+            if (!symbol || symbol.declaredAt === null) {
+                return false;
+            }
+            const index = symbol.ranges.findIndex(range => range.start === symbol.declaredAt);
+            if (index === -1) {
+                return false;
+            }
+            selectOccurrence(symbol, index);
+            return true;
+        };
+
+        // F7 / Shift+F7: next / previous occurrence (as in VS Code), F12: go to the declaration,
+        // Escape: close the bar. Returns whether the key was used.
+        const handleOccurrenceKeys = (e) => {
+            let handled = false;
+            if (e.key === 'F7') {
+                handled = stepOccurrence(e.shiftKey ? -1 : 1);
+            } else if (e.key === 'F12') {
+                handled = goToDefinition();
+            } else if (e.key === 'Escape' && occurrenceBar.value) {
+                dismissOccurrenceBar();
+                handled = true;
+            }
+
+            if (handled) {
+                e.preventDefault();
+            }
+            return handled;
+        };
+
         const handleKeydown = (e) => {
             if (tip.value) dismissTip();
+            // The caret moves after the key's default action, so it's read on the next frame.
+            requestAnimationFrame(readSelection);
             if (find.handleEditorFindKeys(e)) return;
+            if (handleOccurrenceKeys(e)) return;
             if (isCutShortcut(e)) selectLineForCut(e.target);
             else if (e.key === 'Tab' && !props.readonly) handleTab(e);
         };
@@ -859,6 +1163,11 @@ const FormulaInput = {
         onBeforeUnmount(() => {
             if (resizeObserver) resizeObserver.disconnect();
             clearTimers();
+            // Switching tabs removes a focused editor without a blur, which would leave its caret
+            // in the status bar.
+            if (isFocused.value && !props.readonly) {
+                editorStatus.active = false;
+            }
         });
 
         const itemLookup = computed(() => {
@@ -871,7 +1180,7 @@ const FormulaInput = {
             return { byId, byName };
         });
 
-        const highlightedHTML = computed(() => highlightCode({
+        const nameContext = computed(() => buildNameContext({
             text: props.modelValue || '',
             tint: editorSettings.variableHighlight,
             syntax: editorSettings.syntaxHighlight,
@@ -882,9 +1191,18 @@ const FormulaInput = {
             itemsByName: itemLookup.value.byName,
         }));
 
+        const highlightedHTML = computed(() => highlightCode(nameContext.value));
+        const codeSymbols = computed(() => collectCodeSymbols(nameContext.value));
+
         // The new backdrop has no outline, so the next mouse move marks the occurrences again.
         watch(highlightedHTML, () => {
             linkedSelector = null;
+        });
+        watch([caretMark, highlightedHTML], applyCaretMark, { flush: 'post' });
+        watch(() => caretPosition.value?.symbol.id, (id) => {
+            if (id !== dismissedSymbolId.value) {
+                dismissedSymbolId.value = null;
+            }
         });
 
         const errorLines = computed(() => codeErrorLines(props.errors || []));
@@ -968,10 +1286,17 @@ const FormulaInput = {
             tip, handleMouseMove, handleMouseLeave, dismissTip, handleTipEnter, handleTipLeave,
             handleColorInput, handlePickerClosed, handleReplaceCall,
             openPicker: () => { pickerOpen = true; },
+            handleFocus, handleBlur, readSelection,
+            occurrenceBar, stepOccurrence, goToDefinition, dismissOccurrenceBar,
         };
     },
+    // The parent's class and attributes go on the editor box, not the wrapper that also holds the
+    // occurrence bar, so callers style the editor as before.
+    inheritAttrs: false,
     template: `
+        <div class="formula-input">
         <div class="formula-input-container"
+             v-bind="$attrs"
              :class="{ 'syntax-on': editorSettings.syntaxHighlight, 'lines-on': editorSettings.lineNumbers }"
              :style="containerStyle"
              ref="containerRef">
@@ -990,8 +1315,9 @@ const FormulaInput = {
                 @mousemove="handleMouseMove"
                 @mouseleave="handleMouseLeave"
                 @mousedown="dismissTip"
-                @focus="$emit('focus')"
-                @blur="$emit('blur')"
+                @mouseup="readSelection"
+                @focus="handleFocus"
+                @blur="handleBlur"
                 :placeholder="placeholder"
                 :readonly="readonly"
                 spellcheck="false"
@@ -1040,6 +1366,23 @@ const FormulaInput = {
                     ></formula-tooltip>
                 </transition>
             </teleport>
+        </div>
+        <!-- The caret's symbol: a bar over the editor's bottom edge that stays in view while the
+             editor runs past the window. Pressing it never takes focus from the code. -->
+        <div v-if="occurrenceBar" class="occurrence-bar" @mousedown.prevent>
+            <span class="occurrence-swatch" :style="{ backgroundColor: occurrenceBar.color }"></span>
+            <span class="occurrence-name">{{ occurrenceBar.name }}</span>
+            <span class="occurrence-kind">{{ occurrenceBar.kindLabel }}</span>
+            <span v-if="occurrenceBar.valueText !== null" class="occurrence-value" :title="occurrenceBar.valueText">= {{ occurrenceBar.valueText }}</span>
+            <span class="occurrence-spacer"></span>
+            <span class="occurrence-count">{{ occurrenceBar.index + 1 }} of {{ occurrenceBar.total }}</span>
+            <span class="occurrence-line">Ln {{ occurrenceBar.line }}</span>
+            <button class="find-btn" title="Previous occurrence (Shift+F7)" :disabled="occurrenceBar.total < 2" @click="stepOccurrence(-1)">↑</button>
+            <button class="find-btn" title="Next occurrence (F7)" :disabled="occurrenceBar.total < 2" @click="stepOccurrence(1)">↓</button>
+            <button class="find-btn find-text-btn" :title="occurrenceBar.canGoToDefinition ? 'Go to its declaration (F12)' : 'Declared outside this code'"
+                    :disabled="!occurrenceBar.canGoToDefinition" @click="goToDefinition">Definition</button>
+            <button class="find-btn" title="Close until the caret is on another name (Escape)" @click="dismissOccurrenceBar">✕</button>
+        </div>
         </div>
     `
 };

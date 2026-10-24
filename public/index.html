@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GE Tracker · Price Computation Suite</title>
+    <title>JS-Sandbox</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -14,38 +14,51 @@
 
 <div id="app" class="app-shell">
 
-    <!-- Application Header -->
+    <!-- Application Header: brand, the tabs, then the actions -->
     <header class="app-header">
         <div class="brand">
             <div class="brand-mark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M15 7h5v5"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/><path d="M13.5 4l-3 16"/></svg>
             </div>
-            <div class="brand-text">
-                <span class="brand-name">GE Tracker <span class="brand-edition">PRO</span></span>
-                <span class="brand-sub">Grand Exchange Price Computation Suite</span>
-            </div>
+            <span class="brand-name">JS-Sandbox</span>
         </div>
 
-        <div class="header-metrics">
-            <div class="status-pill" :class="loading ? 'is-loading' : error ? 'is-error' : 'is-live'">
-                <span class="status-dot"></span>
-                {{ loading ? 'Syncing' : error ? 'Offline' : 'Live' }}
-            </div>
-            <div class="header-metric">
-                <span class="metric-label">Items</span>
-                <span class="metric-value">{{ Object.keys(items).length.toLocaleString() }}</span>
-            </div>
-            <div class="header-metric">
-                <span class="metric-label">Item tags</span>
-                <span class="metric-value">{{ tagDefs.size }}</span>
-            </div>
-            <div class="header-metric">
-                <span class="metric-label">Scopes</span>
-                <span class="metric-value">{{ scopes.length }}</span>
-            </div>
+        <nav v-if="!showSignInScreen" class="tabs-header">
+            <button class="tab-btn" :class="{ active: activeTab === 'market' }" title="Market Search (Alt+1)" @click="activeTab = 'market'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <span class="tab-label">Market Search</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'item-tags' }" title="Item Tags (Alt+2)" @click="activeTab = 'item-tags'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span class="tab-label">Item Tags</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'globals' }" title="Global Vars (Alt+3)" @click="activeTab = 'globals'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
+                <span class="tab-label">Global Vars</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'scopes' }" title="Scopes (Alt+4)" @click="activeTab = 'scopes'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6"/><path d="M16 6l6 6-6 6"/></svg>
+                <span class="tab-label">Scopes</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'tags' }" title="Variable Tags (Alt+5)" @click="activeTab = 'tags'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                <span class="tab-label">Variable Tags</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'dashboard' }" title="Dashboard (Alt+6)" @click="activeTab = 'dashboard'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v2"/><path d="M11 11v6"/><path d="M15 7v10"/><path d="M19 12v5"/></svg>
+                <span class="tab-label">Dashboard</span>
+            </button>
+        </nav>
+
+        <div class="header-actions">
+            <button v-if="!showSignInScreen" class="palette-btn" title="Command palette (Ctrl+K)" @click="openCommandPalette">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                <span class="palette-btn-label">Commands</span>
+                <kbd>Ctrl K</kbd>
+            </button>
             <button class="btn btn-primary" @click="refreshPrices" :disabled="loading" title="Re-fetch the latest GE prices">
                 <svg class="btn-icon" :class="{ spinning: loading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-                Refresh Prices
+                <span class="refresh-label">Refresh Prices</span>
             </button>
             <div v-if="saveStatusPill" class="status-pill" :class="saveStatusPill.className" :title="saveStatusPill.title">
                 <span class="status-dot"></span>
@@ -64,10 +77,38 @@
         </div>
     </header>
 
+    <!-- Command palette (Ctrl+K) -->
+    <command-palette v-if="isCommandPaletteOpen" :commands="paletteCommands" @run="runPaletteCommand" @close="closeCommandPalette"></command-palette>
+
+    <!-- Follows the pointer while the UI section is dragged to another dock -->
+    <div v-if="uiDockDrag.active" class="ui-dock-ghost" :class="{ 'has-zone': uiDockDrag.zone }" :style="{ left: uiDockDrag.x + 'px', top: uiDockDrag.y + 'px' }">
+        <template v-if="uiDockDrag.zone === 'top'">Dock full width above the editor</template>
+        <template v-else-if="uiDockDrag.zone === 'sidebar'">Dock in the sidebar</template>
+        <template v-else>Drop on a highlighted dock</template>
+    </div>
+
+    <!-- Status bar -->
+    <footer v-if="!showSignInScreen" class="status-bar">
+        <div class="status-bar-side">
+            <span class="status-item status-tab">{{ activeTabLabel }}</span>
+            <span v-if="activeTab === 'scopes' && selectedScope" class="status-item">{{ selectedScope.name }}</span>
+            <span v-if="activeCodeErrorCount" class="status-item is-error">{{ activeCodeErrorCount }} {{ activeCodeErrorCount === 1 ? 'error' : 'errors' }}</span>
+            <span v-if="isSharedView" class="status-item">Read-only</span>
+        </div>
+        <div class="status-bar-side">
+            <span v-if="editorStatus.active" class="status-item">
+                Ln {{ editorStatus.line }}, Col {{ editorStatus.column }}<template v-if="editorStatus.selected"> ({{ editorStatus.selected }} selected)</template>
+            </span>
+            <span v-if="loading" class="status-item">Fetching prices…</span>
+            <span v-else-if="pricesUpdatedLabel" class="status-item" title="When the GE prices were last fetched">Prices {{ pricesUpdatedLabel }}</span>
+            <button class="status-item status-btn" title="Command palette" @click="openCommandPalette">Ctrl+K</button>
+        </div>
+    </footer>
+
     <!-- Sign-in screen: shown when signed out, except on a shared scope's link -->
     <div v-if="showSignInScreen" class="signin-screen">
         <div class="signin-card">
-            <h1>GE Tracker</h1>
+            <h1>JS-Sandbox</h1>
             <p v-if="serverUnreachable">The server can't be reached right now. Try reloading in a moment.</p>
             <template v-else>
                 <p>Sign in to keep your scopes, globals and tags, on any device.</p>
@@ -280,45 +321,20 @@
         </div>
     </div>
 
-    <div v-if="loading" class="loading-container">
+    <!-- The first load; later refreshes keep the workspace up -->
+    <div v-if="loading && !hasItems" class="loading-container">
         <div class="spinner"></div>
         <p>Syncing with the Grand Exchange…</p>
         <span class="loading-sub">Fetching item mapping and latest prices</span>
     </div>
 
-    <div v-if="error" class="error-container">
+    <div v-if="error && !hasItems" class="error-container">
         <p>Error fetching items</p>
         <span class="loading-sub">{{ error }}</span>
     </div>
 
-    <main v-if="!loading && !error" class="main-layout">
+    <main v-if="hasItems" class="main-layout">
         <section class="main-panel">
-            <nav class="tabs-header">
-                <button class="tab-btn" :class="{ active: activeTab === 'market' }" @click="activeTab = 'market'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-                    Market Search
-                </button>
-                <button class="tab-btn" :class="{ active: activeTab === 'item-tags' }" @click="activeTab = 'item-tags'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                    Item Tags
-                </button>
-                <button class="tab-btn" :class="{ active: activeTab === 'globals' }" @click="activeTab = 'globals'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
-                    Global Vars
-                </button>
-                <button class="tab-btn" :class="{ active: activeTab === 'scopes' }" @click="activeTab = 'scopes'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6"/><path d="M16 6l6 6-6 6"/></svg>
-                    Scopes
-                </button>
-                <button class="tab-btn" :class="{ active: activeTab === 'tags' }" @click="activeTab = 'tags'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
-                    Variable Tags
-                </button>
-                <button class="tab-btn" :class="{ active: activeTab === 'dashboard' }" @click="activeTab = 'dashboard'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v2"/><path d="M11 11v6"/><path d="M15 7v10"/><path d="M19 12v5"/></svg>
-                    Dashboard
-                </button>
-            </nav>
 
             <!-- Tab: Market Search -->
             <div v-if="activeTab === 'market'" class="items-panel market-layout">
@@ -540,12 +556,18 @@
 
             <!-- Tab: Global Vars -->
             <div v-if="activeTab === 'globals'" class="tab-panel">
-                <div class="code-tab-layout">
+                <div class="code-tab-layout" :style="workbenchStyle">
 
-                    <!-- UI section: full width above the editor, unless moved to the sidebar -->
+                    <!-- UI section: full width above the editor, or in the sidebar. Dragged by its
+                         header between the docks (data-ui-dock). -->
+                    <div v-if="uiDockDrag.active && editorSettings.uiInSidebar" class="ui-dock-zone ui-dock-zone-top" :class="{ 'is-target': uiDockDrag.zone === 'top' }" data-ui-dock="top">
+                        Drop to dock the UI full width above the editor
+                    </div>
                     <scope-ui-panel
                         v-if="globalsUiPanels.length && !editorSettings.uiInSidebar"
                         class="ui-panel-top"
+                        :class="{ 'is-target': uiDockDrag.zone === 'top' }"
+                        data-ui-dock="top"
                         :panels="globalsUiPanels"
                         :item-catalog="itemCatalog"
                         :run-error="globalsRunError"
@@ -598,7 +620,22 @@
                         </div>
                     </div>
 
-                    <div class="code-sidebar">
+                    <div v-if="!paneCollapsed.sidebar" class="pane-splitter splitter-sidebar" title="Drag to resize; double-click to reset"
+                         @pointerdown.prevent="startPaneResize('sidebar', $event)" @dblclick="resetPaneWidth('sidebar')"></div>
+
+                    <div class="code-sidebar" :class="{ 'is-target': uiDockDrag.zone === 'sidebar', 'is-collapsed': paneCollapsed.sidebar }" data-ui-dock="sidebar">
+                    <button v-if="paneCollapsed.sidebar" class="pane-rail" title="Expand the sidebar (Ctrl+Alt+B)" @click="togglePaneCollapsed('sidebar')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                        <span class="pane-rail-label">{{ editorSettings.uiInSidebar ? 'UI · Values' : 'Values' }}</span>
+                    </button>
+                    <template v-else>
+                    <div class="pane-head">
+                        <span class="pane-title">{{ editorSettings.uiInSidebar ? 'UI · Values' : 'Values' }}</span>
+                        <button class="pane-collapse-btn" title="Collapse the sidebar (Ctrl+Alt+B)" @click="togglePaneCollapsed('sidebar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+                    </div>
+                    <div v-if="uiDockDrag.active && !editorSettings.uiInSidebar" class="ui-dock-zone" :class="{ 'is-target': uiDockDrag.zone === 'sidebar' }">
+                        Drop to dock the UI in the sidebar
+                    </div>
                     <scope-ui-panel
                         v-if="globalsUiPanels.length && editorSettings.uiInSidebar"
                         :panels="globalsUiPanels"
@@ -624,6 +661,7 @@
                             </div>
                         </details>
                     </div>
+                    </template>
                     </div>
 
                 </div>
@@ -635,18 +673,107 @@
                     <p>A scope is a block of code that works out values (profits, costs, ...) from live prices.</p>
                     <button class="scope-new-btn" @click="createScope">+ Create your first scope</button>
                 </div>
-                <div v-else class="code-tab-layout">
+                <div v-else class="code-tab-layout has-explorer" :style="workbenchStyle">
 
-                    <!-- UI section: full width above the editor, unless moved to the sidebar -->
+                    <!-- UI section: full width above the editor, or in the sidebar. Dragged by its
+                         header between the docks (data-ui-dock). -->
+                    <div v-if="uiDockDrag.active && editorSettings.uiInSidebar" class="ui-dock-zone ui-dock-zone-top" :class="{ 'is-target': uiDockDrag.zone === 'top' }" data-ui-dock="top">
+                        Drop to dock the UI full width above the editor
+                    </div>
                     <scope-ui-panel
                         v-if="scopeUiPanels.length && !editorSettings.uiInSidebar"
                         :key="'top-' + selectedScopeId"
                         class="ui-panel-top"
+                        :class="{ 'is-target': uiDockDrag.zone === 'top' }"
+                        data-ui-dock="top"
                         :panels="scopeUiPanels"
                         :item-catalog="itemCatalog"
                         :run-error="scopeRunError"
                         :inputs="scopeUiInputs"
                     ></scope-ui-panel>
+
+                    <!-- Data explorer: the scope's item tags, item search and the implied globals -->
+                    <aside v-if="selectedScope" class="code-explorer" :class="{ 'is-collapsed': paneCollapsed.explorer }">
+                        <button v-if="paneCollapsed.explorer" class="pane-rail" title="Expand the data panel (Ctrl+B)" @click="togglePaneCollapsed('explorer')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                            <span class="pane-rail-label">Data</span>
+                        </button>
+                        <template v-else>
+                        <div class="pane-head">
+                            <span class="pane-title">Data</span>
+                            <button class="pane-collapse-btn" title="Collapse the data panel (Ctrl+B)" @click="togglePaneCollapsed('explorer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                        </div>
+                        <div class="scope-groups">
+                            <span class="scope-groups-label">Item tags</span>
+                            <tag-multi-select v-model="scopeItemTagKeys" :options="itemTagOptions" placeholder="+ Item tag"></tag-multi-select>
+                            <button @click="rerollScopeItemColors" class="scope-new-btn btn-secondary" title="Give this scope's items a new palette, coordinated by their item tags">New item colors</button>
+                        </div>
+
+                        <details v-for="section in scopeItemTagSections" :key="section.key" class="implied-code" open>
+                            <summary title="Click a price to insert it into the code, the lookup or ID to copy it">{{ section.label }} ({{ section.items.length }})</summary>
+                            <item-ref-list
+                                sortable
+                                :items="section.items"
+                                color-editable
+                                taggable
+                                :tag-label="itemTagLabel"
+                                :tag-options="userTagOptions"
+                                :is-user-tag="isUserTag"
+                                @add-tag="addTagToItemByText"
+                                @remove-tag="removeTagFromItem"
+                                @set-color="setScopeItemColor"
+                                @filter-tag="searchItemTag"
+                                @insert="insertPriceRef"
+                                @copy="copyToClipboard"
+                            ></item-ref-list>
+                        </details>
+
+                        <details class="implied-code" open>
+                            <summary>Find items by name, ID or tag</summary>
+                            <input type="text" v-model="itemLookupText" class="item-lookup-input" placeholder="e.g. Ahrim's hood, 4708, or tag:seed maple" spellcheck="false">
+                            <template v-if="itemLookupText.trim()">
+                                <div v-if="loading" class="item-lookup-note">Loading items…</div>
+                                <div v-else-if="itemLookupUnknownTags.length" class="item-lookup-note">Unknown item tag: {{ itemLookupUnknownTags.join(', ') }}</div>
+                                <div v-else-if="!itemLookupTotal" class="item-lookup-note">No items found.</div>
+                                <template v-else>
+                                    <item-ref-list
+                                        sortable
+                                        :items="itemLookupResults"
+                                        color-editable
+                                        taggable
+                                :tag-label="itemTagLabel"
+                                :tag-options="userTagOptions"
+                                :is-user-tag="isUserTag"
+                                @add-tag="addTagToItemByText"
+                                @remove-tag="removeTagFromItem"
+                                        @set-color="setScopeItemColor"
+                                        @filter-tag="searchItemTag"
+                                        @insert="insertPriceRef"
+                                        @copy="copyToClipboard"
+                                    ></item-ref-list>
+                                    <div v-if="itemLookupTotal > itemLookupResults.length" class="item-lookup-note">
+                                        Showing {{ itemLookupResults.length }} of {{ itemLookupTotal }} matches; type more to narrow it down.
+                                    </div>
+                                </template>
+                            </template>
+                        </details>
+
+                        <details v-if="impliedScopeCode" class="implied-code" open>
+                            <summary>Implied variables (read-only)</summary>
+                            <formula-input
+                                readonly
+                                class="implied-code-editor"
+                                :model-value="impliedScopeCode"
+                                :variables="visibleGlobalVariables"
+                                :items="scopeItems"
+                                :item-catalog="itemCatalog"
+                                :value-for-key="globalsCodeValueOf"
+                            ></formula-input>
+                        </details>
+                        </template>
+                    </aside>
+                    <div v-if="selectedScope && !paneCollapsed.explorer" class="pane-splitter splitter-explorer" title="Drag to resize; double-click to reset"
+                         @pointerdown.prevent="startPaneResize('explorer', $event)" @dblclick="resetPaneWidth('explorer')"></div>
 
                     <!-- Scope Code Editor -->
                     <div class="var-panel">
@@ -671,73 +798,6 @@
                         </div>
 
                         <template v-if="selectedScope">
-                            <div class="scope-groups">
-                                <span class="scope-groups-label">Item tags</span>
-                                <tag-multi-select v-model="scopeItemTagKeys" :options="itemTagOptions" placeholder="+ Item tag"></tag-multi-select>
-                                <button @click="rerollScopeItemColors" class="scope-new-btn btn-secondary" title="Give this scope's items a new palette, coordinated by their item tags">New item colors</button>
-                            </div>
-
-                            <details v-for="section in scopeItemTagSections" :key="section.key" class="implied-code" open>
-                                <summary>{{ section.label }} ({{ section.items.length }}): click a price to insert it, the lookup or ID to copy it</summary>
-                                <item-ref-list
-                                    sortable
-                                    :items="section.items"
-                                    color-editable
-                                    taggable
-                                    :tag-label="itemTagLabel"
-                                    :tag-options="userTagOptions"
-                                    :is-user-tag="isUserTag"
-                                    @add-tag="addTagToItemByText"
-                                    @remove-tag="removeTagFromItem"
-                                    @set-color="setScopeItemColor"
-                                    @filter-tag="searchItemTag"
-                                    @insert="insertPriceRef"
-                                    @copy="copyToClipboard"
-                                ></item-ref-list>
-                            </details>
-
-                            <details class="implied-code" open>
-                                <summary>Find items by name, ID or tag</summary>
-                                <input type="text" v-model="itemLookupText" class="item-lookup-input" placeholder="e.g. Ahrim's hood, 4708, or tag:seed maple" spellcheck="false">
-                                <template v-if="itemLookupText.trim()">
-                                    <div v-if="loading" class="item-lookup-note">Loading items…</div>
-                                    <div v-else-if="itemLookupUnknownTags.length" class="item-lookup-note">Unknown item tag: {{ itemLookupUnknownTags.join(', ') }}</div>
-                                    <div v-else-if="!itemLookupTotal" class="item-lookup-note">No items found.</div>
-                                    <template v-else>
-                                        <item-ref-list
-                                            sortable
-                                            :items="itemLookupResults"
-                                            color-editable
-                                            taggable
-                                    :tag-label="itemTagLabel"
-                                    :tag-options="userTagOptions"
-                                    :is-user-tag="isUserTag"
-                                    @add-tag="addTagToItemByText"
-                                    @remove-tag="removeTagFromItem"
-                                            @set-color="setScopeItemColor"
-                                            @filter-tag="searchItemTag"
-                                            @insert="insertPriceRef"
-                                            @copy="copyToClipboard"
-                                        ></item-ref-list>
-                                        <div v-if="itemLookupTotal > itemLookupResults.length" class="item-lookup-note">
-                                            Showing {{ itemLookupResults.length }} of {{ itemLookupTotal }} matches; type more to narrow it down.
-                                        </div>
-                                    </template>
-                                </template>
-                            </details>
-
-                            <details v-if="impliedScopeCode" class="implied-code" open>
-                                <summary>Implied variables (read-only)</summary>
-                                <formula-input
-                                    readonly
-                                    class="implied-code-editor"
-                                    :model-value="impliedScopeCode"
-                                    :variables="visibleGlobalVariables"
-                                    :items="scopeItems"
-                                    :item-catalog="itemCatalog"
-                                    :value-for-key="globalsCodeValueOf"
-                                ></formula-input>
-                            </details>
                             <div class="editor-toolbar">
                                 <span class="editor-toolbar-title">{{ selectedScope.name }}</span>
                                 <div class="editor-toolbar-actions">
@@ -804,7 +864,22 @@
                         </template>
                     </div>
 
-                    <div class="code-sidebar">
+                    <div v-if="!paneCollapsed.sidebar" class="pane-splitter splitter-sidebar" title="Drag to resize; double-click to reset"
+                         @pointerdown.prevent="startPaneResize('sidebar', $event)" @dblclick="resetPaneWidth('sidebar')"></div>
+
+                    <div class="code-sidebar" :class="{ 'is-target': uiDockDrag.zone === 'sidebar', 'is-collapsed': paneCollapsed.sidebar }" data-ui-dock="sidebar">
+                    <button v-if="paneCollapsed.sidebar" class="pane-rail" title="Expand the sidebar (Ctrl+Alt+B)" @click="togglePaneCollapsed('sidebar')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                        <span class="pane-rail-label">{{ editorSettings.uiInSidebar ? 'UI · Values' : 'Values' }}</span>
+                    </button>
+                    <template v-else>
+                    <div class="pane-head">
+                        <span class="pane-title">{{ editorSettings.uiInSidebar ? 'UI · Values' : 'Values' }}</span>
+                        <button class="pane-collapse-btn" title="Collapse the sidebar (Ctrl+Alt+B)" @click="togglePaneCollapsed('sidebar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+                    </div>
+                    <div v-if="uiDockDrag.active && !editorSettings.uiInSidebar" class="ui-dock-zone" :class="{ 'is-target': uiDockDrag.zone === 'sidebar' }">
+                        Drop to dock the UI in the sidebar
+                    </div>
                     <scope-ui-panel
                         v-if="scopeUiPanels.length && editorSettings.uiInSidebar"
                         :key="'side-' + selectedScopeId"
@@ -839,6 +914,7 @@
                             </div>
                         </details>
                     </div>
+                    </template>
                     </div>
 
                 </div>
@@ -955,6 +1031,7 @@
 <script src="js/formula/scopeCode.js"></script>
 <script src="js/formula/codeBindings.js"></script>
 <script src="js/composables/useEditorSettings.js"></script>
+<script src="js/composables/useWorkbench.js"></script>
 <script src="js/composables/useUiInputs.js"></script>
 
 <script src="js/components/useFindReplace.js"></script>
@@ -965,6 +1042,7 @@
 <script src="js/components/ScopeUiPanel.js"></script>
 <script src="js/components/TagMultiSelect.js"></script>
 <script src="js/components/ItemRefList.js"></script>
+<script src="js/components/CommandPalette.js"></script>
 <script src="js/ai/lineDiff.js"></script>
 <script src="js/ai/chatFormat.js"></script>
 <script src="js/ai/agentTools.js"></script>
@@ -989,6 +1067,7 @@
 <script src="js/composables/useSharing.js"></script>
 <script src="js/composables/useAiAccount.js"></script>
 <script src="js/composables/useAgentChat.js"></script>
+<script src="js/composables/useCommandPalette.js"></script>
 
 <script src="js/app.js"></script>
 

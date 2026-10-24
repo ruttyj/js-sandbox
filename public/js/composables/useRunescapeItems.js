@@ -35,6 +35,9 @@ const useRunescapeItems = ({ showToast }) => {
     const itemsByName = ref(new Map()); // itemNameKey(name) -> item, for getOsrsItem('Name')
     const loading = ref(true);
     const error = ref(null);
+    const pricesUpdatedAt = ref(null); // when the prices were last loaded (a Date), or null
+    // Once there are items, a refresh keeps the workspace up; only the refresh button shows it.
+    const hasItems = computed(() => Object.keys(items.value).length > 0);
 
     const searchText = ref('');
     const searchQuery = ref('');
@@ -57,6 +60,7 @@ const useRunescapeItems = ({ showToast }) => {
             const { byId, byName } = buildItemIndex(mapping, latest.data);
             items.value = byId;
             itemsByName.value = byName;
+            pricesUpdatedAt.value = new Date();
         } catch (e) {
             error.value = e.message;
             console.error("Failed to fetch items:", e);
@@ -67,7 +71,10 @@ const useRunescapeItems = ({ showToast }) => {
 
     const refreshPrices = async () => {
         await loadItems();
-        if (error.value) return;
+        if (error.value) {
+            showToast(`Couldn't refresh the prices: ${error.value}`, 'error');
+            return;
+        }
         showToast('Prices refreshed.', 'success');
     };
 
@@ -77,5 +84,5 @@ const useRunescapeItems = ({ showToast }) => {
 
     watch(searchText, debouncedSetSearchQuery);
 
-    return { items, itemsByName, loading, error, filteredItems, searchText, searchQuery, loadItems, refreshPrices };
+    return { items, itemsByName, loading, error, pricesUpdatedAt, hasItems, filteredItems, searchText, searchQuery, loadItems, refreshPrices };
 };

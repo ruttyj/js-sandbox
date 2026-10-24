@@ -52,7 +52,8 @@
     --shadow-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45);
     --shadow-3: 0 24px 64px rgba(0, 0, 0, 0.6);
 
-    --header-h: 60px;
+    --header-h: 52px;
+    --statusbar-h: 24px;
     --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -198,11 +199,11 @@ input[type="text"]:focus, select:focus, .field:focus {
     border-bottom: 1px solid var(--line);
     box-shadow: 0 1px 0 rgba(230, 180, 80, 0.05);
 }
-.brand { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
 .brand-mark {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
     display: grid;
     place-items: center;
     color: var(--accent-ink);
@@ -210,52 +211,42 @@ input[type="text"]:focus, select:focus, .field:focus {
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 6px 18px rgba(230, 180, 80, 0.25);
     flex-shrink: 0;
 }
-.brand-mark svg { width: 20px; height: 20px; }
-.brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-.brand-name { font-weight: 700; font-size: 0.98rem; letter-spacing: -0.01em; }
-.brand-edition {
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    border: 1px solid var(--accent-ring);
-    background: var(--accent-soft);
-    border-radius: 3px;
-    padding: 1px 4px;
-    margin-left: 4px;
-    vertical-align: 2px;
-}
-.brand-sub {
-    font-size: 0.7rem;
+.brand-mark svg { width: 18px; height: 18px; }
+.brand-name { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; white-space: nowrap; }
+.header-actions { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+
+/* Opens the command palette; looks like a search box, as in most IDEs. */
+.palette-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 32px;
+    padding: 0 0.5rem 0 0.65rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--bg-input);
     color: var(--text-2);
-    letter-spacing: 0.04em;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.palette-btn svg { width: 14px; height: 14px; }
+.palette-btn:hover { color: var(--text-0); border-color: var(--line-focus); }
+.palette-btn-label { min-width: 5.5rem; text-align: left; }
+kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border: 1px solid var(--line-strong);
+    border-bottom-width: 2px;
+    border-radius: var(--r-sm);
+    background: var(--bg-2);
+    color: var(--text-2);
+    font-family: var(--font-ui);
+    font-size: 0.66rem;
+    font-weight: 600;
+    line-height: 1.4;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
-.header-metrics { display: flex; align-items: center; gap: 0.6rem; }
-.header-metric {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    line-height: 1.15;
-    padding: 0 0.9rem;
-    border-left: 1px solid var(--line);
-}
-.metric-label {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-2);
-    font-weight: 600;
-}
-.metric-value {
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-}
-.header-metrics .btn { margin-left: 0.6rem; }
 
 .status-pill {
     display: inline-flex;
@@ -288,11 +279,11 @@ input[type="text"]:focus, select:focus, .field:focus {
 /* ==========================================================================
    Layout
    ========================================================================== */
+/* Full width: the code tabs are a work area, so every pixel goes to the panes. The bottom padding
+   keeps the page clear of the status bar. */
 .main-layout {
     gap: 1.25rem;
-    padding: 1.25rem 1.5rem 2rem;
-    max-width: 1920px;
-    margin: 0 auto;
+    padding: 1rem 1.25rem calc(var(--statusbar-h) + 1.25rem);
 }
 .main-panel { min-width: 0; }
 
@@ -513,23 +504,26 @@ input[type="text"]:focus, select:focus, .field:focus {
 /* ==========================================================================
    Tabs
    ========================================================================== */
+/* The tabs sit in the header, between the brand and the actions, so the page below is all work area. */
 .tabs-header {
+    flex: 1;
+    min-width: 0;
     display: flex;
     gap: 2px;
-    padding: 4px;
-    margin-bottom: 1.25rem;
+    padding: 3px;
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     overflow-x: auto;
-    box-shadow: var(--shadow-1);
+    scrollbar-width: none;
 }
+.tabs-header::-webkit-scrollbar { display: none; }
 .tab-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    height: 34px;
-    padding: 0 0.95rem;
+    gap: 0.45rem;
+    height: 30px;
+    padding: 0 0.8rem;
     background: none;
     border: 1px solid transparent;
     border-radius: var(--r-md);
@@ -1245,14 +1239,133 @@ input[type="text"]:focus, select:focus, .field:focus {
 .item-lookup-note { margin-top: 0.3rem; color: var(--text-2); font-size: 0.8rem; }
 
 /* ==========================================================================
-   Scopes / Global Vars: editor on the left, values on the right
+   Scopes / Global Vars: a workbench of panes
    ========================================================================== */
+/* Wide screens: the data explorer (Scopes only), the editor and the sidebar side by side, with a
+   draggable splitter between each pair; the UI section can take a full-width band on top. The
+   pane widths come from workbenchStyle and are capped so the editor always keeps some room.
+   Rows have no gap, so an empty top band takes no space; the band gets its own margin instead. */
 .code-tab-layout {
+    --explorer-col: min(var(--explorer-w, 400px), 30vw);
+    --side-col: min(var(--side-w, 420px), 42vw);
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1fr) 14px var(--side-col);
+    grid-template-areas:
+        "top top top"
+        "editor split-side side";
     align-items: start;
 }
+.code-tab-layout.has-explorer {
+    grid-template-columns: var(--explorer-col) 14px minmax(0, 1fr) 14px var(--side-col);
+    grid-template-areas:
+        "top top top top top"
+        "explorer split-explorer editor split-side side";
+}
+.code-tab-layout > .var-panel { grid-area: editor; }
+.splitter-explorer { grid-area: split-explorer; }
+.splitter-sidebar { grid-area: split-side; }
+
+/* A splitter is the gap between two panes; its line shows on hover and while dragging. */
+.pane-splitter {
+    position: relative;
+    align-self: stretch;
+    cursor: col-resize;
+    touch-action: none;
+}
+.pane-splitter::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+    border-radius: 2px;
+    background: transparent;
+    transition: background-color 0.15s;
+}
+.pane-splitter:hover::before, .pane-splitter:active::before { background: var(--accent-ring); }
+body.is-resizing-pane { cursor: col-resize; user-select: none; }
+
+/* The data explorer scrolls on its own, like the sidebar, so it stays beside the code. */
+.code-explorer {
+    grid-area: explorer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    position: sticky;
+    top: calc(var(--header-h) + 1rem);
+    max-height: calc(100vh - var(--header-h) - var(--statusbar-h) - 2rem);
+    overflow-y: auto;
+    padding: 0.85rem;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1);
+}
+.pane-title {
+    color: var(--text-2);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+/* A pane's title row, with its collapse button */
+.pane-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-shrink: 0; }
+.code-sidebar > .pane-head { padding: 0 0.15rem; }
+.pane-collapse-btn {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    background: none;
+    color: var(--text-2);
+    cursor: pointer;
+}
+.pane-collapse-btn svg { width: 14px; height: 14px; }
+.pane-collapse-btn:hover { background: var(--bg-3); border-color: var(--line-strong); color: var(--text-0); }
+
+/* A collapsed pane is just its rail: a thin bar with the pane's name, which expands it again. */
+.code-explorer.is-collapsed {
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+}
+.code-sidebar.is-collapsed { overflow: visible; }
+.pane-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 180px;
+    padding: 0.6rem 0;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1);
+    color: var(--text-2);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.pane-rail svg { width: 14px; height: 14px; flex-shrink: 0; }
+.pane-rail-label { writing-mode: vertical-rl; white-space: nowrap; }
+.pane-rail:hover { color: var(--text-0); border-color: var(--line-focus); }
+
+.code-explorer .scope-groups { flex-wrap: wrap; gap: 0.5rem; }
+/* Item rows are narrower here, so their tags drop to a line of their own. */
+.code-explorer .item-ref-row { flex-wrap: wrap; row-gap: 2px; }
+.code-explorer .item-ref-tags { order: 1; flex-basis: 100%; padding-left: 2.6rem; }
 .var-panel {
     display: flex;
     flex-direction: column;
@@ -1379,9 +1492,82 @@ input[type="text"]:focus, select:focus, .field:focus {
 .tok-ident   { color: var(--text-0); }
 .tok-var     { color: #ffd479; }
 
+/* The caret's variable or local is marked wherever it occurs, the one under the caret more
+   strongly (see FormulaInput's caret occurrences). Outlines, because the tinted spans already use
+   box-shadow inline; the faint background only shows on untinted spans. */
+.formula-backdrop .occurrence-caret {
+    outline: 1px solid rgba(230, 180, 80, 0.4);
+    border-radius: 3px;
+    background-color: rgba(230, 180, 80, 0.1);
+}
+.formula-backdrop .occurrence-current { outline: 1.5px solid var(--accent); }
+
 /* Hovering a variable or local outlines all its occurrences. An outline, because the tinted
    spans already use box-shadow inline. */
 .formula-backdrop .occurrence-linked { outline: 1px solid rgba(255, 255, 255, 0.55); border-radius: 4px; }
+
+/* The editor and its occurrence bar */
+.formula-input { display: flex; flex-direction: column; min-width: 0; }
+
+/* The occurrence bar overlays the editor's bottom edge: its negative top margin cancels its own
+   height and bottom margin, so it takes no space. Sticky, so a tall editor keeps it in view just
+   above the status bar. Inset on the right, clear of the editor's resize handle. */
+.occurrence-bar {
+    position: sticky;
+    bottom: calc(var(--statusbar-h) + 8px);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 36px;
+    margin: -44px 20px 8px 10px;
+    padding: 0 0.35rem 0 0.65rem;
+    background: rgba(24, 32, 43, 0.94);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    font-size: 12px;
+    animation: fadeUp 0.15s var(--ease);
+}
+.occurrence-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.occurrence-name {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-0);
+    font-family: var(--font-mono);
+    font-weight: 600;
+}
+.occurrence-kind {
+    flex-shrink: 0;
+    padding: 1px 5px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.occurrence-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-1);
+    font-family: var(--font-mono);
+}
+.occurrence-spacer { flex: 1; }
+.occurrence-count, .occurrence-line {
+    flex-shrink: 0;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.occurrence-line { padding-right: 0.25rem; }
 
 /* Line numbers: the gutter layer spans the whole editor behind the code, holding each line's
    text (transparent) so wrapped lines keep their numbers level; the numbers sit out to the left
@@ -1553,7 +1739,8 @@ input[type="text"]:focus, select:focus, .field:focus {
     height: 0;
     visibility: hidden;
     pointer-events: none;
-    scroll-margin: calc(var(--header-h) + 70px) 0 30px; /* keep the match clear of the find panel */
+    /* keep the match clear of the find panel above and the occurrence bar and status bar below */
+    scroll-margin: calc(var(--header-h) + 70px) 0 calc(var(--statusbar-h) + 60px);
 }
 .find-panel {
     position: absolute;
@@ -1948,7 +2135,10 @@ input[type="text"]:focus, select:focus, .field:focus {
 /* ==========================================================================
    Scopes / Global Vars: code editor and values
    ========================================================================== */
-.code-editor { flex-grow: 0; min-height: 440px; }
+/* At least as tall as the window leaves room for, so a short program still gets a full editor. */
+.code-editor { flex-grow: 0; min-height: max(440px, calc(100vh - var(--header-h) - var(--statusbar-h) - 11rem)); }
+/* Room under the last line for the occurrence bar, so it never covers code. */
+.code-editor .formula-backdrop, .code-editor .formula-textarea { padding-bottom: 52px; }
 .implied-code {
     background: var(--bg-1);
     border: 1px solid var(--line);
@@ -2005,20 +2195,23 @@ input[type="text"]:focus, select:focus, .field:focus {
 /* The sidebar scrolls as a whole, so a UI section and Values stacked in it never run past the
    bottom of the window. */
 .code-sidebar {
+    grid-area: side;
     display: flex;
     flex-direction: column;
     gap: 1rem;
     min-width: 0;
     position: sticky;
-    top: calc(var(--header-h) + 1.25rem);
-    max-height: calc(100vh - var(--header-h) - 2.5rem);
+    top: calc(var(--header-h) + 1rem);
+    max-height: calc(100vh - var(--header-h) - var(--statusbar-h) - 2rem);
     overflow-y: auto;
+    border-radius: var(--r-lg);
 }
 .code-sidebar > .scope-panel { flex-shrink: 0; max-height: none; overflow: visible; }
 
 /* UI section (ScopeUiPanel). By default it's a full-width band across the top of the code tab's
-   grid, above the editor and the sidebar; it can be moved into the sidebar instead. */
-.ui-panel-top { grid-column: 1 / -1; max-height: none; overflow: visible; }
+   grid, above every pane; it can be docked in the sidebar instead, by dragging its header or
+   with its button. */
+.ui-panel-top { grid-area: top; margin-bottom: 1rem; max-height: none; overflow: visible; }
 .ui-panel-head {
     display: flex;
     align-items: center;
@@ -2026,8 +2219,52 @@ input[type="text"]:focus, select:focus, .field:focus {
     gap: 0.5rem;
     margin-bottom: 0.5rem;
     border-bottom: 1px solid var(--line);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
 }
-.ui-panel .ui-panel-head h4 { margin: 0; border-bottom: 0; }
+.ui-panel .ui-panel-head h4 { flex: 1; margin: 0; border-bottom: 0; }
+.ui-drag-grip { display: inline-flex; margin-bottom: 0.4rem; color: var(--text-3); }
+.ui-drag-grip svg { width: 14px; height: 14px; }
+.ui-panel-head:hover .ui-drag-grip { color: var(--text-1); }
+.ui-panel.is-being-dragged { opacity: 0.55; }
+body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-select: none; }
+
+/* Drop zones: an empty dock while the UI section is dragged. The dock under the pointer lights up. */
+.ui-dock-zone {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    min-height: 64px;
+    padding: 0.75rem;
+    border: 2px dashed var(--line-focus);
+    border-radius: var(--r-lg);
+    background: rgba(230, 180, 80, 0.03);
+    color: var(--text-2);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    transition: border-color 0.12s, background-color 0.12s, color 0.12s;
+}
+.ui-dock-zone-top { grid-area: top; margin-bottom: 1rem; }
+.ui-dock-zone.is-target { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-hi); }
+.ui-panel-top.is-target, .code-sidebar.is-target { outline: 2px dashed var(--accent-ring); outline-offset: 3px; }
+.ui-dock-ghost {
+    position: fixed;
+    z-index: 3000;
+    transform: translate(14px, 14px);
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-md);
+    background: var(--bg-4);
+    box-shadow: var(--shadow-2);
+    color: var(--text-1);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+}
+.ui-dock-ghost.has-zone { border-color: var(--accent); color: var(--accent-hi); }
 .ui-placement-btn {
     display: inline-flex;
     align-items: center;
@@ -2457,17 +2694,44 @@ input[type="text"]:focus, select:focus, .field:focus {
 /* ==========================================================================
    Responsive
    ========================================================================== */
-@media (max-width: 1280px) {
-    .header-metric { display: none; }
-    .market-layout, .code-tab-layout { grid-template-columns: minmax(0, 1fr); }
+/* Medium screens: the data explorer moves above the editor, beside the sidebar. */
+@media (max-width: 1500px) {
+    .code-tab-layout.has-explorer {
+        grid-template-columns: minmax(0, 1fr) 14px var(--side-col);
+        grid-template-areas:
+            "top top top"
+            "explorer split-side side"
+            "editor split-side side";
+    }
+    .splitter-explorer { display: none; }
+    .code-explorer { position: static; max-height: none; margin-bottom: 1rem; }
+    .code-explorer .pane-rail { flex-direction: row; min-height: 0; padding: 0.5rem 0.8rem; }
+    .code-explorer .pane-rail-label { writing-mode: horizontal-tb; }
+}
+/* Tabs show just their icons, the open one its label too, once the header runs out of room. */
+@media (max-width: 1680px) {
+    .tab-label { display: none; }
+    .tab-btn.active .tab-label { display: inline; }
+}
+@media (max-width: 1100px) {
+    .market-layout { grid-template-columns: minmax(0, 1fr); }
+    .code-tab-layout, .code-tab-layout.has-explorer {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "top" "explorer" "editor" "side";
+    }
+    .pane-splitter { display: none; }
     .side-panel, .code-sidebar { position: static; max-height: none; }
+    .code-sidebar { margin-top: 1rem; }
+    .code-sidebar .pane-rail { flex-direction: row; min-height: 0; padding: 0.5rem 0.8rem; }
+    .code-sidebar .pane-rail-label { writing-mode: horizontal-tb; }
+    .palette-btn-label, .palette-btn kbd, .refresh-label { display: none; }
 }
 @media (max-width: 900px) {
-    .main-layout { padding: 1rem; }
+    .main-layout { padding: 1rem 1rem calc(var(--statusbar-h) + 1rem); }
     .group-items-layout { grid-template-columns: minmax(0, 1fr); }
     .groups-panel { position: static; max-height: none; }
-    .brand-sub { display: none; }
-    .app-header { padding: 0 1rem; }
+    .app-header { padding: 0 1rem; gap: 0.75rem; }
+    .brand-name, .user-name { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2585,7 +2849,7 @@ input[type="text"]:focus, select:focus, .field:focus {
 
 /* Wide screens: the page makes room for the drawer, and toasts move clear of it. */
 @media (min-width: 1100px) {
-    body.chat-open .main-layout { margin-right: var(--chat-w); }
+    body.chat-open .main-layout, body.chat-open .status-bar { margin-right: var(--chat-w); }
     body.chat-open .toast-container { right: calc(var(--chat-w) + 1.5rem); }
 }
 
@@ -2819,3 +3083,116 @@ input[type="text"]:focus, select:focus, .field:focus {
 
 /* A rate-limit wait: a countdown, not a failure. */
 .chat-notice.is-waiting { border-color: var(--accent-ring); background: var(--accent-soft); }
+
+/* ==========================================================================
+   Command palette (Ctrl+K)
+   ========================================================================== */
+.palette-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 12vh;
+    background: rgba(4, 6, 10, 0.55);
+    animation: fadeIn 0.12s ease-out;
+}
+.palette {
+    width: min(640px, calc(100vw - 2rem));
+    overflow: hidden;
+    background: var(--bg-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-3);
+}
+.palette-search {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+}
+.palette-search svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-2); }
+.palette-search input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-0);
+    font-family: var(--font-ui);
+    font-size: 0.95rem;
+}
+.palette-search input:focus-visible { outline: none; }
+.palette-list { max-height: min(420px, 60vh); overflow-y: auto; padding: 0.35rem; }
+.palette-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: none;
+    border-radius: var(--r-md);
+    background: none;
+    color: var(--text-1);
+    font-size: 0.84rem;
+    text-align: left;
+    cursor: pointer;
+}
+.palette-row.active { background: var(--accent-soft); color: var(--text-0); }
+.palette-group {
+    flex-shrink: 0;
+    min-width: 6.5rem;
+    color: var(--text-3);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.palette-row.active .palette-group { color: var(--accent); }
+.palette-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-empty { padding: 1rem; color: var(--text-2); font-size: 0.84rem; text-align: center; }
+
+/* ==========================================================================
+   Status bar
+   ========================================================================== */
+.status-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: var(--statusbar-h);
+    padding: 0 0.75rem;
+    background: var(--bg-1);
+    border-top: 1px solid var(--line);
+    color: var(--text-2);
+    font-size: 0.72rem;
+}
+.status-bar-side { display: flex; align-items: center; gap: 0.25rem; min-width: 0; }
+.status-item {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 0.5rem;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.status-tab { color: var(--text-1); font-weight: 600; }
+.status-item.is-error { color: var(--down); font-weight: 600; }
+.status-btn {
+    height: 18px;
+    border: none;
+    border-radius: var(--r-sm);
+    background: none;
+    color: inherit;
+    font-size: inherit;
+    cursor: pointer;
+}
+.status-btn:hover { background: var(--bg-3); color: var(--text-0); }
