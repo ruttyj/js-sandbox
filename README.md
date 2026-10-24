@@ -8,6 +8,15 @@ they follow them across devices. A scope can be shared read-only by link.
 
 The screenshots below are all of one scope: an Oathplate armour profit calculator.
 
+### Workbench
+
+The Scopes tab is a work area: a Data panel for finding items, the code editor, and a sidebar
+with the scope's UI and values. Panels resize by dragging the splitters between them and
+collapse to a rail (Ctrl+B / Ctrl+Alt+B), and the UI section is dragged by its header to dock it
+full width above the editor or in the sidebar. Ctrl+K opens a command palette.
+
+![The Scopes tab: Data panel, code editor and sidebar](docs/images/workbench.png)
+
 ### Scope UI
 
 A scope's code can build its own UI: forms, stat tiles and tables that update as prices and
@@ -18,7 +27,9 @@ inputs change.
 ### Code editor
 
 Each scope is JavaScript with built-in functions for looking up items and their live prices.
-The editor highlights variables, and item lookups take their item tag's colour.
+The editor highlights variables, and item lookups take their item tag's colour. With the caret
+on a variable, its occurrences are marked and a bar at the bottom steps through them (F7 /
+Shift+F7) or jumps to its declaration (F12).
 
 ![The Oathplate scope's code in the editor](docs/images/code-editor.png)
 

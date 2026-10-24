@@ -1244,10 +1244,13 @@ kbd {
 /* Wide screens: the data explorer (Scopes only), the editor and the sidebar side by side, with a
    draggable splitter between each pair; the UI section can take a full-width band on top. The
    pane widths come from workbenchStyle and are capped so the editor always keeps some room.
-   Rows have no gap, so an empty top band takes no space; the band gets its own margin instead. */
+   Rows have no gap, so an empty top band takes no space; the band gets its own margin instead.
+   The layout follows the work area's width (a container query on .main-layout), not the
+   window's, so opening the AI chat drawer narrows it too. */
+.main-layout { container: workarea / inline-size; }
 .code-tab-layout {
-    --explorer-col: min(var(--explorer-w, 400px), 30vw);
-    --side-col: min(var(--side-w, 420px), 42vw);
+    --explorer-col: min(var(--explorer-w, 400px), 30cqi);
+    --side-col: min(var(--side-w, 420px), 42cqi);
     display: grid;
     grid-template-columns: minmax(0, 1fr) 14px var(--side-col);
     grid-template-areas:
@@ -2694,8 +2697,8 @@ body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-s
 /* ==========================================================================
    Responsive
    ========================================================================== */
-/* Medium screens: the data explorer moves above the editor, beside the sidebar. */
-@media (max-width: 1500px) {
+/* A medium work area: the data explorer moves above the editor, beside the sidebar. */
+@container workarea (max-width: 1460px) {
     .code-tab-layout.has-explorer {
         grid-template-columns: minmax(0, 1fr) 14px var(--side-col);
         grid-template-areas:
@@ -2713,7 +2716,8 @@ body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-s
     .tab-label { display: none; }
     .tab-btn.active .tab-label { display: inline; }
 }
-@media (max-width: 1100px) {
+/* A narrow work area: every pane stacked. */
+@container workarea (max-width: 1060px) {
     .market-layout { grid-template-columns: minmax(0, 1fr); }
     .code-tab-layout, .code-tab-layout.has-explorer {
         grid-template-columns: minmax(0, 1fr);
@@ -2724,6 +2728,8 @@ body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-s
     .code-sidebar { margin-top: 1rem; }
     .code-sidebar .pane-rail { flex-direction: row; min-height: 0; padding: 0.5rem 0.8rem; }
     .code-sidebar .pane-rail-label { writing-mode: horizontal-tb; }
+}
+@media (max-width: 1100px) {
     .palette-btn-label, .palette-btn kbd, .refresh-label { display: none; }
 }
 @media (max-width: 900px) {
