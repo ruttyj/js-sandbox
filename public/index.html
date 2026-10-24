@@ -116,7 +116,7 @@
                 <select class="chat-model" :value="aiStatus.model" :disabled="chatBusy" title="Model" @change="setAiModel($event.target.value)">
                     <optgroup v-for="group in aiModelGroups" :key="group.provider" :label="group.label">
                         <option v-for="model in group.models" :key="model.id" :value="model.id" :disabled="!model.available"
-                                :title="model.available ? model.description : 'Connect a ' + group.label + ' key to use this'">{{ model.label }}</option>
+                                :title="aiModelOptionTitle(model, group.label)">{{ aiModelOptionLabel(model) }}</option>
                     </optgroup>
                 </select>
                 <button class="chat-icon-btn" :class="{ active: isChatHistoryOpen }" title="Saved chats" @click="toggleChatHistory">

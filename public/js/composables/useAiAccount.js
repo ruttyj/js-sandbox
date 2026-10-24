@@ -25,11 +25,65 @@ const AI_PROVIDER_INFO = [
 
 const emptyAiStatus = () => ({ available: false, connected: false, providers: {}, model: null, models: [] });
 
-// The picker's models grouped by provider: [{ provider, label, models }].
+/**
+ * The picker's models grouped by provider: [{ provider, label, models }]. The server sends the
+ * models most free requests per day first, so the groups keep that order too: the provider whose
+ * model comes first is the top group.
+ */
 const groupAiModels = (models) => {
-    return AI_PROVIDER_INFO
-        .map(info => ({ provider: info.id, label: info.label, models: models.filter(model => model.provider === info.id) }))
-        .filter(group => group.models.length);
+    const groups = [];
+    for (const model of models) {
+        let group = groups.find(candidate => candidate.provider === model.provider);
+        if (!group) {
+            const info = AI_PROVIDER_INFO.find(candidate => candidate.id === model.provider);
+            group = { provider: model.provider, label: info?.label ?? model.provider, models: [] };
+            groups.push(group);
+        }
+        group.models.push(model);
+    }
+    return groups;
+};
+
+// How roomy a free tier's daily limit is, as a colored dot: green for a day of steady use, yellow
+// for a few chats, red for a handful of requests (a single chat with tool calls can use several).
+const FREE_LIMIT_DOTS = [
+    { minimumPerDay: 250, dot: '🟢' },
+    { minimumPerDay: 50, dot: '🟡' },
+    { minimumPerDay: 0, dot: '🔴' },
+];
+
+const freeLimitDot = (requestsPerDay) => {
+    return FREE_LIMIT_DOTS.find(tier => requestsPerDay >= tier.minimumPerDay).dot;
+};
+
+// A model's line in the picker: "🟢 Gemini 3.5 Flash-Lite · 500/day" when it has free limits.
+// Built as one string because an in-page template can't put elements inside an <option>.
+const aiModelOptionLabel = (model) => {
+    if (!model.freeLimits) {
+        return model.label;
+    }
+    const perDay = model.freeLimits.requestsPerDay;
+    return `${freeLimitDot(perDay)} ${model.label} · ${perDay.toLocaleString()}/day`;
+};
+
+// 250000 -> "250K", 14400 -> "14.4K", 500 -> "500".
+const formatLimitNumber = (value) => {
+    return new Intl.NumberFormat('en', { notation: 'compact' }).format(value);
+};
+
+// A model's hover text in the picker: its description and, for a free model, all its limits.
+const aiModelOptionTitle = (model, providerLabel) => {
+    if (!model.available) {
+        return `Connect a ${providerLabel} key to use this`;
+    }
+    if (!model.freeLimits) {
+        return model.description;
+    }
+
+    const { requestsPerMinute, tokensPerMinute, requestsPerDay } = model.freeLimits;
+    const limits = `Free limits: ${requestsPerMinute} requests/min, ${formatLimitNumber(tokensPerMinute)} tokens/min, `
+        + `${requestsPerDay.toLocaleString()} requests/day`;
+    return `${model.description}\n${limits}`;
 };
 
 // What to show under a key field when saving it failed.
@@ -139,7 +193,7 @@ const useAiAccount = ({ showToast }) => {
     };
 
     return {
-        aiStatus, aiProviders: AI_PROVIDER_INFO, aiModelGroups, currentAiModel, assistantName,
+        aiStatus, aiProviders: AI_PROVIDER_INFO, aiModelGroups, aiModelOptionLabel, aiModelOptionTitle, currentAiModel, assistantName,
         isAiModalVisible, aiKeyInputs, aiKeyErrors, savingAiProvider, aiKeyButtonLabel,
         loadAiStatus, openAiModal, closeAiModal, connectAiKey, disconnectAiKey, setAiModel, markAiProviderDisconnected,
     };

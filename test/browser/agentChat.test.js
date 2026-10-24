@@ -105,6 +105,8 @@ beforeAll(async () => {
     cookie = signIn.headers.get('set-cookie').split(';')[0];
     await putJson('/api/ai/key/anthropic', { apiKey: GOOD_KEY });
     await putJson('/api/ai/key/gemini', { apiKey: GEMINI_KEY });
+    // With both connected the default is Gemini's roomiest free model; these tests talk to Claude.
+    await putJson('/api/ai/model', { model: 'claude-opus-5-5' });
 });
 
 afterAll(async () => {

@@ -67,14 +67,14 @@ describe('browser store syncing', () => {
 
     it('loads what was saved, including settings', async () => {
         const first = await openStore();
-        first.tab.editorSettings.lineNumbers = true;
+        first.tab.editorSettings.lineNumbers = false;
         first.store.dashboardFilterTags.value = ['PROFIT'];
         first.store.saveData();
         await waitFor(() => first.store.saveStatus.value === 'saved');
 
         const second = await openStore();
         expect(second.store.scopes.value[0]).toMatchObject({ id: '1', name: 'Alchs', code: 'const a = 1;' });
-        expect(second.tab.editorSettings.lineNumbers).toBe(true);
+        expect(second.tab.editorSettings.lineNumbers).toBe(false);
         expect(second.store.dashboardFilterTags.value).toEqual(['PROFIT']);
     });
 

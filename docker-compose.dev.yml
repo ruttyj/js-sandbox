@@ -1,0 +1,17 @@
+# Dev mode, layered on docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Plain `docker compose up` leaves this file out and runs the copy of the code baked into the image.
+#
+# The image's copies of server/ and public/ are swapped for the working folders, so an edit shows
+# up without a rebuild: tools/dev-server.mjs restarts the server on a server/ change, and a browser
+# refresh is enough for public/. node_modules stays the image's own, since the host's has a Windows
+# build of better-sqlite3. Rebuild (`docker compose up --build -d`) after changing package.json.
+services:
+  app:
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./server:/app/server
+      - ./public:/app/public
+      - ./tools/dev-server.mjs:/app/tools/dev-server.mjs
+    command: ["node", "tools/dev-server.mjs"]

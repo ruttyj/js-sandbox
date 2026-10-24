@@ -337,6 +337,30 @@ const formatChatDate = (timestamp) => {
     return date.toLocaleDateString();
 };
 
+// Why a save failed, as the toast says it: the server's reason, and for a rejected body the first
+// field it rejected ("messages.3.content: ...").
+const describeSaveError = (error) => {
+    if (error instanceof TypeError) {
+        return 'could not reach the server.';
+    }
+    const issue = error.body?.issues?.[0];
+    if (issue) {
+        return `${error.message} ${issue.path}: ${issue.message}`;
+    }
+    return error.message;
+};
+
+// Asks the browser to confirm leaving or refreshing while a chat turn runs (streaming, running
+// tools or waiting on an approval), because unloading the page cuts the agent off mid-task.
+const warnBeforeLeavingBusyChat = (chatBusy) => {
+    window.addEventListener('beforeunload', (event) => {
+        if (chatBusy.value) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+};
+
 // --- The composable -----------------------------------------------------------------------------
 
 /**
@@ -359,6 +383,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     const chatInputRef = ref(null);
     const chatScrollRef = ref(null);
     const chatBusy = ref(false);
+    warnBeforeLeavingBusyChat(chatBusy);
     const chatNotice = ref(null); // { text, needsKey } after a turn failed or was declined
 
     const chatId = ref(newChatId());
@@ -668,8 +693,8 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
                 costUsd: chatCostUsd.value,
             });
         } catch (error) {
-            console.error(error);
-            showToast('Could not save this chat.', 'error');
+            console.error(error, error.body);
+            showToast(`Could not save this chat: ${describeSaveError(error)}`, 'error');
         }
     };
 

@@ -73,7 +73,8 @@ describe('connecting API keys', () => {
             model: null,
         });
         expect(status.body.models.map(model => model.id)).toEqual([
-            'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash',
+            'gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash',
+            'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5',
         ]);
         expect(status.body.models.every(model => !model.available)).toBe(true);
     });
@@ -119,8 +120,11 @@ describe('connecting API keys', () => {
     it('chats with the picked model, using its provider key', async () => {
         const aiKeys = new AiKeyManager(testApp.knex, { cipher: createKeyCipher(testApp.config.aiKeySecret), verifyKey: fakeVerify });
         const userId = await devUserId(testApp.knex);
-        expect(await aiKeys.chatSettingsFor(userId)).toMatchObject({ apiKey: CLAUDE_KEY, model: { id: 'claude-opus-5-5' } });
+        // Nothing picked yet: the free model with the most requests per day.
+        expect(await aiKeys.chatSettingsFor(userId)).toMatchObject({ apiKey: GEMINI_KEY, model: { id: 'gemma-4-31b-it' } });
 
+        await agent.put('/api/ai/model').set(API_HEADER).send({ model: 'claude-opus-5-5' }).expect(200);
+        expect(await aiKeys.chatSettingsFor(userId)).toMatchObject({ apiKey: CLAUDE_KEY, model: { id: 'claude-opus-5-5' } });
         await agent.put('/api/ai/model').set(API_HEADER).send({ model: 'gemini-3.8-flash' }).expect(200);
         expect(await aiKeys.chatSettingsFor(userId)).toMatchObject({ apiKey: GEMINI_KEY, model: { id: 'gemini-3.8-flash' } });
         await agent.put('/api/ai/model').set(API_HEADER).send({ model: 'gpt-5' }).expect(400);

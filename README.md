@@ -15,6 +15,16 @@ docker compose up --build
 
 Open http://localhost:3000. Data lives in the `ge-tracker-data` volume.
 
+That runs the code baked into the image, so a change needs a rebuild. For development, add
+`docker-compose.dev.yml`, which mounts `server/` and `public/` from the working folder:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+A server change then restarts the server within a second (`tools/dev-server.mjs`), and a browser
+refresh picks up a `public/` change. Rebuild only after changing `package.json` or the `Dockerfile`.
+
 ### Without Docker
 
 Needs Node 20 or later.
