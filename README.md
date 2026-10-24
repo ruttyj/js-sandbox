@@ -4,6 +4,33 @@ A tool for tracking Old School RuneScape Grand Exchange prices and computing val
 Users sign in with Google; their scopes, globals, tags and settings are stored on the server, so
 they follow them across devices. A scope can be shared read-only by link.
 
+## Features
+
+The screenshots below are all of one scope: an Oathplate armour profit calculator.
+
+### Scope UI
+
+A scope's code can build its own UI: forms, stat tiles and tables that update as prices and
+inputs change.
+
+![The Oathplate scope's UI: a cost form, profit tiles, and product and ingredient tables](docs/images/ui-panel.png)
+
+### Code editor
+
+Each scope is JavaScript with built-in functions for looking up items and their live prices.
+The editor highlights variables, and item lookups take their item tag's colour.
+
+![The Oathplate scope's code in the editor](docs/images/code-editor.png)
+
+### AI chat
+
+The AI chat drawer can answer questions about items and prices, or change a scope. It reads the
+scope, test-runs its edit, and changes nothing until you click Apply.
+
+![The AI chat drawer moving a section of the Oathplate scope's UI](docs/images/ai-chat.png)
+
+More in [docs/](docs/README.md).
+
 ## Running it
 
 ### With Docker (recommended)
