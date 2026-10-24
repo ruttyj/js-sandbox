@@ -1,7 +1,9 @@
-// Textarea with a syntax-highlighted backdrop: variable keys and item refs (getOsrsItem('Name')
-// and legacy I_<id>_H/L) are tinted with their color, and optionally the code is colored like an
-// IDE (see editorSettings). The backdrop must mirror the textarea's size and scroll exactly.
-// Hovering a variable or an item ref shows a FormulaTooltip with its value or item details.
+// Textarea with a syntax-highlighted backdrop: variable keys are tinted with their color, local
+// bindings (parameters and declarations inside functions and blocks) with a softer color of their
+// own, and item refs (getOsrsItem('Name') and legacy I_<id>_H/L) get a faint underline. Optionally
+// the code is colored like an IDE (see editorSettings). The backdrop must mirror the textarea's
+// size and scroll exactly. Hovering a variable or an item ref shows a FormulaTooltip with its
+// value or item details, and hovering a variable or local binding outlines its other occurrences.
 //
 // The pure parts (editing keys, highlighting) are plain functions above the component; the
 // component wires them to the DOM.
@@ -88,58 +90,50 @@ const isCutShortcut = (e) => (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKe
 
 
 // --- Highlighting -----------------------------------------------------------------------------
+// The token patterns (SYNTAX_*) live in formula/codeBindings.js, so its scope analysis and this
+// highlighter agree on where every identifier starts.
 
 // getOsrsItem('Name') or getOsrsItem(5316), optionally followed by .highPrice / .lowPrice.
 const ITEM_LOOKUP_PATTERN = /(?<itemLookup>getOsrsItem\(\s*(?:(?<quote>['"])(?<itemName>(?:\\.|(?!\k<quote>).)*?)\k<quote>|(?<lookupId>\d+))\s*\)(?:\.(?<itemField>highPrice|lowPrice))?)/.source;
 const LEGACY_ITEM_REF_PATTERN = /(?<itemRef>I_(?<itemId>\d+)_(?<itemType>H|L))/.source;
 
-// Syntax highlighting tokens. Unterminated comments and strings run to the end so typing one
-// doesn't flicker. Numbers include RS shorthand like 10k / 1.5m / 2b.
-const SYNTAX_COMMENT_PATTERN = /(?<comment>\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$))/.source;
-const SYNTAX_STRING_PATTERN = /(?<string>'(?:\\.|[^'\\\n])*'?|"(?:\\.|[^"\\\n])*"?|`(?:\\[\s\S]|[^`\\])*`?)/.source;
-const SYNTAX_NUMBER_PATTERN = /(?<number>\b(?:0x[\da-f]+|\d[\d_]*(?:\.\d+)?(?:e[+-]?\d+)?[kmb]?)\b|\.\d+\b)/.source;
-const SYNTAX_IDENT_PATTERN = /(?<ident>[A-Za-z_$][\w$]*)/.source;
-const SYNTAX_OP_PATTERN = /(?<op>=>|[=!<>]=?=?|&&|\|\||\?\?|[-+*\/%&|^~?:]=?|\.\.\.)/.source;
-const SYNTAX_PUNCT_PATTERN = /(?<punct>[{}()\[\];,.])/.source;
-const SYNTAX_KEYWORDS = new Set([
-    'const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'do', 'of', 'in',
-    'break', 'continue', 'switch', 'case', 'default', 'new', 'typeof', 'instanceof', 'try',
-    'catch', 'finally', 'throw', 'class', 'this', 'delete', 'void', 'async', 'await', 'yield',
-]);
-const SYNTAX_LITERALS = new Set(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity']);
-
 // Tokens whose CSS class is just their group name (tok-comment, tok-string, ...).
 const PLAIN_TOKEN_GROUPS = ['comment', 'string', 'number', 'op', 'punct'];
 
-// An item ref's outline tells high from low price at a glance.
-const HIGH_PRICE_BORDER = '#FFF5';
-const LOW_PRICE_BORDER = '#000';
 const TINT_BASE_STYLE = 'border-radius: 4px;';
+
+// Hex alpha suffixes. Item refs are kept faint (a light wash and an underline), since they're
+// mostly there for their tooltip; locals get a soft wash, lighter than a scope variable's tint.
+const ITEM_TINT_ALPHA = '14';
+const ITEM_UNDERLINE_ALPHA = 'a0';
+const LOCAL_TINT_ALPHA = '33';
 
 // One regex matching every token to color. Order matters: comments and item lookups must win
 // over the strings and operators inside them, and variables over plain identifiers. Named
-// groups tell the tokens apart. variableKeys: longest first, so `Profit` beats `Pro`.
-const buildHighlightRegex = (variableKeys, syntax) => {
-    const parts = [];
-    if (syntax) parts.push(SYNTAX_COMMENT_PATTERN);
-    parts.push(ITEM_LOOKUP_PATTERN, LEGACY_ITEM_REF_PATTERN);
-    if (syntax) parts.push(SYNTAX_STRING_PATTERN);
-    if (variableKeys.length) parts.push(`\\b(?<varKey>${variableKeys.map(escapeRegex).join('|')})\\b`);
-    if (syntax) parts.push(SYNTAX_NUMBER_PATTERN, SYNTAX_IDENT_PATTERN, SYNTAX_OP_PATTERN, SYNTAX_PUNCT_PATTERN);
+// groups tell the tokens apart. variableKeys: longest first, so `Profit` beats `Pro`. The syntax
+// tokens are matched even with syntax coloring off, so names inside strings and comments aren't
+// taken for variables, and identifiers can still link to their bindings.
+const buildHighlightRegex = (variableKeys) => {
+    const parts = [SYNTAX_COMMENT_PATTERN, ITEM_LOOKUP_PATTERN, LEGACY_ITEM_REF_PATTERN, SYNTAX_STRING_PATTERN];
+    if (variableKeys.length) {
+        parts.push(`\\b(?<varKey>${variableKeys.map(escapeRegex).join('|')})\\b`);
+    }
+    parts.push(SYNTAX_NUMBER_PATTERN, SYNTAX_IDENT_PATTERN, SYNTAX_OP_PATTERN, SYNTAX_PUNCT_PATTERN);
     return new RegExp(parts.join('|'), 'gi');
 };
 
 const syntaxToken = (cls, text) => `<span class="tok-${cls}">${escapeHtml(text)}</span>`;
 
 // hl (the highlight context): { text, tint, syntax, variables, itemsById, itemsByName }.
-// itemsById is a plain object and itemsByName a Map, the shapes findItem takes.
+// itemsById is a plain object and itemsByName a Map, the shapes findItem takes. highlightCode
+// adds variableByKey (upper-cased key -> variable) and bindings (see findCodeBindings).
 
 // An item ref is always wrapped in a span carrying its getOsrsItem argument (a name or an ID),
-// so the hover tooltip can find it; tinting adds the colored background around its own
-// (possibly syntax-colored) parts. The argument is URI-encoded so any name is a safe attribute.
-// sourceStart: where a getOsrsItem(...) call starts in the code, so the tooltip can replace it;
-// null for legacy refs.
-const tintItemRef = (hl, itemArg, sourceStart, color, borderColor, innerHtml) => {
+// so the hover tooltip can find it; tinting adds a faint wash and underline in the item's color
+// around its own (possibly syntax-colored) parts. The argument is URI-encoded so any name is a
+// safe attribute. sourceStart: where a getOsrsItem(...) call starts in the code, so the tooltip
+// can replace it; null for legacy refs.
+const tintItemRef = (hl, itemArg, sourceStart, color, innerHtml) => {
     let argAttr = ` data-item-arg="${encodeURIComponent(itemArg)}"`;
     if (sourceStart !== null) {
         argAttr += ` data-item-start="${sourceStart}"`;
@@ -147,18 +141,66 @@ const tintItemRef = (hl, itemArg, sourceStart, color, borderColor, innerHtml) =>
     if (!hl.tint) {
         return `<span${argAttr}>${innerHtml}</span>`;
     }
-    const style = `background-color: ${color}60; ${TINT_BASE_STYLE} box-shadow: 0 0 0 2px ${borderColor};`;
+    const style = `background-color: ${color}${ITEM_TINT_ALPHA}; ${TINT_BASE_STYLE} box-shadow: inset 0 -1px 0 ${color}${ITEM_UNDERLINE_ALPHA};`;
     return `<span${argAttr} style="${style}">${innerHtml}</span>`;
 };
 
 // Variable spans always keep data-var-key, even untinted, so the color picker can find them.
-const renderVariable = (hl, varKey) => {
-    const variable = hl.variables.find(v => v.key.toUpperCase() === varKey.toUpperCase());
-    const color = variable?.color || UNDECLARED_COLOR;
-    const keyAttr = variable ? ` data-var-key="${variable.key}"` : '';
+const renderVariable = (hl, text, variable) => {
+    const color = variable.color || UNDECLARED_COLOR;
     const cls = hl.syntax ? ' class="tok-var"' : '';
     const style = hl.tint ? ` style="background-color: ${color}60; ${TINT_BASE_STYLE} box-shadow: 0 0 2px ${color};"` : '';
-    return `<span${keyAttr}${cls}${style}>${escapeHtml(varKey)}</span>`;
+    return `<span data-var-key="${variable.key}"${cls}${style}>${escapeHtml(text)}</span>`;
+};
+
+// A local's color comes from its name, so it stays the same while the code around it changes.
+const localBindingColor = (name) => {
+    let hue = 0;
+    for (const ch of name) {
+        hue = (hue * 31 + ch.charCodeAt(0)) % 360;
+    }
+    return hslToHex(hue, 65, 62);
+};
+
+// An identifier followed by "(" is a call; one after "." is a property.
+const identifierClass = (ident, text, start, end) => {
+    if (SYNTAX_KEYWORDS.has(ident)) return 'keyword';
+    if (SYNTAX_LITERALS.has(ident)) return 'literal';
+    if (/^\s*\(/.test(text.slice(end))) return 'fn';
+    if (text[start - 1] === '.') return 'prop';
+    return 'ident';
+};
+
+// Local spans always keep data-binding, even untinted, so hovering one can find the others.
+// They keep their usual syntax color (a local function call stays tok-fn).
+const renderLocal = (hl, name, start, binding) => {
+    const cls = hl.syntax ? ` class="tok-${identifierClass(name, hl.text, start, start + name.length)}"` : '';
+    const style = hl.tint ? ` style="background-color: ${localBindingColor(binding.name)}${LOCAL_TINT_ALPHA}; ${TINT_BASE_STYLE}"` : '';
+    return `<span data-binding="${binding.id}"${cls}${style}>${escapeHtml(name)}</span>`;
+};
+
+const renderPlainIdentifier = (hl, name, start) => {
+    if (!hl.syntax) {
+        return escapeHtml(name);
+    }
+    return syntaxToken(identifierClass(name, hl.text, start, start + name.length), name);
+};
+
+// A name declared in this code links to its declaration: a top-level declaration of a scope
+// variable shows as that variable, any other declaration (a parameter, a const inside a
+// function, ...) as a local, even when it shares a variable's name. An undeclared name is a
+// variable from elsewhere (another scope, the globals) when its key matches, else plain code.
+const renderName = (hl, name, start) => {
+    const binding = hl.bindings.get(start);
+    const variable = hl.variableByKey.get(name.toUpperCase());
+    const isScopeVariable = variable && (!binding || binding.isTopLevel);
+    if (isScopeVariable) {
+        return renderVariable(hl, name, variable);
+    }
+    if (binding) {
+        return renderLocal(hl, name, start, binding);
+    }
+    return renderPlainIdentifier(hl, name, start);
 };
 
 // getOsrsItem ( 'Name' ) .field, each part colored; the name may itself contain parentheses.
@@ -172,55 +214,63 @@ const syntaxColoredItemLookup = (lookup) => {
         + (dot ? syntaxToken('punct', dot) + syntaxToken('prop', field) : '');
 };
 
-const renderItemLookup = (hl, { itemLookup, itemName, lookupId, itemField }, start) => {
+const renderItemLookup = (hl, { itemLookup, itemName, lookupId }, start) => {
     const itemArg = lookupId ?? unescapeQuoted(itemName);
     const item = findItem(itemArg, hl.itemsById, hl.itemsByName);
     const color = item?.color || UNDECLARED_COLOR;
-    const field = (itemField || '').toLowerCase();
-    const borderColor = field === 'highprice' ? HIGH_PRICE_BORDER : field === 'lowprice' ? LOW_PRICE_BORDER : color;
     const inner = hl.syntax ? syntaxColoredItemLookup(itemLookup) : escapeHtml(itemLookup);
-    return tintItemRef(hl, itemArg, start, color, borderColor, inner);
+    return tintItemRef(hl, itemArg, start, color, inner);
 };
 
-const renderLegacyItemRef = (hl, { itemRef, itemId, itemType }) => {
+const renderLegacyItemRef = (hl, { itemRef, itemId }) => {
     const item = hl.itemsById[itemId];
     const color = item?.color || UNDECLARED_COLOR;
-    const borderColor = itemType.toUpperCase() === 'H' ? HIGH_PRICE_BORDER : LOW_PRICE_BORDER;
-    return tintItemRef(hl, itemId, null, color, borderColor, hl.syntax ? syntaxToken('var', itemRef) : escapeHtml(itemRef));
-};
-
-// An identifier followed by "(" is a call; one after "." is a property.
-const identifierClass = (ident, text, start, end) => {
-    if (SYNTAX_KEYWORDS.has(ident)) return 'keyword';
-    if (SYNTAX_LITERALS.has(ident)) return 'literal';
-    if (/^\s*\(/.test(text.slice(end))) return 'fn';
-    if (text[start - 1] === '.') return 'prop';
-    return 'ident';
+    return tintItemRef(hl, itemId, null, color, hl.syntax ? syntaxToken('var', itemRef) : escapeHtml(itemRef));
 };
 
 const renderHighlightMatch = (hl, match) => {
     const groups = match.groups;
-    if (groups.varKey) return renderVariable(hl, groups.varKey);
     if (groups.itemLookup) return renderItemLookup(hl, groups, match.index);
     if (groups.itemRef) return renderLegacyItemRef(hl, groups);
-    if (groups.ident) {
-        const end = match.index + match[0].length;
-        return syntaxToken(identifierClass(groups.ident, hl.text, match.index, end), groups.ident);
+
+    const name = groups.varKey ?? groups.ident;
+    if (name) {
+        return renderName(hl, name, match.index);
     }
-    const plain = PLAIN_TOKEN_GROUPS.find(name => groups[name]);
-    return plain ? syntaxToken(plain, groups[plain]) : escapeHtml(match[0]);
+
+    const plain = PLAIN_TOKEN_GROUPS.find(group => groups[group]);
+    if (plain && hl.syntax) {
+        return syntaxToken(plain, groups[plain]);
+    }
+    return escapeHtml(match[0]);
 };
 
-// The backdrop's HTML, built in one pass over the raw text. tint colors variables and item
-// refs; syntax also colors comments, strings, numbers, keywords, ... (the textarea text is then
-// made transparent so the colored backdrop shows through). The trailing <br> keeps a final
+const variablesByUpperKey = (variables) => {
+    const byKey = new Map();
+    for (const variable of variables) {
+        const key = variable.key.toUpperCase();
+        if (!byKey.has(key)) {
+            byKey.set(key, variable);
+        }
+    }
+    return byKey;
+};
+
+// The backdrop's HTML, built in one pass over the raw text. tint colors variables, locals and
+// item refs; syntax also colors comments, strings, numbers, keywords, ... (the textarea text is
+// then made transparent so the colored backdrop shows through). The trailing <br> keeps a final
 // empty line as tall as the textarea's.
 const highlightCode = (hl) => {
-    const regex = buildHighlightRegex(hl.variables.map(v => v.key), hl.syntax);
+    const ctx = {
+        ...hl,
+        variableByKey: variablesByUpperKey(hl.variables),
+        bindings: findCodeBindings(hl.text),
+    };
+    const regex = buildHighlightRegex(hl.variables.map(v => v.key));
     let html = '';
     let last = 0;
     for (const match of hl.text.matchAll(regex)) {
-        html += escapeHtml(hl.text.slice(last, match.index)) + renderHighlightMatch(hl, match);
+        html += escapeHtml(hl.text.slice(last, match.index)) + renderHighlightMatch(ctx, match);
         last = match.index + match[0].length;
     }
     return html + escapeHtml(hl.text.slice(last)) + '<br>';
@@ -365,9 +415,9 @@ const declaredItemCall = (code, key) => {
 // The backdrop spans a tooltip can be about (see renderVariable and tintItemRef).
 const TIP_TARGET_SELECTOR = '[data-var-key], [data-item-arg]';
 
-// The tooltip target under a point: { span, rect }, or null.
-const tipTargetAt = (backdrop, x, y) => {
-    const spans = backdrop ? backdrop.querySelectorAll(TIP_TARGET_SELECTOR) : [];
+// The backdrop span matching selector under a point: { span, rect }, or null.
+const backdropSpanAt = (backdrop, selector, x, y) => {
+    const spans = backdrop ? backdrop.querySelectorAll(selector) : [];
     for (const span of spans) {
         for (const rect of span.getClientRects()) {
             const isInside = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
@@ -378,6 +428,8 @@ const tipTargetAt = (backdrop, x, y) => {
     }
     return null;
 };
+
+const tipTargetAt = (backdrop, x, y) => backdropSpanAt(backdrop, TIP_TARGET_SELECTOR, x, y);
 
 // What a target span is: 'var:<key>' or 'item:<argument>'. Used to tell targets apart.
 const tipTargetId = (span) => {
@@ -472,6 +524,48 @@ const buildTip = (tc, span, rect) => {
     const hasStart = span.dataset.itemStart !== undefined;
     const call = hasStart ? itemCallAt(tc.text, Number(span.dataset.itemStart)) : null;
     return { target, anchor, variable: null, ...itemTipContent(tc, itemArg, call) };
+};
+
+
+// --- Linked occurrences -----------------------------------------------------------------------
+// Hovering a variable or a local binding outlines every occurrence of it in the backdrop. A
+// local's occurrences share its data-binding id (see renderLocal), so a `product` parameter
+// only links to the uses inside its own function, not to another function's `product`.
+
+const OCCURRENCE_SELECTOR = '[data-var-key], [data-binding]';
+const OCCURRENCE_CLASS = 'occurrence-linked';
+
+// The selector matching every occurrence of what span names. Variable keys are identifiers, so
+// they need no escaping inside the quotes.
+const occurrenceSelector = (span) => {
+    if (span.dataset.binding) {
+        return `[data-binding="${span.dataset.binding}"]`;
+    }
+    return `[data-var-key="${span.dataset.varKey}"]`;
+};
+
+// The selector for the occurrences to outline at a point, or null when it's on nothing linkable.
+const occurrenceSelectorAt = (backdrop, x, y) => {
+    const hit = backdropSpanAt(backdrop, OCCURRENCE_SELECTOR, x, y);
+    if (!hit) {
+        return null;
+    }
+    return occurrenceSelector(hit.span);
+};
+
+// Outlines the spans matching selector, clearing the previous outline; null just clears it.
+const markOccurrences = (backdrop, selector) => {
+    if (!backdrop) {
+        return;
+    }
+    for (const span of backdrop.querySelectorAll(`.${OCCURRENCE_CLASS}`)) {
+        span.classList.remove(OCCURRENCE_CLASS);
+    }
+    if (selector) {
+        for (const span of backdrop.querySelectorAll(selector)) {
+            span.classList.add(OCCURRENCE_CLASS);
+        }
+    }
 };
 
 
@@ -581,7 +675,21 @@ const FormulaInput = {
             startIdleTimer();
         };
 
+        // The selector currently outlined (see "Linked occurrences"), so moving within one
+        // occurrence doesn't re-mark them all. Re-rendering the backdrop drops the outline.
+        let linkedSelector = null;
+
+        const linkOccurrences = (selector) => {
+            if (selector === linkedSelector) {
+                return;
+            }
+            linkedSelector = selector;
+            markOccurrences(backdropRef.value, selector);
+        };
+
         const handleMouseMove = (e) => {
+            linkOccurrences(occurrenceSelectorAt(backdropRef.value, e.clientX, e.clientY));
+
             const hit = tipTargetAt(backdropRef.value, e.clientX, e.clientY);
             const target = hit ? tipTargetId(hit.span) : null;
             if (target !== dismissedTarget) {
@@ -611,6 +719,11 @@ const FormulaInput = {
             // card cancels the switch (see handleTipEnter). Each move restarts the wait.
             const delay = tip.value ? TIP_SWITCH_DELAY : TIP_SHOW_DELAY;
             showTimer = setTimeout(() => showTip(hit), delay);
+        };
+
+        const handleMouseLeave = () => {
+            linkOccurrences(null);
+            hideTipSoon();
         };
 
         const handleColorInput = (color) => {
@@ -769,6 +882,11 @@ const FormulaInput = {
             itemsByName: itemLookup.value.byName,
         }));
 
+        // The new backdrop has no outline, so the next mouse move marks the occurrences again.
+        watch(highlightedHTML, () => {
+            linkedSelector = null;
+        });
+
         const errorLines = computed(() => codeErrorLines(props.errors || []));
 
         const gutterHTML = computed(() => {
@@ -847,7 +965,7 @@ const FormulaInput = {
             editorSettings,
             textareaRef, backdropRef, containerRef, handleInput, handleKeydown, handleScroll, highlightedHTML,
             gutterRef, gutterHTML, containerStyle, errorLayerRef, errorLayerHTML,
-            tip, handleMouseMove, hideTipSoon, dismissTip, handleTipEnter, handleTipLeave,
+            tip, handleMouseMove, handleMouseLeave, dismissTip, handleTipEnter, handleTipLeave,
             handleColorInput, handlePickerClosed, handleReplaceCall,
             openPicker: () => { pickerOpen = true; },
         };
@@ -870,7 +988,7 @@ const FormulaInput = {
                 @keydown="handleKeydown"
                 @scroll="handleScroll"
                 @mousemove="handleMouseMove"
-                @mouseleave="hideTipSoon"
+                @mouseleave="handleMouseLeave"
                 @mousedown="dismissTip"
                 @focus="$emit('focus')"
                 @blur="$emit('blur')"

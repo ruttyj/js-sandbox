@@ -1379,6 +1379,10 @@ input[type="text"]:focus, select:focus, .field:focus {
 .tok-ident   { color: var(--text-0); }
 .tok-var     { color: #ffd479; }
 
+/* Hovering a variable or local outlines all its occurrences. An outline, because the tinted
+   spans already use box-shadow inline. */
+.formula-backdrop .occurrence-linked { outline: 1px solid rgba(255, 255, 255, 0.55); border-radius: 4px; }
+
 /* Line numbers: the gutter layer spans the whole editor behind the code, holding each line's
    text (transparent) so wrapped lines keep their numbers level; the numbers sit out to the left
    of the text, in the strip the other layers move aside for. It is never selectable, and the
