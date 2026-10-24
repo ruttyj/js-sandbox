@@ -1,0 +1,19 @@
+# Local development: http://localhost:3000, settings from .env.
+#   docker compose up --build
+# For a server behind Traefik with HTTPS, add docker-compose.prod.yml (see README).
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # Fixed inside the container, whatever .env says for running outside Docker.
+      PORT: 3000
+      DATA_DIR: /data
+    ports:
+      - "3000:3000"
+    volumes:
+      - ge-tracker-data:/data
+    restart: unless-stopped
+
+volumes:
+  ge-tracker-data:

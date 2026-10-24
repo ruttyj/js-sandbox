@@ -1,19 +1,19 @@
-// Builds data/itemTagData.js (the app's built-in item tags) from the tag proposals.
+// Builds public/data/itemTagData.js (the app's built-in item tags) from the tag proposals.
 //
 //   node tools/build-item-tags.mjs           build, and print a summary
 //   node tools/build-item-tags.mjs --report  also print every tag's item count
 //
 // Reads data/raw/items.json (from tools/fetch-item-data.mjs), every
-// data/tagging/proposals/*.json, and data/tagging/merge.json (how conflicts between proposals
-// are settled). See data/tagging/README.md for the proposal format and matching rules.
+// public/data/tagging/proposals/*.json, and public/data/tagging/merge.json (how conflicts between proposals
+// are settled). See public/data/tagging/README.md for the proposal format and matching rules.
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const proposalsDir = join(projectRoot, 'data', 'tagging', 'proposals');
-const outputFile = join(projectRoot, 'data', 'itemTagData.js');
+const proposalsDir = join(projectRoot, 'public', 'data', 'tagging', 'proposals');
+const outputFile = join(projectRoot, 'public', 'data', 'itemTagData.js');
 
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 
@@ -233,7 +233,7 @@ const renderDataFile = (tags, byItem) => {
 
 const main = async () => {
     const showReport = process.argv.includes('--report');
-    const merge = await readJson(join(projectRoot, 'data', 'tagging', 'merge.json'));
+    const merge = await readJson(join(projectRoot, 'public', 'data', 'tagging', 'merge.json'));
     const items = await readJson(join(projectRoot, 'data', 'raw', 'items.json'));
     const proposals = await loadProposals(merge);
 

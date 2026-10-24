@@ -1,4 +1,4 @@
-// Builds data/itemRecipeData.js (the app's built-in recipes) from the wiki's recipe data.
+// Builds public/data/itemRecipeData.js (the app's built-in recipes) from the wiki's recipe data.
 //
 //   node tools/build-item-recipes.mjs
 //
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rawDir = join(projectRoot, 'data', 'raw');
-const outputFile = join(projectRoot, 'data', 'itemRecipeData.js');
+const outputFile = join(projectRoot, 'public', 'data', 'itemRecipeData.js');
 
 const readJson = async (path) => JSON.parse(await readFile(path, 'utf8'));
 

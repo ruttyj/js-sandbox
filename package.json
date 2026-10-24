@@ -1,0 +1,35 @@
+{
+  "name": "ge-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OSRS Grand Exchange price tracker and formula suite: Express API + static Vue frontend.",
+  "type": "module",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch --env-file=.env server/index.js",
+    "migrate": "knex --knexfile server/db/knexfile.js migrate:latest",
+    "migrate:rollback": "knex --knexfile server/db/knexfile.js migrate:rollback",
+    "migrate:make": "knex --knexfile server/db/knexfile.js migrate:make",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "knex": "^3.3.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "lz-string": "^1.5.0",
+    "supertest": "^7.3.1",
+    "vitest": "^3.2.4"
+  }
+}

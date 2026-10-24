@@ -1,2 +1,6 @@
 claude_ref
 data/raw/
+node_modules/
+.env
+storage/
+/index.html

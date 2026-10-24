@@ -1,0 +1,10 @@
+node_modules
+storage
+data/raw
+claude_ref
+test
+tools
+.git
+.env
+.env.*
+*.log

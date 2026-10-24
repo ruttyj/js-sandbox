@@ -1,0 +1,1894 @@
+[
+ {
+  "name": "Noteable items",
+  "count": 3863
+ },
+ {
+  "name": "Members' items",
+  "count": 3842
+ },
+ {
+  "name": "Items appearing in drop table",
+  "count": 2668
+ },
+ {
+  "name": "Equipable items",
+  "count": 2208
+ },
+ {
+  "name": "Items dropped by monster",
+  "count": 1512
+ },
+ {
+  "name": "Collection log items",
+  "count": 1079
+ },
+ {
+  "name": "Recipes that use a facility",
+  "count": 932
+ },
+ {
+  "name": "Free-to-play items",
+  "count": 857
+ },
+ {
+  "name": "Items storable in the costume room",
+  "count": 830
+ },
+ {
+  "name": "Recipes that require a tool",
+  "count": 778
+ },
+ {
+  "name": "Content released in 2005",
+  "count": 765
+ },
+ {
+  "name": "Stackable items",
+  "count": 636
+ },
+ {
+  "name": "Content released in 2006",
+  "count": 611
+ },
+ {
+  "name": "Treasure Trails rewards",
+  "count": 607
+ },
+ {
+  "name": "Weapons",
+  "count": 492
+ },
+ {
+  "name": "Content released in 2004",
+  "count": 476
+ },
+ {
+  "name": "Weapon slot items",
+  "count": 411
+ },
+ {
+  "name": "Content released in 2001",
+  "count": 379
+ },
+ {
+  "name": "Smithing",
+  "count": 379
+ },
+ {
+  "name": "Content released in 2002",
+  "count": 364
+ },
+ {
+  "name": "Herblore",
+  "count": 356
+ },
+ {
+  "name": "Potions",
+  "count": 345
+ },
+ {
+  "name": "Untradeable items",
+  "count": 345
+ },
+ {
+  "name": "Head slot items",
+  "count": 340
+ },
+ {
+  "name": "Fletching",
+  "count": 320
+ },
+ {
+  "name": "Items needed for an emote clue",
+  "count": 311
+ },
+ {
+  "name": "Items storable in the potion storage",
+  "count": 311
+ },
+ {
+  "name": "Legs slot items",
+  "count": 301
+ },
+ {
+  "name": "Content released in 2014",
+  "count": 298
+ },
+ {
+  "name": "Body slot items",
+  "count": 292
+ },
+ {
+  "name": "Items that cannot be alchemised",
+  "count": 289
+ },
+ {
+  "name": "Content released in 2025",
+  "count": 287
+ },
+ {
+  "name": "Melee armour",
+  "count": 279
+ },
+ {
+  "name": "Melee weapons",
+  "count": 279
+ },
+ {
+  "name": "Crafting",
+  "count": 277
+ },
+ {
+  "name": "Cooking",
+  "count": 267
+ },
+ {
+  "name": "Weapons that inflict poison",
+  "count": 265
+ },
+ {
+  "name": "Temporary skill boost",
+  "count": 236
+ },
+ {
+  "name": "Content released in 2016",
+  "count": 231
+ },
+ {
+  "name": "Magic",
+  "count": 212
+ },
+ {
+  "name": "Edible items",
+  "count": 204
+ },
+ {
+  "name": "Content released in 2019",
+  "count": 195
+ },
+ {
+  "name": "Farming",
+  "count": 188
+ },
+ {
+  "name": "Content released in 2024",
+  "count": 187
+ },
+ {
+  "name": "Food",
+  "count": 183
+ },
+ {
+  "name": "Prayer items",
+  "count": 175
+ },
+ {
+  "name": "Ammunition slot items",
+  "count": 172
+ },
+ {
+  "name": "Construction",
+  "count": 168
+ },
+ {
+  "name": "Two-handed slot items",
+  "count": 162
+ },
+ {
+  "name": "Hard clue rewards",
+  "count": 160
+ },
+ {
+  "name": "Rune",
+  "count": 159
+ },
+ {
+  "name": "Content released in 2007",
+  "count": 156
+ },
+ {
+  "name": "Ranged armour",
+  "count": 153
+ },
+ {
+  "name": "Ranged weapons",
+  "count": 152
+ },
+ {
+  "name": "Jewellery",
+  "count": 147
+ },
+ {
+  "name": "Content released in 2026",
+  "count": 146
+ },
+ {
+  "name": "Content released in 2003",
+  "count": 134
+ },
+ {
+  "name": "Stab weapons",
+  "count": 133
+ },
+ {
+  "name": "Item sets",
+  "count": 132
+ },
+ {
+  "name": "Magic armour",
+  "count": 132
+ },
+ {
+  "name": "Easy clue rewards",
+  "count": 131
+ },
+ {
+  "name": "Content released in 2023",
+  "count": 129
+ },
+ {
+  "name": "Content released in 2018",
+  "count": 115
+ },
+ {
+  "name": "Medium clue rewards",
+  "count": 115
+ },
+ {
+  "name": "Content released in 2021",
+  "count": 114
+ },
+ {
+  "name": "Shield slot items",
+  "count": 112
+ },
+ {
+  "name": "Deadman seasonal items",
+  "count": 110
+ },
+ {
+  "name": "Feet slot items",
+  "count": 106
+ },
+ {
+  "name": "Content released in 2015",
+  "count": 104
+ },
+ {
+  "name": "Content released in 2017",
+  "count": 104
+ },
+ {
+  "name": "Bolts",
+  "count": 103
+ },
+ {
+  "name": "Cape slot items",
+  "count": 96
+ },
+ {
+  "name": "Slash weapons",
+  "count": 95
+ },
+ {
+  "name": "Adamant",
+  "count": 94
+ },
+ {
+  "name": "Weapons with Special attacks",
+  "count": 94
+ },
+ {
+  "name": "Elite clue rewards",
+  "count": 91
+ },
+ {
+  "name": "Deadman: Armageddon",
+  "count": 89
+ },
+ {
+  "name": "Neck slot items",
+  "count": 89
+ },
+ {
+  "name": "Teleportation items",
+  "count": 89
+ },
+ {
+  "name": "Capes",
+  "count": 88
+ },
+ {
+  "name": "Drinks",
+  "count": 88
+ },
+ {
+  "name": "Quest items",
+  "count": 87
+ },
+ {
+  "name": "Helmets",
+  "count": 86
+ },
+ {
+  "name": "Flatpacks",
+  "count": 85
+ },
+ {
+  "name": "Tools",
+  "count": 85
+ },
+ {
+  "name": "Hands slot items",
+  "count": 84
+ },
+ {
+  "name": "Hunter",
+  "count": 83
+ },
+ {
+  "name": "Crafting items",
+  "count": 82
+ },
+ {
+  "name": "Mithril",
+  "count": 82
+ },
+ {
+  "name": "Bronze",
+  "count": 81
+ },
+ {
+  "name": "Magic weapons",
+  "count": 80
+ },
+ {
+  "name": "Master clue rewards",
+  "count": 80
+ },
+ {
+  "name": "Non-GE items",
+  "count": 80
+ },
+ {
+  "name": "Iron",
+  "count": 79
+ },
+ {
+  "name": "Seeds",
+  "count": 79
+ },
+ {
+  "name": "Steel",
+  "count": 79
+ },
+ {
+  "name": "Prayer",
+  "count": 78
+ },
+ {
+  "name": "Runecraft",
+  "count": 78
+ },
+ {
+  "name": "Content released in 2022",
+  "count": 75
+ },
+ {
+  "name": "Items with charges",
+  "count": 75
+ },
+ {
+  "name": "Fish",
+  "count": 72
+ },
+ {
+  "name": "Produce",
+  "count": 72
+ },
+ {
+  "name": "Black",
+  "count": 71
+ },
+ {
+  "name": "Boots",
+  "count": 71
+ },
+ {
+  "name": "Gnome cooking",
+  "count": 71
+ },
+ {
+  "name": "Orikalkum",
+  "count": 71
+ },
+ {
+  "name": "Deadman: Annihilation",
+  "count": 70
+ },
+ {
+  "name": "Deadman: Apocalypse",
+  "count": 69
+ },
+ {
+  "name": "Woodcutting",
+  "count": 69
+ },
+ {
+  "name": "Items subject to Grand Exchange item sink",
+  "count": 68
+ },
+ {
+  "name": "Content released in 2020",
+  "count": 65
+ },
+ {
+  "name": "Items exempt from Grand Exchange tax",
+  "count": 65
+ },
+ {
+  "name": "Meat",
+  "count": 65
+ },
+ {
+  "name": "Herblore secondaries",
+  "count": 61
+ },
+ {
+  "name": "Platebodies",
+  "count": 61
+ },
+ {
+  "name": "Arrows",
+  "count": 59
+ },
+ {
+  "name": "Barbarian mixes",
+  "count": 58
+ },
+ {
+  "name": "Strength boosting items",
+  "count": 57
+ },
+ {
+  "name": "Barrows",
+  "count": 56
+ },
+ {
+  "name": "Shared treasure trails items",
+  "count": 56
+ },
+ {
+  "name": "Barrows equipment",
+  "count": 55
+ },
+ {
+  "name": "Ornament kits",
+  "count": 55
+ },
+ {
+  "name": "Amulets",
+  "count": 53
+ },
+ {
+  "name": "Deadman: Reborn",
+  "count": 53
+ },
+ {
+  "name": "Team capes",
+  "count": 53
+ },
+ {
+  "name": "Warm clothing",
+  "count": 53
+ },
+ {
+  "name": "Crush weapons",
+  "count": 51
+ },
+ {
+  "name": "Pies",
+  "count": 50
+ },
+ {
+  "name": "Defence boosting items",
+  "count": 48
+ },
+ {
+  "name": "God Wars Dungeon",
+  "count": 48
+ },
+ {
+  "name": "Firemaking",
+  "count": 47
+ },
+ {
+  "name": "Magic tablets",
+  "count": 47
+ },
+ {
+  "name": "Sailing",
+  "count": 47
+ },
+ {
+  "name": "Kiteshields",
+  "count": 46
+ },
+ {
+  "name": "Fremennik armour",
+  "count": 45
+ },
+ {
+  "name": "Needs skilling success chart",
+  "count": 44
+ },
+ {
+  "name": "Attack boosting items",
+  "count": 43
+ },
+ {
+  "name": "Fishing",
+  "count": 43
+ },
+ {
+  "name": "Platelegs",
+  "count": 43
+ },
+ {
+  "name": "Ring slot items",
+  "count": 43
+ },
+ {
+  "name": "Rings",
+  "count": 43
+ },
+ {
+  "name": "Shades of Mort'ton (minigame)",
+  "count": 43
+ },
+ {
+  "name": "Armour",
+  "count": 41
+ },
+ {
+  "name": "Javelins",
+  "count": 41
+ },
+ {
+  "name": "Mining",
+  "count": 41
+ },
+ {
+  "name": "Plateskirts",
+  "count": 39
+ },
+ {
+  "name": "Self-damaging items",
+  "count": 39
+ },
+ {
+  "name": "Sherlock skill challenge",
+  "count": 39
+ },
+ {
+  "name": "Crossbows",
+  "count": 38
+ },
+ {
+  "name": "Masks",
+  "count": 38
+ },
+ {
+  "name": "Upgraded equipment",
+  "count": 38
+ },
+ {
+  "name": "Boats",
+  "count": 36
+ },
+ {
+  "name": "Darts",
+  "count": 36
+ },
+ {
+  "name": "Remains",
+  "count": 35
+ },
+ {
+  "name": "Waterbirth Island",
+  "count": 34
+ },
+ {
+  "name": "Pages with Jagex-supported success charts",
+  "count": 33
+ },
+ {
+  "name": "Herbs",
+  "count": 32
+ },
+ {
+  "name": "Magic boosting items",
+  "count": 32
+ },
+ {
+  "name": "Raging Echoes League",
+  "count": 31
+ },
+ {
+  "name": "Strength armour",
+  "count": 31
+ },
+ {
+  "name": "Last Man Standing",
+  "count": 30
+ },
+ {
+  "name": "Gems",
+  "count": 29
+ },
+ {
+  "name": "Logs",
+  "count": 29
+ },
+ {
+  "name": "Throwing knives",
+  "count": 28
+ },
+ {
+  "name": "Forestry",
+  "count": 27
+ },
+ {
+  "name": "Necklace",
+  "count": 27
+ },
+ {
+  "name": "Demonic Pacts League",
+  "count": 26
+ },
+ {
+  "name": "Wilderness",
+  "count": 26
+ },
+ {
+  "name": "3rd Age equipment",
+  "count": 25
+ },
+ {
+  "name": "Canifis robes",
+  "count": 25
+ },
+ {
+  "name": "Content released in 2013",
+  "count": 25
+ },
+ {
+  "name": "Bones",
+  "count": 24
+ },
+ {
+  "name": "Bounty Hunter",
+  "count": 24
+ },
+ {
+  "name": "Bracelets",
+  "count": 24
+ },
+ {
+  "name": "Dragonstone",
+  "count": 24
+ },
+ {
+  "name": "Ranged boosting items",
+  "count": 24
+ },
+ {
+  "name": "Snails",
+  "count": 24
+ },
+ {
+  "name": "Tai Bwo Wannai Cleanup",
+  "count": 24
+ },
+ {
+  "name": "Upgrade items",
+  "count": 24
+ },
+ {
+  "name": "Walk animation modifiers",
+  "count": 24
+ },
+ {
+  "name": "White Knight equipment",
+  "count": 24
+ },
+ {
+  "name": "Bagged items",
+  "count": 23
+ },
+ {
+  "name": "Ensouled heads",
+  "count": 23
+ },
+ {
+  "name": "Gloves",
+  "count": 23
+ },
+ {
+  "name": "Neypotzli",
+  "count": 23
+ },
+ {
+  "name": "Runes",
+  "count": 23
+ },
+ {
+  "name": "Slayer",
+  "count": 23
+ },
+ {
+  "name": "Pirate clothing",
+  "count": 22
+ },
+ {
+  "name": "Yama",
+  "count": 22
+ },
+ {
+  "name": "Clothes",
+  "count": 21
+ },
+ {
+  "name": "Fur",
+  "count": 21
+ },
+ {
+  "name": "Saplings",
+  "count": 21
+ },
+ {
+  "name": "Trailblazer Reloaded League",
+  "count": 21
+ },
+ {
+  "name": "Unfinished potions",
+  "count": 21
+ },
+ {
+  "name": "Ammunition",
+  "count": 20
+ },
+ {
+  "name": "Axes",
+  "count": 20
+ },
+ {
+  "name": "Defence reduction",
+  "count": 20
+ },
+ {
+  "name": "Farming tools",
+  "count": 20
+ },
+ {
+  "name": "Fishing equipment",
+  "count": 20
+ },
+ {
+  "name": "Gnome robes",
+  "count": 20
+ },
+ {
+  "name": "Nightmare Zone",
+  "count": 20
+ },
+ {
+  "name": "Vambraces",
+  "count": 20
+ },
+ {
+  "name": "Deadman Mode",
+  "count": 19
+ },
+ {
+  "name": "Heat-resistant gear",
+  "count": 19
+ },
+ {
+  "name": "Shattered Relics League",
+  "count": 19
+ },
+ {
+  "name": "Splitbark armour",
+  "count": 19
+ },
+ {
+  "name": "Trailblazer League",
+  "count": 19
+ },
+ {
+  "name": "Zulrah",
+  "count": 19
+ },
+ {
+  "name": "Fruit",
+  "count": 18
+ },
+ {
+  "name": "Ores",
+  "count": 18
+ },
+ {
+  "name": "Patchy",
+  "count": 18
+ },
+ {
+  "name": "Ancient Warriors' equipment",
+  "count": 17
+ },
+ {
+  "name": "Opal",
+  "count": 17
+ },
+ {
+  "name": "Red topaz",
+  "count": 17
+ },
+ {
+  "name": "Twisted League",
+  "count": 17
+ },
+ {
+  "name": "Beginner clue rewards",
+  "count": 16
+ },
+ {
+  "name": "Diamond",
+  "count": 16
+ },
+ {
+  "name": "Emerald",
+  "count": 16
+ },
+ {
+  "name": "Hitpoints boosting items",
+  "count": 16
+ },
+ {
+  "name": "Onyx",
+  "count": 16
+ },
+ {
+  "name": "Pages with Jagex-supported drop tables",
+  "count": 16
+ },
+ {
+  "name": "Recipe for Disaster",
+  "count": 16
+ },
+ {
+  "name": "Theatre of Blood",
+  "count": 16
+ },
+ {
+  "name": "Clockwork items",
+  "count": 15
+ },
+ {
+  "name": "Dwarven clothing",
+  "count": 15
+ },
+ {
+  "name": "Event rewards",
+  "count": 15
+ },
+ {
+  "name": "Jade",
+  "count": 15
+ },
+ {
+  "name": "Ruby",
+  "count": 15
+ },
+ {
+  "name": "Tombs of Amascut",
+  "count": 15
+ },
+ {
+  "name": "Zenyte",
+  "count": 15
+ },
+ {
+  "name": "Chambers of Xeric",
+  "count": 14
+ },
+ {
+  "name": "Fishing boosting items",
+  "count": 14
+ },
+ {
+  "name": "Forced speech",
+  "count": 14
+ },
+ {
+  "name": "Light sources",
+  "count": 14
+ },
+ {
+  "name": "Revenant Caves",
+  "count": 14
+ },
+ {
+  "name": "Shades of Mort'ton",
+  "count": 14
+ },
+ {
+  "name": "Silver",
+  "count": 14
+ },
+ {
+  "name": "The Forgotten Four",
+  "count": 14
+ },
+ {
+  "name": "Hunter boosting items",
+  "count": 13
+ },
+ {
+  "name": "Jars",
+  "count": 13
+ },
+ {
+  "name": "Formal Garden",
+  "count": 12
+ },
+ {
+  "name": "Fossil Island",
+  "count": 12
+ },
+ {
+  "name": "Granite equipment",
+  "count": 12
+ },
+ {
+  "name": "Grid Master",
+  "count": 12
+ },
+ {
+  "name": "Keys",
+  "count": 12
+ },
+ {
+  "name": "Obsidian equipment",
+  "count": 12
+ },
+ {
+  "name": "Square shields",
+  "count": 12
+ },
+ {
+  "name": "Bird houses",
+  "count": 11
+ },
+ {
+  "name": "Birds",
+  "count": 11
+ },
+ {
+  "name": "Bolt tips",
+  "count": 11
+ },
+ {
+  "name": "Charlie Items",
+  "count": 11
+ },
+ {
+  "name": "Crystal items",
+  "count": 11
+ },
+ {
+  "name": "Impetuous Impulses",
+  "count": 11
+ },
+ {
+  "name": "Pages using information from game APIs or cache",
+  "count": 11
+ },
+ {
+  "name": "Araxxor",
+  "count": 10
+ },
+ {
+  "name": "Big Chompy Bird Hunting",
+  "count": 10
+ },
+ {
+  "name": "Chainbodies",
+  "count": 10
+ },
+ {
+  "name": "Corporeal Beast",
+  "count": 10
+ },
+ {
+  "name": "Cosmetics",
+  "count": 10
+ },
+ {
+  "name": "Feathers",
+  "count": 10
+ },
+ {
+  "name": "Garden",
+  "count": 10
+ },
+ {
+  "name": "Gold",
+  "count": 10
+ },
+ {
+  "name": "Items with negative weight",
+  "count": 10
+ },
+ {
+  "name": "Metal bars",
+  "count": 10
+ },
+ {
+  "name": "Monsters that drop clues",
+  "count": 10
+ },
+ {
+  "name": "One Small Favour",
+  "count": 10
+ },
+ {
+  "name": "Pickaxes",
+  "count": 10
+ },
+ {
+  "name": "Pyramid Plunder",
+  "count": 10
+ },
+ {
+  "name": "Unfinished bolts",
+  "count": 10
+ },
+ {
+  "name": "Unobtainable items",
+  "count": 10
+ },
+ {
+  "name": "Agility",
+  "count": 9
+ },
+ {
+  "name": "Agility boosting items",
+  "count": 9
+ },
+ {
+  "name": "Cerberus",
+  "count": 9
+ },
+ {
+  "name": "Falo Items",
+  "count": 9
+ },
+ {
+  "name": "Hunter Guild",
+  "count": 9
+ },
+ {
+  "name": "Lliann's Wares",
+  "count": 9
+ },
+ {
+  "name": "Minigame items",
+  "count": 9
+ },
+ {
+  "name": "The Fremennik Isles",
+  "count": 9
+ },
+ {
+  "name": "The Hueycoatl",
+  "count": 9
+ },
+ {
+  "name": "The Nightmare",
+  "count": 9
+ },
+ {
+  "name": "Zogre Flesh Eaters",
+  "count": 9
+ },
+ {
+  "name": "Blackjacks",
+  "count": 8
+ },
+ {
+  "name": "Boaters",
+  "count": 8
+ },
+ {
+  "name": "Boosted bounty task drop rates",
+  "count": 8
+ },
+ {
+  "name": "Fishing Trawler",
+  "count": 8
+ },
+ {
+  "name": "Fortis Colosseum",
+  "count": 8
+ },
+ {
+  "name": "Lake Molch",
+  "count": 8
+ },
+ {
+  "name": "Leather",
+  "count": 8
+ },
+ {
+  "name": "Moulds",
+  "count": 8
+ },
+ {
+  "name": "Pearl",
+  "count": 8
+ },
+ {
+  "name": "Random events",
+  "count": 8
+ },
+ {
+  "name": "Sapphire",
+  "count": 8
+ },
+ {
+  "name": "Single-use ability unlock items",
+  "count": 8
+ },
+ {
+  "name": "Tea",
+  "count": 8
+ },
+ {
+  "name": "Texts and tomes",
+  "count": 8
+ },
+ {
+  "name": "Death to the Dorgeshuun",
+  "count": 7
+ },
+ {
+  "name": "Discontinued content",
+  "count": 7
+ },
+ {
+  "name": "Guardians of the Rift",
+  "count": 7
+ },
+ {
+  "name": "Humans Against Monsters",
+  "count": 7
+ },
+ {
+  "name": "Hunter creatures",
+  "count": 7
+ },
+ {
+  "name": "Making Friends with My Arm",
+  "count": 7
+ },
+ {
+  "name": "Nails",
+  "count": 7
+ },
+ {
+  "name": "Storable in bookcases",
+  "count": 7
+ },
+ {
+  "name": "Tai Bwo Wannai Trio",
+  "count": 7
+ },
+ {
+  "name": "The Lost Tribe",
+  "count": 7
+ },
+ {
+  "name": "Abyssal Sire",
+  "count": 6
+ },
+ {
+  "name": "Alchemical Hydra",
+  "count": 6
+ },
+ {
+  "name": "Darkness of Hallowvale",
+  "count": 6
+ },
+ {
+  "name": "Dorgesh-Kaan",
+  "count": 6
+ },
+ {
+  "name": "Dye",
+  "count": 6
+ },
+ {
+  "name": "Gorilla",
+  "count": 6
+ },
+ {
+  "name": "Grotesque Guardians",
+  "count": 6
+ },
+ {
+  "name": "In Aid of the Myreque",
+  "count": 6
+ },
+ {
+  "name": "Mage Training Arena",
+  "count": 6
+ },
+ {
+  "name": "Random event rewards",
+  "count": 6
+ },
+ {
+  "name": "Strength",
+  "count": 6
+ },
+ {
+  "name": "Underwater weapons",
+  "count": 6
+ },
+ {
+  "name": "Woodcutting boosting items",
+  "count": 6
+ },
+ {
+  "name": "Demonic ashes",
+  "count": 5
+ },
+ {
+  "name": "Doom of Mokhaiotl",
+  "count": 5
+ },
+ {
+  "name": "Dwarf Cannon",
+  "count": 5
+ },
+ {
+  "name": "Imp Catcher",
+  "count": 5
+ },
+ {
+  "name": "Mining boosting items",
+  "count": 5
+ },
+ {
+  "name": "Nature Spirit",
+  "count": 5
+ },
+ {
+  "name": "Pizza",
+  "count": 5
+ },
+ {
+  "name": "Sandwich lady",
+  "count": 5
+ },
+ {
+  "name": "Shields",
+  "count": 5
+ },
+ {
+  "name": "Skilling equipment",
+  "count": 5
+ },
+ {
+  "name": "Slayer boosting items",
+  "count": 5
+ },
+ {
+  "name": "The Feud",
+  "count": 5
+ },
+ {
+  "name": "Tree roots",
+  "count": 5
+ },
+ {
+  "name": "Vale Totems",
+  "count": 5
+ },
+ {
+  "name": "Blowpipes",
+  "count": 4
+ },
+ {
+  "name": "Desert Treasure I",
+  "count": 4
+ },
+ {
+  "name": "Druidic Ritual",
+  "count": 4
+ },
+ {
+  "name": "Emote enhancers",
+  "count": 4
+ },
+ {
+  "name": "Enakhra's Lament",
+  "count": 4
+ },
+ {
+  "name": "Farming boosting items",
+  "count": 4
+ },
+ {
+  "name": "Forthos Dungeon",
+  "count": 4
+ },
+ {
+  "name": "Garden of Tranquillity",
+  "count": 4
+ },
+ {
+  "name": "Gnome Restaurant",
+  "count": 4
+ },
+ {
+  "name": "Herblore boosting items",
+  "count": 4
+ },
+ {
+  "name": "Icthlarin's Little Helper",
+  "count": 4
+ },
+ {
+  "name": "Kraken Cove",
+  "count": 4
+ },
+ {
+  "name": "Legends' Quest",
+  "count": 4
+ },
+ {
+  "name": "Pet Fish",
+  "count": 4
+ },
+ {
+  "name": "Phantom Muspah",
+  "count": 4
+ },
+ {
+  "name": "Regicide",
+  "count": 4
+ },
+ {
+  "name": "Storage items",
+  "count": 4
+ },
+ {
+  "name": "Vorkath",
+  "count": 4
+ },
+ {
+  "name": "2013 Halloween event",
+  "count": 3
+ },
+ {
+  "name": "Brutus",
+  "count": 3
+ },
+ {
+  "name": "Chinchompas",
+  "count": 3
+ },
+ {
+  "name": "Cook's Assistant",
+  "count": 3
+ },
+ {
+  "name": "Currency",
+  "count": 3
+ },
+ {
+  "name": "Dagon'hai",
+  "count": 3
+ },
+ {
+  "name": "Darkmeyer",
+  "count": 3
+ },
+ {
+  "name": "Elemental Workshop II",
+  "count": 3
+ },
+ {
+  "name": "Freeing Skrach Uglogwee",
+  "count": 3
+ },
+ {
+  "name": "Hybrid armour",
+  "count": 3
+ },
+ {
+  "name": "Incomplete articles",
+  "count": 3
+ },
+ {
+  "name": "Making History",
+  "count": 3
+ },
+ {
+  "name": "Members' spells",
+  "count": 3
+ },
+ {
+  "name": "Merlin's Crystal",
+  "count": 3
+ },
+ {
+  "name": "Monkey Madness I",
+  "count": 3
+ },
+ {
+  "name": "Ranging Guild",
+  "count": 3
+ },
+ {
+  "name": "Recruitment Drive",
+  "count": 3
+ },
+ {
+  "name": "Royal Titans",
+  "count": 3
+ },
+ {
+  "name": "Sheep Shearer",
+  "count": 3
+ },
+ {
+  "name": "Smithing boosting items",
+  "count": 3
+ },
+ {
+  "name": "Spells",
+  "count": 3
+ },
+ {
+  "name": "Standard spells",
+  "count": 3
+ },
+ {
+  "name": "Teleport spells",
+  "count": 3
+ },
+ {
+  "name": "The Dig Site",
+  "count": 3
+ },
+ {
+  "name": "Vampyre Slayer",
+  "count": 3
+ },
+ {
+  "name": "2013 Goblin Invasion",
+  "count": 2
+ },
+ {
+  "name": "Animal Magnetism",
+  "count": 2
+ },
+ {
+  "name": "Biohazard",
+  "count": 2
+ },
+ {
+  "name": "Blast mine",
+  "count": 2
+ },
+ {
+  "name": "Brimhaven Agility Arena",
+  "count": 2
+ },
+ {
+  "name": "Cooking boosting items",
+  "count": 2
+ },
+ {
+  "name": "Cooks' Guild",
+  "count": 2
+ },
+ {
+  "name": "Crafting boosting items",
+  "count": 2
+ },
+ {
+  "name": "Death Plateau",
+  "count": 2
+ },
+ {
+  "name": "Edgeville Monastery",
+  "count": 2
+ },
+ {
+  "name": "Ernest the Chicken",
+  "count": 2
+ },
+ {
+  "name": "Fossils",
+  "count": 2
+ },
+ {
+  "name": "Freeing Sir Amik Varze",
+  "count": 2
+ },
+ {
+  "name": "Gertrude's Cat",
+  "count": 2
+ },
+ {
+  "name": "Grim Tales",
+  "count": 2
+ },
+ {
+  "name": "Hallowed Sepulchre",
+  "count": 2
+ },
+ {
+  "name": "Heroes' Guild",
+  "count": 2
+ },
+ {
+  "name": "Interactive scenery",
+  "count": 2
+ },
+ {
+  "name": "Maggot King",
+  "count": 2
+ },
+ {
+  "name": "Mastering Mixology",
+  "count": 2
+ },
+ {
+  "name": "Members' scenery",
+  "count": 2
+ },
+ {
+  "name": "Music",
+  "count": 2
+ },
+ {
+  "name": "Needs clarification",
+  "count": 2
+ },
+ {
+  "name": "Prayer boosting items",
+  "count": 2
+ },
+ {
+  "name": "Prince Ali Rescue",
+  "count": 2
+ },
+ {
+  "name": "Scenery",
+  "count": 2
+ },
+ {
+  "name": "Shadow of the Storm",
+  "count": 2
+ },
+ {
+  "name": "Spices",
+  "count": 2
+ },
+ {
+  "name": "Stronghold of Security",
+  "count": 2
+ },
+ {
+  "name": "Temple Trekking",
+  "count": 2
+ },
+ {
+  "name": "Tempoross",
+  "count": 2
+ },
+ {
+  "name": "The Gauntlet",
+  "count": 2
+ },
+ {
+  "name": "Thieving boosting items",
+  "count": 2
+ },
+ {
+  "name": "Troll Romance",
+  "count": 2
+ },
+ {
+  "name": "Trouble Brewing",
+  "count": 2
+ },
+ {
+  "name": "Underground Pass",
+  "count": 2
+ },
+ {
+  "name": "Varrock Sewers",
+  "count": 2
+ },
+ {
+  "name": "Wintertodt",
+  "count": 2
+ },
+ {
+  "name": "Zalcano",
+  "count": 2
+ },
+ {
+  "name": "2022 Birthday event",
+  "count": 1
+ },
+ {
+  "name": "Al Kharid",
+  "count": 1
+ },
+ {
+  "name": "Ali Morrisane Commercial Enterprises Ltd.",
+  "count": 1
+ },
+ {
+  "name": "Another Slice of H.A.M.",
+  "count": 1
+ },
+ {
+  "name": "Bank PIN protection",
+  "count": 1
+ },
+ {
+  "name": "Barbarian Assault",
+  "count": 1
+ },
+ {
+  "name": "Barracuda Trials",
+  "count": 1
+ },
+ {
+  "name": "Calculators",
+  "count": 1
+ },
+ {
+  "name": "Colossal Wyrm Agility Course",
+  "count": 1
+ },
+ {
+  "name": "Crafting Guild",
+  "count": 1
+ },
+ {
+  "name": "Deep Wilderness Dungeon",
+  "count": 1
+ },
+ {
+  "name": "Disambiguation",
+  "count": 1
+ },
+ {
+  "name": "Dragon Slayer I",
+  "count": 1
+ },
+ {
+  "name": "Edgeville Dungeon",
+  "count": 1
+ },
+ {
+  "name": "Elemental Workshop I",
+  "count": 1
+ },
+ {
+  "name": "Feldip Hills",
+  "count": 1
+ },
+ {
+  "name": "Firemaking boosting items",
+  "count": 1
+ },
+ {
+  "name": "Fletching boosting items",
+  "count": 1
+ },
+ {
+  "name": "Freeing Pirate Pete",
+  "count": 1
+ },
+ {
+  "name": "Giants' Foundry",
+  "count": 1
+ },
+ {
+  "name": "Gnome Ball",
+  "count": 1
+ },
+ {
+  "name": "Goblin Diplomacy",
+  "count": 1
+ },
+ {
+  "name": "Hazeel Cult",
+  "count": 1
+ },
+ {
+  "name": "Interface items",
+  "count": 1
+ },
+ {
+  "name": "Jagex staff references",
+  "count": 1
+ },
+ {
+  "name": "Kalphite",
+  "count": 1
+ },
+ {
+  "name": "Lair of Tarn Razorlor",
+  "count": 1
+ },
+ {
+  "name": "Legends' Guild",
+  "count": 1
+ },
+ {
+  "name": "Lunar Diplomacy",
+  "count": 1
+ },
+ {
+  "name": "Members' NPCs",
+  "count": 1
+ },
+ {
+  "name": "Monkey greegrees",
+  "count": 1
+ },
+ {
+  "name": "Mourning's End Part I",
+  "count": 1
+ },
+ {
+  "name": "Mourning's End Part II",
+  "count": 1
+ },
+ {
+  "name": "Nardah",
+  "count": 1
+ },
+ {
+  "name": "Non-player characters",
+  "count": 1
+ },
+ {
+  "name": "Obsolete",
+  "count": 1
+ },
+ {
+  "name": "Olaf's Quest",
+  "count": 1
+ },
+ {
+  "name": "Pets",
+  "count": 1
+ },
+ {
+  "name": "Port tasks",
+  "count": 1
+ },
+ {
+  "name": "Ranged",
+  "count": 1
+ },
+ {
+  "name": "Ratcatchers",
+  "count": 1
+ },
+ {
+  "name": "Romeo & Juliet",
+  "count": 1
+ },
+ {
+  "name": "Rune Mysteries",
+  "count": 1
+ },
+ {
+  "name": "Runecraft boosting items",
+  "count": 1
+ },
+ {
+  "name": "Sea Slug",
+  "count": 1
+ },
+ {
+  "name": "Slepe",
+  "count": 1
+ },
+ {
+  "name": "Stealing artefacts",
+  "count": 1
+ },
+ {
+  "name": "The Eyes of Glouphrie",
+  "count": 1
+ },
+ {
+  "name": "The Fremennik Exiles",
+  "count": 1
+ },
+ {
+  "name": "The Fremennik Trials",
+  "count": 1
+ },
+ {
+  "name": "The Great Brain Robbery",
+  "count": 1
+ },
+ {
+  "name": "Thieving",
+  "count": 1
+ },
+ {
+  "name": "Tithe Farm",
+  "count": 1
+ },
+ {
+  "name": "Tower of Life",
+  "count": 1
+ },
+ {
+  "name": "Transportation",
+  "count": 1
+ },
+ {
+  "name": "Unbankable items",
+  "count": 1
+ },
+ {
+  "name": "Vampyrium",
+  "count": 1
+ },
+ {
+  "name": "World 666 event",
+  "count": 1
+ },
+ {
+  "name": "Wyrmscraig",
+  "count": 1
+ }
+]
