@@ -194,6 +194,67 @@ const EDITOR_SNIPPET_GROUPS = [
         ],
     },
     {
+        title: 'Form inputs',
+        snippets: [
+            {
+                label: 'Number input',
+                code: "const amount = ui.input.number('Amount', { default: 1, min: 0, max: 1000, step: 1 });",
+                select: 'amount',
+            },
+            {
+                label: 'Price input',
+                code: "const price = ui.input.price('Price', { default: 0, min: 0 });",
+                select: 'price',
+            },
+            {
+                label: 'Item input',
+                code: "const item = ui.input.item('Item', { default: 'Magic logs' });",
+                select: 'item',
+            },
+            {
+                label: 'Item input (fixed choices)',
+                code: "const item = ui.input.item('Item', { choices: ['Yew logs', 'Magic logs', 'Redwood logs'] });",
+                select: 'item',
+            },
+            {
+                label: 'Select input',
+                code: "const choice = ui.input.select('Choice', ['A', 'B', 'C'], { default: 'A' });",
+                select: 'choice',
+            },
+            {
+                label: 'Checkbox input',
+                code: "const enabled = ui.input.checkbox('Enabled', { default: true });",
+                select: 'enabled',
+            },
+            {
+                label: 'Profit calculator',
+                code: [
+                    "const item = ui.input.item('Item', { default: 'Magic logs' });",
+                    "const qty = ui.input.number('Quantity', { default: 1000, min: 1, integer: true });",
+                    "const buy = ui.input.price('Buy at', { default: item.lowPrice });",
+                    "const tax = ui.input.checkbox('Pay GE tax (2%)', { default: true });",
+                    "const step = ui.input.select('Price step', [{ label: '1%', value: 0.01 }, { label: '2%', value: 0.02 }, { label: '5%', value: 0.05 }], { default: 0.02 });",
+                    '',
+                    'const taxOn = (sell) => (tax ? Math.min(Math.floor(sell * 0.02), 5m) : 0);',
+                    'const profitEach = (sell) => sell - taxOn(sell) - buy;',
+                    'const sellPrices = [-2, -1, 0, 1, 2, 3].map(n => Math.round(item.highPrice * (1 + n * step)));',
+                    '',
+                    'ui.table(sellPrices, {',
+                    "    title: 'Profit by sell price',",
+                    '    columns: [',
+                    "        { label: 'Sell at', type: 'price', value: sell => sell },",
+                    "        { label: 'Tax', type: 'price', value: taxOn },",
+                    "        { label: 'Each', type: 'signedPrice', value: profitEach },",
+                    "        { label: 'Total', type: 'signedPrice', value: sell => profitEach(sell) * qty },",
+                    "        { label: 'ROI', type: 'percent', value: sell => profitEach(sell) / buy },",
+                    '    ],',
+                    '});',
+                ].join('\n'),
+                select: 'Magic logs',
+            },
+        ],
+    },
+    {
         title: 'Scope',
         snippets: [
             {

@@ -13,6 +13,7 @@ const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
 
     const runGlobals = () => runScopeCode(globalsCode.value, declaredKeys(globalsCode.value), {
         items: items.value, itemsByName: itemsByName.value, itemQuerySource,
+        inputs: uiInputsFor(UI_INPUTS_GLOBALS),
     });
 
     const globalsResult = computed(runGlobals);
@@ -53,6 +54,7 @@ const useEvaluation = ({ store, items, itemsByName, itemQuerySource }) => {
                     return runScopeCode(scope.code, declaredKeys(scope.code), {
                         items: items.value, itemsByName: itemsByName.value, itemQuerySource,
                         globals: exportedValues(runGlobals()), importScope,
+                        inputs: uiInputsFor(scope.id),
                     });
                 } finally {
                     runningScopes.pop();

@@ -362,6 +362,7 @@
                         :panels="globalsUiPanels"
                         :item-catalog="itemCatalog"
                         :run-error="globalsRunError"
+                        :inputs="globalsUiInputs"
                     ></scope-ui-panel>
 
                     <!-- Globals Code Editor -->
@@ -416,6 +417,7 @@
                         :panels="globalsUiPanels"
                         :item-catalog="itemCatalog"
                         :run-error="globalsRunError"
+                        :inputs="globalsUiInputs"
                     ></scope-ui-panel>
                     <div class="scope-panel">
                         <h4>Values</h4>
@@ -456,6 +458,7 @@
                         :panels="scopeUiPanels"
                         :item-catalog="itemCatalog"
                         :run-error="scopeRunError"
+                        :inputs="scopeUiInputs"
                     ></scope-ui-panel>
 
                     <!-- Scope Code Editor -->
@@ -615,6 +618,7 @@
                         :panels="scopeUiPanels"
                         :item-catalog="itemCatalog"
                         :run-error="scopeRunError"
+                        :inputs="scopeUiInputs"
                     ></scope-ui-panel>
                     <div class="scope-panel">
                         <h4>Values</h4>
@@ -757,6 +761,7 @@
 <script src="js/formula/engine.js"></script>
 <script src="js/formula/scopeCode.js"></script>
 <script src="js/composables/useEditorSettings.js"></script>
+<script src="js/composables/useUiInputs.js"></script>
 
 <script src="js/components/useFindReplace.js"></script>
 <script src="js/components/EditorToolbarMenus.js"></script>

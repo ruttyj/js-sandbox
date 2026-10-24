@@ -424,6 +424,7 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
     });
     const scopeUiPanels = computed(() => selectedScopeResult.value?.ui || []);
     const scopeRunError = computed(() => selectedScopeResult.value?.error || null);
+    const scopeUiInputs = computed(() => uiInputsFor(selectedScopeId.value));
 
     const impliedScopeCode = computed(() => generateImpliedCode(
         scopeValues.value.globals.map(g => ({ variable: g.variable, value: g.value, overridden: g.overridden }))
@@ -433,7 +434,7 @@ const useScopes = ({ store, items, itemsByName, itemTagsApi, evaluation, showToa
         selectedScopeId, selectedScope, createScope, renameScope, deleteScope,
         scopeItemTagKeys, scopeItemTagSections, scopeItems, scopeItemColor, setScopeItemColor, rerollScopeItemColors,
         scopeCode, scopeCodeErrors, scopeCodeEditorRef, scopeValues, impliedScopeCode, visibleGlobalVariables,
-        scopeUiPanels, scopeRunError,
+        scopeUiPanels, scopeRunError, scopeUiInputs,
         onScopeCodeInput, onScopeCodeBlur, insertIntoScopeCode, insertSnippetIntoScopeCode, registerVariableTags, isErrorValue,
         setGlobalVariableColor, setScopeVariableColor, autoColorScopeVariables,
     };

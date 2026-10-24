@@ -47,6 +47,8 @@ const FormulaEngine = (() => {
      *     values by name, for importScope('Name'). Omitted for the globals, which can't import scopes.
      * @property {ItemQuerySource|null} [itemQuerySource] What queryOsrsItems() searches, with item
      *     tags. Defaults to the items alone, without tags.
+     * @property {Object|null} [inputs] The values typed into this code's ui.input fields (see
+     *     uiInputsFor). Defaults to none, so every field reads its default.
      */
 
     /**
@@ -433,17 +435,18 @@ const FormulaEngine = (() => {
      * code's own declarations shadow it. It's read-only: assigning to one of its names throws.
      * Non-string names are symbols such as Symbol.unscopables, which `with` reads; they're never ours.
      * @param {Required<RunContext>} context
+     * @param {ItemQuerySource} querySource What queryOsrsItems() searches.
+     * @param {function(string|number): Object} getOsrsItem This run's item lookup, shared with ui.
      * @param {Object} ui This run's ui object (see createUiLibrary).
      * @returns {Proxy}
      */
-    const createScopeProxy = ({ items, itemsByName, globals, importScope, itemQuerySource }, ui) => {
-        const querySource = itemQuerySource || untaggedItemSource(items);
+    const createScopeProxy = ({ items, itemsByName, globals, importScope }, querySource, getOsrsItem, ui) => {
         const graphContext = { itemsById: items, itemsByName, source: querySource };
         const env = {
             items,
             globals,
             importScope,
-            getOsrsItem: createItemLookup(items, itemsByName, querySource),
+            getOsrsItem,
             queryOsrsItems: () => createItemQuery(querySource),
             queryOsrsItemRecipes: () => createItemRecipeQuery(graphContext),
             queryOsrsItemLinks: (type) => createItemLinkQuery(graphContext, type),
@@ -631,11 +634,13 @@ const FormulaEngine = (() => {
      * @returns {RunResult}
      */
     const runScopeCode = (code, keys, context) => {
-        const { items = {}, itemsByName = new Map(), globals = new Map(), importScope = null, itemQuerySource = null } = context;
+        const { items = {}, itemsByName = new Map(), globals = new Map(), importScope = null, itemQuerySource = null, inputs = null } = context;
+        const querySource = itemQuerySource || untaggedItemSource(items);
+        const getOsrsItem = createItemLookup(items, itemsByName, querySource);
 
         // A fresh ui object per run, so each run (an imported scope's included) shows only its own panels.
-        const ui = createUiLibrary({ itemsById: items, itemsByName });
-        const scope = createScopeProxy({ items, itemsByName, globals, importScope, itemQuerySource }, ui.api);
+        const ui = createUiLibrary({ itemsById: items, itemsByName, inputs, getOsrsItem });
+        const scope = createScopeProxy({ items, itemsByName, globals, importScope }, querySource, getOsrsItem, ui.api);
         const runtime = createRuntime();
         const { returned, error } = executeProgram(buildProgram(code, keys), scope, runtime);
 
