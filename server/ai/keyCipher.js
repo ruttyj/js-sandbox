@@ -36,9 +36,12 @@ export const createKeyCipher = (secret) => {
     };
 
     const decrypt = (stored) => {
-        const [version, iv, tag, ciphertext] = stored.split('.');
+        const [version, iv, tag, ciphertext, ...rest] = stored.split('.');
         if (version !== FORMAT_VERSION) {
             throw new Error(`Unknown encrypted key format "${version}".`);
+        }
+        if (!iv || !tag || !ciphertext || rest.length > 0) {
+            throw new Error('Malformed encrypted key.');
         }
 
         const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'base64url'));

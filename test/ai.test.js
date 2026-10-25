@@ -61,6 +61,11 @@ describe('key cipher', () => {
         const flipped = ciphertext[0] === 'A' ? 'B' + ciphertext.slice(1) : 'A' + ciphertext.slice(1);
         expect(() => cipher.decrypt([version, iv, tag, flipped].join('.'))).toThrow();
     });
+
+    it('gives a clear error for a truncated value, not a TypeError', () => {
+        expect(() => cipher.decrypt('v1.abc')).toThrow('Malformed encrypted key.');
+        expect(() => cipher.decrypt('v1')).toThrow('Malformed encrypted key.');
+    });
 });
 
 describe('connecting API keys', () => {
