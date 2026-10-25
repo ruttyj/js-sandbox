@@ -132,6 +132,18 @@ const describeChatToolResult = (name, result, isError) => {
     return 'Done';
 };
 
+// The name of the scope the user is viewing, when it differs from the one a change was made for.
+// Null when the change is for the globals, a new scope, or the scope that's already open.
+const viewingScopeNote = (proposal, selectedScope) => {
+    if (!proposal?.scopeId || !selectedScope) {
+        return null;
+    }
+    if (String(selectedScope.id) === proposal.scopeId) {
+        return null;
+    }
+    return selectedScope.name;
+};
+
 // A propose_edit / create_scope call, with its outcome once it has one.
 const proposalEntry = (block, resultBlock, ctx) => {
     const waiting = ctx.approvals[block.id];
@@ -146,6 +158,9 @@ const proposalEntry = (block, resultBlock, ctx) => {
         diff: shown?.diff || null,
         state: 'pending',
         detail: '',
+        // The scope the user is looking at now, shown only when it isn't the one this change is for,
+        // so "apply" to a change made for another scope isn't mistaken for the open one.
+        viewingScope: viewingScopeNote(shown, ctx.selectedScope),
     };
 
     if (waiting) {
@@ -418,6 +433,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         approvals: chatApprovals.value,
         proposals: chatProposals.value,
         busy: chatBusy.value,
+        selectedScope: scopesApi.selectedScope.value,
     }));
 
     const scrollChatToEnd = () => {

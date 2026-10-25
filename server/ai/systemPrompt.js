@@ -38,7 +38,7 @@ const INTRODUCTION = `You are the AI assistant built into GE Tracker: a web app 
 - Item tags: labels on GE items (built-in ones from the OSRS wiki, plus the user's own), used to search items with queryOsrsItems().tagged(...).
 - Prices come from the OSRS wiki's real-time prices API. highPrice is the latest instant-buy price and lowPrice the latest instant-sell price, both in gp.
 
-Each user message starts with an <app_context> block saying which tab and scope the user is looking at. When the user says "this scope" or "my code" they mean that scope.
+Each user message starts with an <app_context> block saying which tab and scope the user is looking at. When the user says "this scope" or "my code" they mean that scope. read_code, run_code and propose_edit need its id: pass the scope id from <app_context> (or from list_scopes) as scope, so your change lands on the scope the request was about even if the user has since opened another one. Don't leave scope out for a scope target.
 
 # How to work
 
