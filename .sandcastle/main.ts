@@ -51,11 +51,17 @@ const MAX_ITERATIONS = 4;
 // endings to CRLF. Linux git doesn't convert them back on commit unless told
 // to, so without autocrlf=input every file an agent touches is committed with
 // CRLF and shows as fully rewritten. --global keeps it in the container.
+//
+// npm ci writes node_modules through the bind mount onto the Windows (and
+// Dropbox) worktree, which is slow, and parallel agents install at once, so it
+// needs far longer than the 60s default hook timeout.
+const NPM_CI_TIMEOUT_MS = 15 * 60 * 1000;
+
 const hooks = {
   sandbox: {
     onSandboxReady: [
       { command: "git config --global core.autocrlf input" },
-      { command: "npm ci" },
+      { command: "npm ci", timeoutMs: NPM_CI_TIMEOUT_MS },
     ],
   },
 };
