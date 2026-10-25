@@ -152,6 +152,7 @@
             <div class="chat-heading">
                 <span class="chat-title" :title="chatTitle">{{ chatTitle || assistantName }}</span>
                 <span v-if="chatCostUsd > 0" class="chat-cost" title="Estimated from token usage. Your Anthropic bill is the real figure.">~{{ formatChatCost(chatCostUsd) }}</span>
+                <span v-if="chatSaveFailed" class="chat-unsaved" title="This chat couldn't be saved. Retrying…">Not saved</span>
             </div>
             <div class="chat-header-actions">
                 <select class="chat-model" :value="aiStatus.model" :disabled="chatBusy" title="Model" @change="setAiModel($event.target.value)">

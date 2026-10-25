@@ -299,7 +299,7 @@ describe('chat tools', () => {
 // --- The whole chat loop --------------------------------------------------------------------------
 
 describe('the chat loop', () => {
-    const openChat = () => {
+    const openChat = (overrides = {}) => {
         const chat = openChatTab();
         const ref = (value) => ({ value });
         const toasts = [];
@@ -326,8 +326,19 @@ describe('the chat loop', () => {
             showToast: (message, type) => toasts.push({ message, type }),
             showUndoToast: (message) => toasts.push({ message, type: 'undo' }),
             showConfirmModal: () => {},
+            ...overrides,
         });
         return { ...chat, api, toasts };
+    };
+
+    const listConversations = async () => {
+        const response = await fetch(`${baseUrl}/api/ai/conversations`, { headers: { ...API_HEADER, cookie } });
+        return response.json();
+    };
+
+    const readConversation = async (id) => {
+        const response = await fetch(`${baseUrl}/api/ai/conversations/${id}`, { headers: { ...API_HEADER, cookie } });
+        return response.json();
     };
 
     it('runs the tools Claude asks for, sends the results back, and shows the answer', async () => {
@@ -503,5 +514,61 @@ describe('the chat loop', () => {
         expect(entries.at(-1)).toMatchObject({ kind: 'assistant', html: 'Yew logs: 300 gp.' });
         expect(entries.filter(entry => entry.kind === 'tool').map(entry => entry.state)).toEqual(['done', 'done']);
         await putJson('/api/ai/model', { model: 'claude-opus-5-5' });
+    });
+
+    it('saves the chat before the turn ends, while it waits on a proposal', async () => {
+        const { api } = openChat();
+        claude.replies.push(
+            () => toolUse('toolu_save', 'propose_edit', {
+                target: 'scope', summary: 'Sell 20.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
+            }),
+            () => textReply('Done.'),
+        );
+
+        const sending = api.sendChatMessage('Save me before the end.');
+        await waitFor(() => api.chatEntries.value.some(entry => entry.state === 'waiting'));
+
+        // The turn is still blocked on the proposal, yet the chat is already in the saved list.
+        const saved = (await listConversations()).find(chat => chat.title === 'Save me before the end.');
+        expect(saved).toBeTruthy();
+        const full = await readConversation(saved.id);
+        const userText = full.messages[0].content
+            .find(block => block.text && !block.text.startsWith('<app_context>')).text;
+        expect(userText).toBe('Save me before the end.');
+
+        api.applyProposal('toolu_save');
+        await sending;
+    });
+
+    it('closes the Saved chats panel when a message is sent', async () => {
+        const { api } = openChat();
+        api.toggleChatHistory();
+        expect(api.isChatHistoryOpen.value).toBe(true);
+
+        claude.replies.push(() => textReply('Hi.'));
+        await api.sendChatMessage('Hello with the list open.');
+
+        expect(api.isChatHistoryOpen.value).toBe(false);
+    });
+
+    it('keeps a deleted chat deleted when it is removed mid-turn', async () => {
+        const { api } = openChat({ showConfirmModal: (title, body, onConfirm) => onConfirm() });
+        claude.replies.push(
+            () => toolUse('toolu_del', 'propose_edit', { target: 'globals', summary: 'x', new_code: 'const tax = 1;' }),
+            () => textReply('Done.'),
+        );
+
+        api.sendChatMessage('Delete me mid-turn.');
+        await waitFor(() => api.chatEntries.value.some(entry => entry.state === 'waiting'));
+
+        // Saved as it went, so the chat exists now; we delete it while the turn still runs.
+        const saved = (await listConversations()).find(chat => chat.title === 'Delete me mid-turn.');
+        expect(saved).toBeTruthy();
+
+        await api.deleteSavedChat({ id: saved.id, title: 'Delete me mid-turn.' });
+
+        expect(api.chatBusy.value).toBe(false);
+        const after = await listConversations();
+        expect(after.some(chat => chat.id === saved.id)).toBe(false);
     });
 });
