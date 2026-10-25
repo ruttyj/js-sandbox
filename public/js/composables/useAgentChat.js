@@ -26,6 +26,9 @@ const CHAT_TRANSIENT_RETRY_WAITS = [2, 4, 8];
 const CHAT_TRANSIENT_REASONS = new Set(['stalled', 'cut-off', 'overloaded']);
 // Backoff, in seconds, for retrying a chat save that failed. The last value repeats for later tries.
 const CHAT_SAVE_RETRY_WAITS = [2, 5, 15];
+// How long the "Review" toast stays up when a change needs approval with the drawer closed. Long,
+// because the change goes on waiting until the user acts and the header badge is the only other cue.
+const CHAT_REVIEW_TOAST_MS = 20000;
 const CHAT_TITLE_LENGTH = 60;
 const CHAT_CONTEXT_TAG = '<app_context>';
 const CHAT_TAB_LABELS = {
@@ -508,6 +511,34 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         selectedScope: scopesApi.selectedScope.value,
     }));
 
+    // The chat's state in a word, for the header badge and the working line. Ordered by what most
+    // needs the user: a change waiting on them wins over "still working", and a retry wait (the
+    // turn hasn't failed yet) over a failure that's waiting on a Retry.
+    const chatStatus = computed(() => {
+        if (Object.keys(chatApprovals.value).length > 0) {
+            return 'needs-approval';
+        }
+        if (chatNotice.value?.waiting) {
+            return 'retrying';
+        }
+        if (chatNotice.value?.canRetry) {
+            return 'failed';
+        }
+        if (chatBusy.value) {
+            return 'working';
+        }
+        return 'idle';
+    });
+
+    // The working line's text: while a change waits, it says so rather than "still working…", which
+    // would read as a freeze.
+    const chatWorkingText = computed(() => {
+        if (chatStatus.value === 'needs-approval') {
+            return 'Waiting for you to apply or reject a change';
+        }
+        return `${assistantName.value} is working…`;
+    });
+
     const scrollChatToEnd = () => {
         nextTick(() => {
             const el = chatScrollRef.value;
@@ -519,8 +550,32 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
     // --- What the tools work on ---
 
+    // Opens the drawer and brings a waiting change into view. The drawer (and so chatScrollRef) may
+    // not exist until it's open, so the scroll waits a tick; if the proposal element isn't found it
+    // falls back to the end of the log, where a fresh proposal sits.
+    const openChatAtProposal = (proposalId) => {
+        isChatOpen.value = true;
+        isChatHistoryOpen.value = false;
+        nextTick(() => {
+            const target = chatScrollRef.value?.querySelector(`[data-proposal-id="${proposalId}"]`);
+            if (target) {
+                target.scrollIntoView({ block: 'center' });
+                return;
+            }
+            scrollChatToEnd();
+        });
+    };
+
     const requestApproval = (proposal) => {
         scrollChatToEnd();
+        // With the drawer closed, a change waiting for approval looks like a freeze; the toast points
+        // the user to it.
+        if (!isChatOpen.value) {
+            showToast(`${assistantName.value} has a change waiting for you.`, 'info', CHAT_REVIEW_TOAST_MS, {
+                label: 'Review',
+                run: () => openChatAtProposal(proposal.id),
+            });
+        }
         return new Promise((resolve) => {
             chatApprovals.value = { ...chatApprovals.value, [proposal.id]: { proposal, resolve } };
         });
@@ -987,6 +1042,14 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
             chatMessages.value = saved.messages;
             chatCostUsd.value = saved.costUsd;
             isChatHistoryOpen.value = false;
+
+            // A chat whose last message is still the user's was interrupted before the model
+            // replied (a reload mid-turn). Offer to pick it up; retryChat re-sends the conversation,
+            // and unansweredToolResults answers any tool calls left hanging on the next request.
+            const lastMessage = chatMessages.value.at(-1);
+            if (lastMessage?.role === 'user') {
+                chatNotice.value = { text: 'This chat was interrupted.', needsKey: false, canResume: true };
+            }
             scrollChatToEnd();
         } catch (error) {
             console.error(error);
@@ -1057,7 +1120,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
     return {
         isChatOpen, chatInput, chatInputRef, chatScrollRef, chatBusy, chatSaveFailed, chatNotice, chatTitle, chatCostUsd,
-        chatEntries, chatRejectReasons, isChatHistoryOpen, chatHistory,
+        chatStatus, chatWorkingText, chatEntries, chatRejectReasons, isChatHistoryOpen, chatHistory,
         sendChatMessage, retryChat, stopChat, onChatInputKeydown, applyProposal, rejectProposal,
         toggleChatHistory, startNewChat, openSavedChat, deleteSavedChat,
         onAiButtonClick, closeChat, askAssistantToFix,

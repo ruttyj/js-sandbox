@@ -32,7 +32,9 @@ const scriptedAnthropic = () => {
             messages: {
                 stream: (request) => {
                     requests.push(structuredClone(request));
-                    const reply = replies.shift()(request);
+                    // delayUntil, when a reply carries one, is a promise the final message waits on,
+                    // so a test can hold a reply streaming (to watch "working") until it resolves it.
+                    const { delayUntil, ...reply } = replies.shift()(request);
                     const message = {
                         id: `msg_${requests.length}`,
                         type: 'message',
@@ -46,7 +48,12 @@ const scriptedAnthropic = () => {
                                 throw reply.error;
                             }
                         },
-                        finalMessage: async () => message,
+                        finalMessage: async () => {
+                            if (delayUntil) {
+                                await delayUntil;
+                            }
+                            return message;
+                        },
                     };
                 },
             },
@@ -654,5 +661,67 @@ describe('the chat loop', () => {
         expect(api.chatBusy.value).toBe(false);
         const after = await listConversations();
         expect(after.some(chat => chat.id === saved.id)).toBe(false);
+    });
+
+    it('reports chatStatus as working while a reply is in flight, and idle once the turn ends', async () => {
+        const { api } = openChat();
+        // A stopped turn in an earlier test can leave a scripted reply unconsumed; start clean.
+        claude.replies.length = 0;
+        expect(api.chatStatus.value).toBe('idle');
+        // Hold the reply open (delayUntil) so "working" lasts long enough to observe; a free-running
+        // reply against the in-process server finishes inside a single poll gap.
+        let releaseReply;
+        const held = new Promise((resolve) => { releaseReply = resolve; });
+        claude.replies.push(() => ({ ...textReply('There you go.'), delayUntil: held }));
+
+        const sending = api.sendChatMessage('Find yew.');
+        await waitFor(() => api.chatStatus.value === 'working');
+        expect(api.chatBusy.value).toBe(true);
+
+        releaseReply();
+        await sending;
+
+        expect(api.chatStatus.value).toBe('idle');
+    });
+
+    it('reports chatStatus as needs-approval while a change waits for the user', async () => {
+        const { api } = openChat();
+        claude.replies.length = 0;
+        claude.replies.push(
+            () => toolUse('toolu_st', 'propose_edit', {
+                target: 'scope', scope: '100', summary: 'Sell 20.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
+            }),
+            () => textReply('Done.'),
+        );
+
+        const sending = api.sendChatMessage('Status please.');
+        await waitFor(() => api.chatEntries.value.some(entry => entry.state === 'waiting'));
+        expect(api.chatStatus.value).toBe('needs-approval');
+
+        api.applyProposal('toolu_st');
+        await sending;
+
+        expect(api.chatStatus.value).toBe('idle');
+    });
+
+    it('offers to resume a saved chat that ends with an unanswered user message', async () => {
+        // A conversation whose last message is the user's: a turn interrupted before any reply.
+        const id = `c-interrupted-${Date.now()}`;
+        await putJson(`/api/ai/conversations/${id}`, {
+            title: 'Interrupted chat',
+            messages: [{ role: 'user', content: [{ type: 'text', text: 'Pick this up again.' }] }],
+            costUsd: 0,
+        });
+
+        const { api } = openChat();
+        await api.openSavedChat(id);
+        expect(api.chatNotice.value).toMatchObject({ text: 'This chat was interrupted.', canResume: true });
+
+        claude.replies.length = 0;
+        claude.replies.push(() => textReply('Carrying on.'));
+        await api.retryChat();
+
+        expect(api.chatNotice.value).toBeNull();
+        expect(api.chatEntries.value.at(-1)).toMatchObject({ kind: 'assistant', html: 'Carrying on.' });
     });
 });

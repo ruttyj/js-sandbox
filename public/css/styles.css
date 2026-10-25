@@ -2817,9 +2817,32 @@ body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-s
 /* ==========================================================================
    Claude: header button and the connect-your-API-key modal
    ========================================================================== */
-.claude-btn { gap: 0.45rem; }
+.claude-btn { gap: 0.45rem; position: relative; }
 .claude-btn .status-dot { color: var(--text-3); }
 .claude-btn.is-connected .status-dot { color: var(--up); }
+
+/* A small badge on the header AI button so a chat working, waiting or failed out of sight (the
+   drawer closed) still shows. A spinner while it works or retries, an accent dot when a change is
+   waiting on the user, a red dot when the last turn failed. */
+.claude-btn-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-2);
+    box-sizing: border-box;
+}
+.claude-btn-badge.is-needs-approval { background: var(--accent); }
+.claude-btn-badge.is-failed { background: var(--danger); }
+.claude-btn-badge.is-working,
+.claude-btn-badge.is-retrying {
+    border-color: var(--accent-ring);
+    border-top-color: var(--accent);
+    background: transparent;
+    animation: spin 0.9s linear infinite;
+}
 
 .claude-modal p + p { margin-top: 0.6rem; }
 .claude-modal a { color: var(--accent-hi); text-decoration: underline; }

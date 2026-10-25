@@ -71,6 +71,7 @@
                         :title="aiStatus.connected ? 'Chat with ' + assistantName : 'Connect a Claude or Gemini API key to use the AI chat'">
                     <span class="status-dot"></span>
                     AI Chat
+                    <span v-if="chatStatus !== 'idle'" class="claude-btn-badge" :class="'is-' + chatStatus" aria-hidden="true"></span>
                 </button>
                 <button class="btn" @click="signOutOfApp">Sign out</button>
             </div>
@@ -206,7 +207,7 @@
                     </summary>
                     <pre v-if="entry.raw" class="chat-tool-raw">{{ entry.raw }}</pre>
                 </details>
-                <div v-else-if="entry.kind === 'proposal'" class="chat-proposal" :class="'is-' + entry.state">
+                <div v-else-if="entry.kind === 'proposal'" class="chat-proposal" :class="'is-' + entry.state" :data-proposal-id="entry.id">
                     <div class="chat-proposal-head">
                         <strong>{{ entry.isCreate ? 'New scope' : 'Change' }}: {{ entry.title }}</strong>
                         <span v-if="entry.diff" class="chat-diff-counts">
@@ -232,11 +233,12 @@
                 </div>
             </template>
 
-            <div v-if="chatBusy" class="chat-working"><span class="status-dot"></span> {{ assistantName }} is working…</div>
+            <div v-if="chatBusy" class="chat-working"><span class="status-dot"></span> {{ chatWorkingText }}</div>
             <div v-if="chatNotice" class="chat-notice" :class="{ 'is-waiting': chatNotice.waiting }">
                 <span>{{ chatNotice.text }}</span>
                 <button v-if="chatNotice.needsKey" class="btn" @click="openAiModal">Connect a key</button>
                 <button v-if="chatNotice.canRetry && !chatBusy" class="btn" @click="retryChat">Retry</button>
+                <button v-if="chatNotice.canResume && !chatBusy" class="btn" @click="retryChat">Resume</button>
             </div>
         </div>
 
