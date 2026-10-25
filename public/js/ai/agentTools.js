@@ -135,17 +135,14 @@ const agentCodeErrors = (code, runError) => {
 const scopeLabelForAgent = (scope) => `"${scope.name}" (id ${scope.id})`;
 
 /**
- * The scope a tool input names (by id or name), or the selected one when it names none.
+ * The scope a tool input names, by id or name. scope is required for a scope target: without it a
+ * change could land on whichever scope the user has since opened, not the one the request was about.
  * @throws {AgentToolError}
  */
 const findAgentScope = (context, ref) => {
     const scopes = context.scopes.value;
     if (ref === undefined || ref === null || String(ref).trim() === '') {
-        const selected = context.selectedScope.value;
-        if (!selected) {
-            throw new AgentToolError('No scope is selected. Pass scope (an id or name from list_scopes).');
-        }
-        return selected;
+        throw new AgentToolError('scope is required for a scope target. Pass the scope id from <app_context> or list_scopes.');
     }
 
     const wanted = String(ref).trim();
@@ -250,7 +247,7 @@ const runCodeTool = (context, input) => {
     const code = readAgentString(input, 'code');
     const target = readAgentTarget(input);
     let scope = null;
-    if (target === 'scope' && input.scope) {
+    if (target === 'scope') {
         scope = findAgentScope(context, input.scope);
     }
 
@@ -323,6 +320,7 @@ const proposeEditTool = async (context, input, toolUseId) => {
         id: toolUseId,
         kind: 'edit',
         title: target === 'globals' ? 'Globals' : before.scope.name,
+        scopeId: target === 'globals' ? null : String(before.scope.id),
         summary: String(input.summary || ''),
         diff: buildAgentDiff(before.code, newCode),
     });

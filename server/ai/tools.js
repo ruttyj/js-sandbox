@@ -4,13 +4,24 @@
 
 const SCOPE_INPUT = {
     type: 'string',
-    description: "The scope's id or name. Leave it out for the scope the user is looking at.",
+    description: "The scope's id or name. Required when target is \"scope\": pass the scope id from <app_context> (the scope the request is about) or from list_scopes, so the change lands on that scope even if the user is now looking at another.",
 };
 
 const TARGET_INPUT = {
     type: 'string',
     enum: ['scope', 'globals'],
     description: "Which code: a scope's, or the globals'.",
+};
+
+// scope must be given whenever target is "scope". Spread into an input_schema alongside its
+// required list; globals needs no scope, so it's only required for the scope target.
+const REQUIRE_SCOPE_FOR_SCOPE_TARGET = {
+    allOf: [
+        {
+            if: { properties: { target: { const: 'scope' } } },
+            then: { required: ['scope'] },
+        },
+    ],
 };
 
 export const CHAT_TOOLS = [
@@ -51,6 +62,7 @@ export const CHAT_TOOLS = [
             properties: { target: TARGET_INPUT, scope: SCOPE_INPUT },
             required: ['target'],
             additionalProperties: false,
+            ...REQUIRE_SCOPE_FOR_SCOPE_TARGET,
         },
     },
     {
@@ -65,6 +77,7 @@ export const CHAT_TOOLS = [
             },
             required: ['code', 'target'],
             additionalProperties: false,
+            ...REQUIRE_SCOPE_FOR_SCOPE_TARGET,
         },
     },
     {
@@ -92,6 +105,7 @@ export const CHAT_TOOLS = [
             },
             required: ['target', 'summary'],
             additionalProperties: false,
+            ...REQUIRE_SCOPE_FOR_SCOPE_TARGET,
         },
     },
     {

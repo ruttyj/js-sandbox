@@ -213,6 +213,7 @@
                             <span class="is-remove">-{{ entry.diff.removed }}</span>
                         </span>
                     </div>
+                    <p v-if="entry.viewingScope" class="chat-proposal-scope-note">Changes <strong>{{ entry.title }}</strong> (you're viewing <strong>{{ entry.viewingScope }}</strong>)</p>
                     <p v-if="entry.summary" class="chat-proposal-summary">{{ entry.summary }}</p>
                     <div v-if="entry.diff" class="chat-diff">
                         <div v-for="(row, rowIndex) in entry.diff.rows" :key="rowIndex" class="chat-diff-row" :class="'is-' + row.type">

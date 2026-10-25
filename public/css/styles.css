@@ -2996,6 +2996,7 @@ body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-s
 .chat-diff-counts .is-add { color: var(--up); }
 .chat-diff-counts .is-remove { color: var(--down); }
 .chat-proposal-summary { margin: 0; padding: 0.5rem 0.7rem 0; color: var(--text-1); }
+.chat-proposal-scope-note { margin: 0; padding: 0.5rem 0.7rem 0; color: var(--warn, var(--text-2)); font-size: 0.85rem; }
 .chat-diff {
     margin: 0.5rem 0.7rem;
     max-height: 320px;

@@ -138,7 +138,7 @@ const openChatTab = () => {
         globalsCode: ref('const tax = 0.02;\n'),
     };
     const evaluation = tab.useEvaluation({ store, items, itemsByName, itemQuerySource });
-    const selectedScope = { get value() { return store.scopes.value[0]; } };
+    const selectedScope = ref(store.scopes.value[0]);
     const tagDefs = ref(new Map([['logs', { key: 'logs', label: 'Logs', parent: 'woodcutting', system: true }]]));
     return { tab, store, evaluation, selectedScope, tagDefs, itemQuerySource };
 };
@@ -239,13 +239,14 @@ describe('chat tools', () => {
         const { context } = toolContext(chat);
         const ok = await run({ tab: chat.tab, context }, 'run_code', {
             target: 'scope',
+            scope: 'logs',
             code: 'const magic = getOsrsItem(\'Magic logs\');\nconst afterTax = magic.highPrice * (1 - tax);\nui.table([magic], { title: \'Logs\', columns: [{ label: \'Item\', type: \'item\', value: m => m }] });',
         });
         expect(ok.parsed.ok).toBe(true);
         expect(ok.parsed.values.afterTax).toBe(1078);
         expect(ok.parsed.ui).toEqual([{ kind: 'table', title: 'Logs', columns: ['Item'], rowCount: 1, firstRows: [['Magic logs']] }]);
 
-        const failed = await run({ tab: chat.tab, context }, 'run_code', { target: 'scope', code: 'const a = 1;\nconst b = missingName + 1;' });
+        const failed = await run({ tab: chat.tab, context }, 'run_code', { target: 'scope', scope: 'logs', code: 'const a = 1;\nconst b = missingName + 1;' });
         expect(failed.parsed.ok).toBe(false);
         expect(failed.parsed.errors[0]).toMatch(/missingName/);
         expect(chat.store.scopes.value[0].code).not.toContain('missingName');
@@ -255,7 +256,7 @@ describe('chat tools', () => {
         const chat = openChatTab();
         const { context, asked } = toolContext(chat);
         const applied = await run({ tab: chat.tab, context }, 'propose_edit', {
-            target: 'scope', summary: 'Sell 20 instead of 10.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
+            target: 'scope', scope: 'logs', summary: 'Sell 20 instead of 10.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
         });
         expect(applied.parsed).toEqual({ status: 'applied', errors: [] });
         expect(chat.store.scopes.value[0].code).toContain('yew * 20');
@@ -263,11 +264,22 @@ describe('chat tools', () => {
         expect(asked[0].diff).toMatchObject({ added: 1, removed: 1 });
 
         const missing = await run({ tab: chat.tab, context }, 'propose_edit', {
-            target: 'scope', summary: 'x', edits: [{ old_text: 'not in the code', new_text: 'y' }],
+            target: 'scope', scope: 'logs', summary: 'x', edits: [{ old_text: 'not in the code', new_text: 'y' }],
         });
         expect(missing.is_error).toBe(true);
         expect(missing.parsed.error).toMatch(/is not in the code/);
         expect(asked).toHaveLength(1);
+    });
+
+    it('refuses a scope target with no scope, so it never lands on the wrong scope', async () => {
+        const chat = openChatTab();
+        const { context, asked } = toolContext(chat);
+        const result = await run({ tab: chat.tab, context }, 'propose_edit', {
+            target: 'scope', summary: 'Sell 20.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
+        });
+        expect(result.is_error).toBe(true);
+        expect(result.parsed.error).toMatch(/scope/i);
+        expect(asked).toHaveLength(0);
     });
 
     it('leaves the code alone when the user rejects, and passes on their reason', async () => {
@@ -373,7 +385,7 @@ describe('the chat loop', () => {
         const { api, store, toasts } = openChat();
         claude.replies.push(
             () => toolUse('toolu_b', 'propose_edit', {
-                target: 'scope', summary: 'Sell 20.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
+                target: 'scope', scope: '100', summary: 'Sell 20.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
             }),
             () => textReply('Done.'),
         );
@@ -392,6 +404,33 @@ describe('the chat loop', () => {
         expect(proposal).toMatchObject({ state: 'applied', title: 'Logs' });
         expect(proposal.diff.added).toBe(1);
         expect(toasts.some(toast => toast.type === 'undo')).toBe(true);
+    });
+
+    it('applies a proposal to the scope it was made for, not the one now open', async () => {
+        const { api, store, selectedScope } = openChat();
+        // A second scope the user switches to while the change waits for approval.
+        store.scopes.value.push({ id: 101, name: 'Herbs', code: 'const grimy = 1;\n', itemTagKeys: [], itemColors: {}, variables: [] });
+        claude.replies.push(
+            () => toolUse('toolu_s', 'propose_edit', {
+                target: 'scope', scope: '100', summary: 'Sell 20.', edits: [{ old_text: 'yew * 10', new_text: 'yew * 20' }],
+            }),
+            () => textReply('Done.'),
+        );
+
+        const sending = api.sendChatMessage('Make it 20 logs.');
+        await waitFor(() => api.chatEntries.value.some(entry => entry.state === 'waiting'));
+
+        // Switch to the other scope while the proposal is still waiting.
+        selectedScope.value = store.scopes.value[1];
+        const proposal = api.chatEntries.value.find(entry => entry.kind === 'proposal');
+        expect(proposal).toMatchObject({ title: 'Logs', viewingScope: 'Herbs' });
+
+        api.applyProposal('toolu_s');
+        await sending;
+
+        // Only the scope the change was made for changed.
+        expect(store.scopes.value[0].code).toContain('yew * 20');
+        expect(store.scopes.value[1].code).toBe('const grimy = 1;\n');
     });
 
     it('turns down a waiting change when the chat is stopped, and answers it before the next message', async () => {
