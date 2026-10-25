@@ -11,7 +11,11 @@
 //       { role: 'assistant', provider, model, content, raw?, stop_reason } (see transcript.js)
 //   { type: 'error', error, reason?, provider?, retryAfterSeconds? }
 //       the turn failed. reason 'no-key': the provider's key needs connecting again;
-//       'rate-limit': try again after retryAfterSeconds.
+//       'rate-limit': try again after retryAfterSeconds; 'overloaded': a 5xx / overloaded
+//       provider error the browser retries on its own.
+//
+// Between events, a ": ping" comment line goes out every 15s so the browser's idle timeout can
+// tell a slow model from a dropped connection.
 import { describeAnthropicError, streamAnthropicReply } from './anthropicChat.js';
 import { describeGeminiError, streamGeminiReply } from './geminiChat.js';
 import { estimateCostUsd } from './models.js';
@@ -20,6 +24,10 @@ const PROVIDERS = {
     anthropic: { streamReply: streamAnthropicReply, describeError: describeAnthropicError },
     gemini: { streamReply: streamGeminiReply, describeError: describeGeminiError },
 };
+
+// How often a heartbeat comment goes out while a turn streams, so a slow model that's still
+// thinking isn't mistaken for a stall by the browser's idle timeout.
+const HEARTBEAT_INTERVAL_MS = 15_000;
 
 export const startEventStream = (res) => {
     res.writeHead(200, {
@@ -32,6 +40,12 @@ export const startEventStream = (res) => {
 
 export const sendEvent = (res, event) => {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
+};
+
+// An SSE comment line (no "data: " prefix): the browser ignores it as an event but sees bytes
+// arrive, so its idle timeout doesn't fire while the model is still working. See takeChatEvents.
+const sendHeartbeat = (res) => {
+    res.write(': ping\n\n');
 };
 
 const describeChatError = (provider, error) => {
@@ -54,13 +68,14 @@ const describeChatError = (provider, error) => {
  * @param {{ anthropic?: function, gemini?: function }} [options.createClients]  Client factories
  *     by provider; replaced in tests.
  */
-export const streamChatTurn = async ({ apiKey, model, systemPrompt, messages, res, createClients = {} }) => {
+export const streamChatTurn = async ({ apiKey, model, systemPrompt, messages, res, createClients = {}, heartbeatMs = HEARTBEAT_INTERVAL_MS }) => {
     const provider = PROVIDERS[model.provider];
     const abort = new AbortController();
     // The browser stopped the reply (or went away): stop paying for tokens nobody will read.
     res.on('close', () => abort.abort());
 
     startEventStream(res);
+    const heartbeat = setInterval(() => sendHeartbeat(res), heartbeatMs);
     try {
         const { message, usage } = await provider.streamReply({
             apiKey,
@@ -78,6 +93,7 @@ export const streamChatTurn = async ({ apiKey, model, systemPrompt, messages, re
         }
         sendEvent(res, { type: 'error', ...describeChatError(provider, error) });
     } finally {
+        clearInterval(heartbeat);
         res.end();
     }
 };

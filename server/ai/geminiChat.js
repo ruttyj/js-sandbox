@@ -10,11 +10,13 @@ import { toGeminiContents } from './transcript.js';
 import { CHAT_TOOLS } from './tools.js';
 
 const DEFAULT_RETRY_SECONDS = 30;
+// A chat reply shouldn't take longer than this; without it a stalled Gemini call never ends.
+const CHAT_TIMEOUT_MS = 5 * 60_000;
 // Why Gemini stopped -> the Anthropic stop_reason the browser understands. Unlisted ones
 // (STOP, ...) are a normal end.
 const GEMINI_REFUSAL_REASONS = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII', 'RECITATION', 'IMAGE_SAFETY']);
 
-export const createGeminiClient = (apiKey) => new GoogleGenAI({ apiKey });
+export const createGeminiClient = (apiKey) => new GoogleGenAI({ apiKey, httpOptions: { timeout: CHAT_TIMEOUT_MS } });
 
 // --- Building the request -----------------------------------------------------------------------
 
@@ -218,8 +220,9 @@ export const describeGeminiError = (error) => {
     if (error.status === 429) {
         return { error: "Gemini's free limit was reached.", reason: 'rate-limit', retryAfterSeconds: retryAfterSeconds(error) };
     }
-    if (error.status === 503 || error.status === 500) {
-        return { error: 'Gemini is overloaded right now. Try again in a minute.' };
+    if (error.status >= 500) {
+        // reason 'overloaded': the browser retries these on its own, with backoff.
+        return { error: 'Gemini is overloaded right now. Try again in a minute.', reason: 'overloaded' };
     }
     if (error.status === 400) {
         return { error: `Google refused the request: ${error.message}` };

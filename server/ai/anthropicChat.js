@@ -8,6 +8,9 @@ const MAX_OUTPUT_TOKENS = 64_000;
 const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const PROGRESS_UPDATES_BETA = 'thinking-display-updates-2026-08-18';
 const DEFAULT_RETRY_SECONDS = 30;
+// A chat reply shouldn't take longer than this; without it the SDK waits its 10-minute default
+// before giving up on a stalled request.
+const CHAT_TIMEOUT_MS = 5 * 60_000;
 
 export const createAnthropicClient = (apiKey, options = {}) => new Anthropic({ apiKey, ...options });
 
@@ -81,7 +84,7 @@ const toBrowserEvent = (event) => {
  */
 export const streamAnthropicReply = async ({ apiKey, model, systemPrompt, messages, onEvent, signal, createClient = createAnthropicClient }) => {
     const client = createClient(apiKey);
-    const stream = client.beta.messages.stream(buildAnthropicRequest(model, systemPrompt, messages), { signal });
+    const stream = client.beta.messages.stream(buildAnthropicRequest(model, systemPrompt, messages), { signal, timeout: CHAT_TIMEOUT_MS });
     for await (const event of stream) {
         const browserEvent = toBrowserEvent(event);
         if (browserEvent) {
@@ -142,7 +145,11 @@ export const describeAnthropicError = (error) => {
         return { error: 'Could not reach Anthropic. Check the connection and try again.' };
     }
     if (error instanceof Anthropic.APIError && error.status === OVERLOADED_STATUS) {
-        return { error: 'Claude is overloaded right now. Try again in a minute.' };
+        // reason 'overloaded': the browser retries these on its own, with backoff.
+        return { error: 'Claude is overloaded right now. Try again in a minute.', reason: 'overloaded' };
+    }
+    if (error instanceof Anthropic.APIError && error.status >= 500) {
+        return { error: `Anthropic returned an error (HTTP ${error.status}). Try again shortly.`, reason: 'overloaded' };
     }
     if (error instanceof Anthropic.APIError) {
         return { error: `Anthropic returned an error (HTTP ${error.status}). Try again shortly.` };

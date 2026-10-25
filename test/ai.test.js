@@ -5,7 +5,9 @@ import supertest from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ApiError } from '@google/genai';
 import { describeAnthropicError } from '../server/ai/anthropicChat.js';
+import { streamChatTurn } from '../server/ai/chatStream.js';
 import { describeGeminiError } from '../server/ai/geminiChat.js';
+import { CHAT_MODELS } from '../server/ai/models.js';
 import { createKeyCipher } from '../server/ai/keyCipher.js';
 import { toAnthropicMessages, toGeminiContents } from '../server/ai/transcript.js';
 import { createKnex } from '../server/db/knex.js';
@@ -432,6 +434,46 @@ describe('the chat', () => {
     });
 });
 
+describe('the chat stream heartbeat', () => {
+    it('sends a ": ping" comment while a slow reply streams, and stops when it ends', async () => {
+        const writes = [];
+        const res = {
+            writeHead: () => {},
+            write: (text) => writes.push(text),
+            end: () => {},
+            on: () => {},
+        };
+        // A client whose reply takes long enough for a few heartbeats to go out first.
+        const slowClient = () => ({
+            beta: {
+                messages: {
+                    stream: () => ({
+                        async *[Symbol.asyncIterator]() {
+                            await new Promise(resolve => setTimeout(resolve, 40));
+                        },
+                        finalMessage: async () => CLAUDE_REPLY,
+                    }),
+                },
+            },
+        });
+
+        await streamChatTurn({
+            apiKey: CLAUDE_KEY,
+            model: CHAT_MODELS.find(model => model.id === 'claude-opus-5-5'),
+            systemPrompt: 'test',
+            messages: [{ role: 'user', content: 'Hi' }],
+            res,
+            createClients: { anthropic: slowClient },
+            heartbeatMs: 10,
+        });
+
+        expect(writes.filter(text => text === ': ping\n\n').length).toBeGreaterThan(0);
+        // The reply's message is the last thing written, so the heartbeat timer was cleared when
+        // the turn ended rather than pinging on forever.
+        expect(writes.at(-1)).toContain('"type":"message"');
+    });
+});
+
 describe('chat errors', () => {
     it('explains an Anthropic account with no API credits', async () => {
         const { default: Anthropic } = await import('@anthropic-ai/sdk');
@@ -449,6 +491,16 @@ describe('chat errors', () => {
     it('asks for a new Gemini key when Google rejects it', () => {
         const message = '{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","details":[{"reason":"API_KEY_INVALID"}]}}';
         expect(describeGeminiError(new ApiError({ message, status: 400 }))).toMatchObject({ reason: 'no-key', provider: 'gemini' });
+    });
+
+    it("marks a provider's overloaded and 5xx errors as retryable, so the browser retries them", async () => {
+        const { default: Anthropic } = await import('@anthropic-ai/sdk');
+        const overloaded = Anthropic.APIError.generate(529, { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }, undefined, new Headers());
+        expect(describeAnthropicError(overloaded).reason).toBe('overloaded');
+        const serverError = Anthropic.APIError.generate(503, { type: 'error', error: { type: 'api_error', message: 'oops' } }, undefined, new Headers());
+        expect(describeAnthropicError(serverError).reason).toBe('overloaded');
+
+        expect(describeGeminiError(new ApiError({ message: 'busy', status: 503 })).reason).toBe('overloaded');
     });
 });
 
