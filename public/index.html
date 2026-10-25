@@ -163,7 +163,7 @@
                 <button class="chat-icon-btn" :class="{ active: isChatHistoryOpen }" title="Saved chats" @click="toggleChatHistory">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 3"/></svg>
                 </button>
-                <button class="chat-icon-btn" title="New chat" :disabled="chatBusy" @click="startNewChat">
+                <button class="chat-icon-btn" title="New chat" @click="startNewChat">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                 </button>
                 <button class="chat-icon-btn" title="API keys" @click="openAiModal">
@@ -234,6 +234,7 @@
             <div v-if="chatNotice" class="chat-notice" :class="{ 'is-waiting': chatNotice.waiting }">
                 <span>{{ chatNotice.text }}</span>
                 <button v-if="chatNotice.needsKey" class="btn" @click="openAiModal">Connect a key</button>
+                <button v-if="chatNotice.canRetry && !chatBusy" class="btn" @click="retryChat">Retry</button>
             </div>
         </div>
 

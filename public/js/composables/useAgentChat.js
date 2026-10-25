@@ -384,7 +384,10 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     const chatScrollRef = ref(null);
     const chatBusy = ref(false);
     warnBeforeLeavingBusyChat(chatBusy);
-    const chatNotice = ref(null); // { text, needsKey } after a turn failed or was declined
+    // { text, needsKey, canRetry?, waiting? } after a turn failed or was declined. canRetry: the
+    // reply failed, so asking again (retryChat) may work; a declined or cut-off reply needs a
+    // new message instead.
+    const chatNotice = ref(null);
 
     const chatId = ref(newChatId());
     const chatTitle = ref('');
@@ -405,6 +408,9 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     let abortController = null;
     let stopRequested = false;
     let cancelRetryWait = null; // ends a rate-limit wait early (when the chat is stopped)
+    // The chat loop while it runs, so a new chat can wait for a stopped one to finish: the loop
+    // saves the chat as it ends, under the chat id at that moment.
+    let runningChatLoop = null;
 
     const chatEntries = computed(() => buildChatEntries({
         messages: chatMessages.value,
@@ -512,7 +518,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         if (error instanceof TypeError) {
             text = 'Could not reach the server.';
         }
-        chatNotice.value = { text, needsKey };
+        chatNotice.value = { text, needsKey, canRetry: true };
     };
 
     /**
@@ -585,7 +591,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
             const tooLong = outcome.retryAfterSeconds > CHAT_MAX_RETRY_WAIT_SECONDS;
             if (tooLong || attempt === CHAT_MAX_RETRIES_IN_A_ROW) {
-                chatNotice.value = { text: `${outcome.error} Try again later, or pick another model.`, needsKey: false };
+                chatNotice.value = { text: `${outcome.error} Try again later, or pick another model.`, needsKey: false, canRetry: true };
                 return null;
             }
             const retry = await waitOutRateLimit(Math.ceil(outcome.retryAfterSeconds), outcome.error);
@@ -640,6 +646,12 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         }
     };
 
+    const startChatLoop = async () => {
+        runningChatLoop = runChatLoop();
+        await runningChatLoop;
+        runningChatLoop = null;
+    };
+
     const sendChatMessage = async (text = chatInput.value) => {
         const trimmed = text.trim();
         if (!trimmed || chatBusy.value) {
@@ -658,7 +670,21 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
             { type: 'text', text: trimmed },
         ]);
         scrollChatToEnd();
-        await runChatLoop();
+        await startChatLoop();
+    };
+
+    // Asks again for the reply that failed. A failed reply leaves the conversation ending with the
+    // user's message (or the tool results it was answering), so running the loop again picks up
+    // where it stopped without repeating anything.
+    const retryChat = async () => {
+        const lastMessage = chatMessages.value.at(-1);
+        const isAwaitingReply = lastMessage?.role === 'user';
+        if (chatBusy.value || !isAwaitingReply) {
+            return;
+        }
+
+        chatNotice.value = null;
+        await startChatLoop();
     };
 
     // Stops the reply streaming (or a rate-limit wait) now, and turns down any change waiting for
@@ -724,9 +750,12 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         chatNotice.value = null;
     };
 
-    const startNewChat = () => {
+    // Starts a fresh chat; the current one stays in Saved chats. When the assistant is still
+    // working, it's stopped first, and the chat is reset only once that turn has ended and saved.
+    const startNewChat = async () => {
         if (chatBusy.value) {
-            return;
+            stopChat();
+            await runningChatLoop;
         }
         resetChat();
         isChatHistoryOpen.value = false;
@@ -806,7 +835,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     return {
         isChatOpen, chatInput, chatInputRef, chatScrollRef, chatBusy, chatNotice, chatTitle, chatCostUsd,
         chatEntries, chatRejectReasons, isChatHistoryOpen, chatHistory,
-        sendChatMessage, stopChat, onChatInputKeydown, applyProposal, rejectProposal,
+        sendChatMessage, retryChat, stopChat, onChatInputKeydown, applyProposal, rejectProposal,
         toggleChatHistory, startNewChat, openSavedChat, deleteSavedChat,
         onAiButtonClick, closeChat, askAssistantToFix,
         chatExamples: CHAT_EXAMPLES, chatToolStatusText, chatProposalStateText, chatDiffSign, chatDiffLineNumber, chatDiffText,

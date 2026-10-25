@@ -410,6 +410,22 @@ describe('the chat loop', () => {
         expect(lastRequest.messages.at(-1).content.at(-1).text).toBe('Never mind.');
     });
 
+    it('starts a new chat while busy by stopping the old one, which is still saved', async () => {
+        const { api } = openChat();
+        claude.replies.push(() => toolUse('toolu_n', 'propose_edit', { target: 'globals', summary: 'x', new_code: 'const tax = 1;' }));
+
+        api.sendChatMessage('Reset me mid-turn.');
+        await waitFor(() => api.chatEntries.value.some(entry => entry.state === 'waiting'));
+        await api.startNewChat();
+
+        expect(api.chatBusy.value).toBe(false);
+        expect(api.chatEntries.value).toEqual([]);
+        expect(api.chatTitle.value).toBe('');
+
+        const list = await (await fetch(`${baseUrl}/api/ai/conversations`, { headers: { ...API_HEADER, cookie } })).json();
+        expect(list.some(chat => chat.title === 'Reset me mid-turn.')).toBe(true);
+    });
+
     it('shows a declined request as a notice, and folds the next message into the unanswered one', async () => {
         const { api } = openChat();
         claude.replies.push(() => ({ content: [], stop_reason: 'refusal' }));
@@ -422,6 +438,23 @@ describe('the chat loop', () => {
         expect(messages).toHaveLength(1);
         expect(messages[0].content.filter(block => !block.text.startsWith('<app_context>')).map(block => block.text))
             .toEqual(['First try.', 'Second try.']);
+    });
+
+    it('offers to retry a failed reply, and asks again without repeating the message', async () => {
+        const { api } = openChat();
+        claude.replies.push(() => ({ error: new Error('boom') }));
+        await api.sendChatMessage('Are you there?');
+        expect(api.chatNotice.value).toMatchObject({ text: 'Something went wrong on the server.', canRetry: true });
+
+        claude.replies.push(() => textReply('Yes, sorry.'));
+        await api.retryChat();
+
+        expect(api.chatNotice.value).toBeNull();
+        const messages = claude.requests.at(-1).messages;
+        expect(messages).toHaveLength(1);
+        expect(messages[0].content.at(-1).text).toBe('Are you there?');
+        expect(api.chatEntries.value.map(entry => entry.kind)).toEqual(['user', 'assistant']);
+        expect(api.chatEntries.value.at(-1).html).toBe('Yes, sorry.');
     });
 
     it('waits out a rate limit with a countdown, then carries on by itself', async () => {
