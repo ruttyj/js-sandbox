@@ -2876,6 +2876,7 @@ body.is-dragging-ui, body.is-dragging-ui * { cursor: grabbing !important; user-s
     font-size: 0.9rem;
 }
 .chat-cost { flex-shrink: 0; color: var(--text-2); font-size: 0.75rem; font-family: var(--font-mono); }
+.chat-unsaved { flex-shrink: 0; color: var(--danger, #c0392b); font-size: 0.72rem; font-weight: 600; }
 .chat-header-actions { display: flex; align-items: center; gap: 0.25rem; flex-shrink: 0; }
 .chat-model {
     height: 28px;

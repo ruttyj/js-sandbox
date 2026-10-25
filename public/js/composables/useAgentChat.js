@@ -24,6 +24,8 @@ const CHAT_MAX_TRANSIENT_RETRIES = 3;
 const CHAT_TRANSIENT_RETRY_WAITS = [2, 4, 8];
 // Failures worth retrying automatically after the reply started streaming (see chatClient.js).
 const CHAT_TRANSIENT_REASONS = new Set(['stalled', 'cut-off', 'overloaded']);
+// Backoff, in seconds, for retrying a chat save that failed. The last value repeats for later tries.
+const CHAT_SAVE_RETRY_WAITS = [2, 5, 15];
 const CHAT_TITLE_LENGTH = 60;
 const CHAT_CONTEXT_TAG = '<app_context>';
 const CHAT_TAB_LABELS = {
@@ -403,6 +405,34 @@ const warnBeforeLeavingBusyChat = (chatBusy) => {
     });
 };
 
+// Runs onHidden whenever the page becomes hidden (a tab switch, a close, a reload), so the chat
+// can save its progress before the page may go away. Guarded for the test harness, which has no
+// document.
+const onPageHidden = (onHidden) => {
+    if (typeof document === 'undefined') {
+        return;
+    }
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            onHidden();
+        }
+    });
+};
+
+// A one-shot save that still completes as the page unloads (keepalive), used when the page is
+// hidden with unsaved progress. Mirrors apiRequest's PUT, but keepalive can't go through it.
+const sendKeepaliveChatSave = (snapshot) => {
+    fetch(`/api/ai/conversations/${snapshot.id}`, {
+        method: 'PUT',
+        keepalive: true,
+        credentials: 'same-origin',
+        headers: { ...API_HEADERS, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: snapshot.title, messages: snapshot.messages, costUsd: snapshot.costUsd }),
+    }).catch((error) => {
+        console.error(error);
+    });
+};
+
 // --- The composable -----------------------------------------------------------------------------
 
 /**
@@ -427,6 +457,9 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     const chatInputRef = ref(null);
     const chatScrollRef = ref(null);
     const chatBusy = ref(false);
+    // True while a save is still owed (the last one failed and is being retried). Drives the
+    // "Not saved" indicator in the chat header.
+    const chatSaveFailed = ref(false);
     warnBeforeLeavingBusyChat(chatBusy);
     // { text, needsKey, canRetry?, waiting? } after a turn failed or was declined. canRetry: the
     // reply failed, so asking again (retryChat) may work; a declined or cut-off reply needs a
@@ -455,6 +488,16 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     // The chat loop while it runs, so a new chat can wait for a stopped one to finish: the loop
     // saves the chat as it ends, under the chat id at that moment.
     let runningChatLoop = null;
+
+    // Saves run one after another in the order they were asked for (chained on this promise), so a
+    // save of older state can never land after a newer one. Each save keeps the chat id its
+    // messages belong to, so one still in flight when a new chat starts lands under the old chat.
+    let chatSaveChain = Promise.resolve();
+    let chatSaveRetryTimer = null;
+    let chatSaveRetryAttempt = 0;
+    // Chats the user deleted this session: a save still queued (or a backoff retry) must not bring
+    // one back.
+    const deletedChatIds = new Set();
 
     const chatEntries = computed(() => buildChatEntries({
         messages: chatMessages.value,
@@ -703,6 +746,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
                     return;
                 }
                 chatMessages.value.push(keptReply(reply));
+                saveChat();
                 scrollChatToEnd();
 
                 const toolUses = reply.content.filter(block => block.type === 'tool_use');
@@ -715,6 +759,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
                 const results = await Promise.all(toolUses.map(toolUse => runAgentTool(toolContext, toolUse)));
                 chatMessages.value.push({ role: 'user', content: results });
+                saveChat();
                 if (stopRequested) {
                     return;
                 }
@@ -744,6 +789,8 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
         chatInput.value = '';
         chatNotice.value = null;
+        // The Saved chats panel hides the conversation; close it so the message runs in view.
+        isChatHistoryOpen.value = false;
         const context = chatContextText({ activeTab: activeTab.value, selectedScope: scopesApi.selectedScope.value });
         appendUserContent([
             ...unansweredToolResults(chatMessages.value),
@@ -751,6 +798,10 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
             { type: 'text', text: trimmed },
         ]);
         scrollChatToEnd();
+
+        // Save as you go: the user's message is saved before the first request, so a reload or
+        // crash mid-turn can't lose it.
+        await saveChat();
         await startChatLoop();
     };
 
@@ -789,21 +840,100 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
     // --- Saved chats ---
 
-    const saveChat = async () => {
-        if (!chatMessages.value.length) {
+    // The chat as it stands now, for a save. Captures the id, so a save of this state still lands
+    // under this chat even if the user starts a new one before it runs.
+    const chatSnapshot = () => ({
+        id: chatId.value,
+        title: chatTitle.value || 'New chat',
+        messages: chatMessages.value,
+        costUsd: chatCostUsd.value,
+    });
+
+    const clearChatSaveRetry = () => {
+        if (chatSaveRetryTimer) {
+            clearTimeout(chatSaveRetryTimer);
+            chatSaveRetryTimer = null;
+        }
+        chatSaveRetryAttempt = 0;
+    };
+
+    // Schedules another attempt at the same snapshot after a backoff. The retry re-runs on the save
+    // chain so it still can't overtake a newer save.
+    const scheduleChatSaveRetry = (snapshot) => {
+        if (chatSaveRetryTimer) {
+            return;
+        }
+        const waitIndex = Math.min(chatSaveRetryAttempt, CHAT_SAVE_RETRY_WAITS.length - 1);
+        const waitSeconds = CHAT_SAVE_RETRY_WAITS[waitIndex];
+        chatSaveRetryAttempt++;
+        chatSaveRetryTimer = setTimeout(() => {
+            chatSaveRetryTimer = null;
+            chatSaveChain = chatSaveChain.then(() => runChatSave(snapshot));
+        }, waitSeconds * 1000);
+    };
+
+    const onChatSaveSucceeded = () => {
+        chatSaveFailed.value = false;
+        clearChatSaveRetry();
+        // A save means the list in the Saved chats panel is now stale; refresh it if it's showing.
+        if (isChatHistoryOpen.value) {
+            loadChatHistory();
+        }
+    };
+
+    const onChatSaveFailed = (error, snapshot) => {
+        console.error(error, error.body);
+        // Only toast once per failure streak, not on every backoff retry.
+        if (!chatSaveFailed.value) {
+            showToast(`Could not save this chat: ${describeSaveError(error)}`, 'error');
+        }
+        chatSaveFailed.value = true;
+        scheduleChatSaveRetry(snapshot);
+    };
+
+    // One save of a snapshot. Never rejects: a failure is reported and queued for a retry, so a slow
+    // or failed save can't break the turn that awaits it.
+    const runChatSave = async (snapshot) => {
+        if (deletedChatIds.has(snapshot.id)) {
             return;
         }
         try {
-            await apiRequest('PUT', `/api/ai/conversations/${chatId.value}`, {
-                title: chatTitle.value || 'New chat',
-                messages: chatMessages.value,
-                costUsd: chatCostUsd.value,
+            await apiRequest('PUT', `/api/ai/conversations/${snapshot.id}`, {
+                title: snapshot.title,
+                messages: snapshot.messages,
+                costUsd: snapshot.costUsd,
             });
+            onChatSaveSucceeded();
         } catch (error) {
-            console.error(error, error.body);
-            showToast(`Could not save this chat: ${describeSaveError(error)}`, 'error');
+            onChatSaveFailed(error, snapshot);
         }
     };
+
+    // Queues a save of the chat as it stands. Returns when this save (and any queued before it) are
+    // done; the returned promise never rejects.
+    const saveChat = () => {
+        if (!chatMessages.value.length) {
+            return Promise.resolve();
+        }
+        const snapshot = chatSnapshot();
+        chatSaveChain = chatSaveChain.then(() => runChatSave(snapshot));
+        return chatSaveChain;
+    };
+
+    // Saves on the way out of the page, but only when there's unsaved progress a close would lose:
+    // a turn still running, or a save that last failed.
+    const saveChatWhenHidden = () => {
+        const hasUnsavedProgress = chatBusy.value || chatSaveFailed.value;
+        if (!hasUnsavedProgress || !chatMessages.value.length) {
+            return;
+        }
+        const snapshot = chatSnapshot();
+        if (deletedChatIds.has(snapshot.id)) {
+            return;
+        }
+        sendKeepaliveChatSave(snapshot);
+    };
+    onPageHidden(saveChatWhenHidden);
 
     const loadChatHistory = async () => {
         try {
@@ -829,6 +959,8 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         chatProposals.value = {};
         chatRejectReasons.value = {};
         chatNotice.value = null;
+        chatSaveFailed.value = false;
+        clearChatSaveRetry();
     };
 
     // Starts a fresh chat; the current one stays in Saved chats. When the assistant is still
@@ -862,8 +994,18 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         }
     };
 
+    // Deletes a saved chat. When it's the current one and busy, the turn is stopped and waited out
+    // first (as New chat does), so the loop's end-of-turn save happens before the delete. Marking
+    // the id deleted makes that save, and any queued save or backoff retry, skip it, so a deleted
+    // chat never comes back.
     const deleteSavedChat = (chat) => {
-        showConfirmModal('Delete Chat', `Delete the chat "<strong>${escapeChatHtml(chat.title)}</strong>"?`, async () => {
+        return showConfirmModal('Delete Chat', `Delete the chat "<strong>${escapeChatHtml(chat.title)}</strong>"?`, async () => {
+            const isCurrent = chat.id === chatId.value;
+            deletedChatIds.add(chat.id);
+            if (isCurrent && chatBusy.value) {
+                stopChat();
+                await runningChatLoop;
+            }
             try {
                 await apiRequest('DELETE', `/api/ai/conversations/${chat.id}`);
             } catch (error) {
@@ -872,7 +1014,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
                 return;
             }
             chatHistory.value = chatHistory.value.filter(candidate => candidate.id !== chat.id);
-            if (chat.id === chatId.value && !chatBusy.value) {
+            if (isCurrent) {
                 resetChat();
             }
         });
@@ -914,7 +1056,7 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
     };
 
     return {
-        isChatOpen, chatInput, chatInputRef, chatScrollRef, chatBusy, chatNotice, chatTitle, chatCostUsd,
+        isChatOpen, chatInput, chatInputRef, chatScrollRef, chatBusy, chatSaveFailed, chatNotice, chatTitle, chatCostUsd,
         chatEntries, chatRejectReasons, isChatHistoryOpen, chatHistory,
         sendChatMessage, retryChat, stopChat, onChatInputKeydown, applyProposal, rejectProposal,
         toggleChatHistory, startNewChat, openSavedChat, deleteSavedChat,
