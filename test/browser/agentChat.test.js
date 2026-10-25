@@ -326,6 +326,8 @@ describe('the chat loop', () => {
             showToast: (message, type) => toasts.push({ message, type }),
             showUndoToast: (message) => toasts.push({ message, type: 'undo' }),
             showConfirmModal: () => {},
+            // Keep the transient-retry backoff to a single second so these tests stay quick.
+            retryWaitSeconds: () => 1,
         });
         return { ...chat, api, toasts };
     };
@@ -455,6 +457,49 @@ describe('the chat loop', () => {
         expect(messages[0].content.at(-1).text).toBe('Are you there?');
         expect(api.chatEntries.value.map(entry => entry.kind)).toEqual(['user', 'assistant']);
         expect(api.chatEntries.value.at(-1).html).toBe('Yes, sorry.');
+    });
+
+    const overloadedError = () => ({
+        error: Anthropic.APIError.generate(529, { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }, undefined, new Headers()),
+    });
+
+    it('retries a reply that fails once with an overloaded error, then shows the answer', async () => {
+        const { api } = openChat();
+        claude.replies.push(overloadedError, () => textReply('Here you go.'));
+
+        const sending = api.sendChatMessage('Still there?');
+        await waitFor(() => api.chatNotice.value?.waiting);
+        expect(api.chatNotice.value.text).toMatch(/Connection lost\. Retrying in 1s….*\(1\/3\)/);
+        await sending;
+
+        expect(api.chatNotice.value).toBeNull();
+        expect(api.chatEntries.value.at(-1)).toMatchObject({ kind: 'assistant', html: 'Here you go.' });
+    });
+
+    it('gives up after three retries of an always-failing reply, leaving a Retry notice', async () => {
+        const { api } = openChat();
+        const before = claude.requests.length;
+        claude.replies.push(overloadedError, overloadedError, overloadedError, overloadedError);
+
+        await api.sendChatMessage('Anyone home?');
+
+        expect(api.chatNotice.value).toMatchObject({ canRetry: true });
+        // The first attempt plus three retries: four requests reached the server.
+        expect(claude.requests.length - before).toBe(4);
+        expect(api.chatBusy.value).toBe(false);
+    }, 10000);
+
+    it('ends the turn when the chat is stopped during a retry wait', async () => {
+        const { api } = openChat();
+        claude.replies.push(overloadedError);
+
+        const sending = api.sendChatMessage('You there?');
+        await waitFor(() => api.chatNotice.value?.waiting);
+        api.stopChat();
+        await sending;
+
+        expect(api.chatBusy.value).toBe(false);
+        expect(api.chatNotice.value).toBeNull();
     });
 
     it('waits out a rate limit with a countdown, then carries on by itself', async () => {

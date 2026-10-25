@@ -16,6 +16,14 @@ const CHAT_MAX_ROUNDS = 40;
 // A rate limit asking for a longer wait than this (a daily limit, say) stops the chat instead.
 const CHAT_MAX_RETRY_WAIT_SECONDS = 120;
 const CHAT_MAX_RETRIES_IN_A_ROW = 5;
+// How many times a transient failure (a dropped connection, a stall, an overloaded provider, a
+// cut-off reply) is retried on its own before the Retry button is shown instead.
+const CHAT_MAX_TRANSIENT_RETRIES = 3;
+// Roughly how long to wait before each transient retry: exponential backoff, with jitter added so
+// many clients recovering from the same outage don't all retry in lockstep.
+const CHAT_TRANSIENT_RETRY_WAITS = [2, 4, 8];
+// Failures worth retrying automatically after the reply started streaming (see chatClient.js).
+const CHAT_TRANSIENT_REASONS = new Set(['stalled', 'cut-off', 'overloaded']);
 const CHAT_TITLE_LENGTH = 60;
 const CHAT_CONTEXT_TAG = '<app_context>';
 const CHAT_TAB_LABELS = {
@@ -32,6 +40,25 @@ const CHAT_TOOL_NOT_RUN = 'This tool call did not run: the user stopped the chat
 // --- Building the conversation ------------------------------------------------------------------
 
 const newChatId = () => `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+// Seconds to wait before the (zero-based) transient retry attempt: the backoff step, plus up to a
+// second of jitter. Injectable into useAgentChat so tests can shorten it.
+const chatRetryWaitSeconds = (attempt) => {
+    const base = CHAT_TRANSIENT_RETRY_WAITS[attempt] ?? CHAT_TRANSIENT_RETRY_WAITS.at(-1);
+    return base + Math.random();
+};
+
+// A reply failure worth retrying on its own, as a { retry, error } outcome, or null for anything
+// else (a bad key, a refusal, a 4xx, or a user Stop). A network error reaches here as a TypeError.
+const transientFailure = (error) => {
+    if (error instanceof TypeError) {
+        return { retry: true, error: 'Could not reach the server.' };
+    }
+    if (error instanceof ChatReplyError && CHAT_TRANSIENT_REASONS.has(error.reason)) {
+        return { retry: true, error: error.message };
+    }
+    return null;
+};
 
 // A message's content as a list of blocks (the API allows a plain string too).
 const chatContentBlocks = (content) => {
@@ -375,8 +402,10 @@ const warnBeforeLeavingBusyChat = (chatBusy) => {
  * @param {function} options.showToast
  * @param {function} options.showUndoToast
  * @param {function} options.showConfirmModal
+ * @param {function(number): number} [options.retryWaitSeconds]  Seconds before the Nth transient
+ *     retry; shortened in tests.
  */
-const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi, aiAccountApi, activeTab, showToast, showUndoToast, showConfirmModal }) => {
+const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi, aiAccountApi, activeTab, showToast, showUndoToast, showConfirmModal, retryWaitSeconds = chatRetryWaitSeconds }) => {
     const { assistantName } = aiAccountApi;
     const isChatOpen = ref(false);
     const chatInput = ref('');
@@ -523,8 +552,9 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
 
     /**
      * One attempt at the model's next reply.
-     * @returns {Promise<{ message: Object } | { retryAfterSeconds: number, error: string } | null>}
-     *     The reply; or a rate limit to wait out; or null when it failed, was stopped or declined.
+     * @returns {Promise<{ message: Object } | { retryAfterSeconds: number, error: string } | { retry: true, error: string } | null>}
+     *     The reply; a rate limit to wait out; a transient failure to retry on its own; or null
+     *     when it failed for good, was stopped or declined.
      */
     const requestReply = async () => {
         abortController = new AbortController();
@@ -544,6 +574,10 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
             if (error instanceof ChatReplyError && error.reason === 'rate-limit') {
                 return { retryAfterSeconds: error.retryAfterSeconds, error: error.message };
             }
+            const transient = transientFailure(error);
+            if (transient) {
+                return transient;
+            }
             showReplyError(error);
             return null;
         } finally {
@@ -552,13 +586,14 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         }
     };
 
-    // Counts down a rate-limit wait in the notice. Resolves true when it's time to retry, false
-    // when the chat was stopped first.
-    const waitOutRateLimit = (seconds, reason) => {
+    // Counts down a wait in the notice, one second at a time. textFor(secondsLeft) is the notice
+    // text to show. Resolves true when the wait is up, false when the chat was stopped first (via
+    // cancelRetryWait, which Stop calls).
+    const countdownNotice = (seconds, textFor) => {
         return new Promise((resolve) => {
             let left = seconds;
             const showLeft = () => {
-                chatNotice.value = { text: `${reason} Retrying in ${left}s…`, needsKey: false, waiting: true };
+                chatNotice.value = { text: textFor(left), needsKey: false, waiting: true };
             };
             const finish = (retry) => {
                 clearInterval(timer);
@@ -580,26 +615,56 @@ const useAgentChat = ({ store, itemTagsApi, evaluation, scopesApi, variablesApi,
         });
     };
 
-    // The model's next reply, waiting out rate limits (common on Gemini's free tier) and trying
-    // again. Null when it failed, was stopped or declined, or the limit needs too long a wait.
+    // Counts down a rate-limit wait. Resolves true when it's time to retry, false when stopped.
+    const waitOutRateLimit = (seconds, reason) => {
+        return countdownNotice(seconds, (left) => `${reason} Retrying in ${left}s…`);
+    };
+
+    // Counts down the backoff before a transient retry, e.g. "Connection lost. Retrying in 4s…
+    // (2/3)". Resolves true when it's time to retry, false when stopped.
+    const waitBeforeTransientRetry = (seconds, attempt) => {
+        return countdownNotice(seconds, (left) => `Connection lost. Retrying in ${left}s… (${attempt}/${CHAT_MAX_TRANSIENT_RETRIES})`);
+    };
+
+    // The model's next reply, waiting out rate limits (common on Gemini's free tier) and retrying
+    // transient failures (a dropped connection, a stall, an overloaded provider, a cut-off reply)
+    // with backoff. Null when it failed for good, was stopped or declined, or a limit needs too
+    // long a wait. Rate-limit and transient retries are counted separately: a long chat that hits
+    // the free tier's limit shouldn't use up its transient budget, or the other way round.
     const requestReplyWithRetries = async () => {
-        for (let attempt = 0; attempt <= CHAT_MAX_RETRIES_IN_A_ROW; attempt++) {
+        let rateLimitWaits = 0;
+        let transientWaits = 0;
+        while (true) {
             const outcome = await requestReply();
             if (!outcome || outcome.message) {
                 return outcome?.message || null;
             }
 
+            if (outcome.retry) {
+                if (transientWaits >= CHAT_MAX_TRANSIENT_RETRIES) {
+                    chatNotice.value = { text: outcome.error, needsKey: false, canRetry: true };
+                    return null;
+                }
+                transientWaits++;
+                const seconds = Math.ceil(retryWaitSeconds(transientWaits - 1));
+                const retry = await waitBeforeTransientRetry(seconds, transientWaits);
+                if (!retry || stopRequested) {
+                    return null;
+                }
+                continue;
+            }
+
             const tooLong = outcome.retryAfterSeconds > CHAT_MAX_RETRY_WAIT_SECONDS;
-            if (tooLong || attempt === CHAT_MAX_RETRIES_IN_A_ROW) {
+            if (tooLong || rateLimitWaits >= CHAT_MAX_RETRIES_IN_A_ROW) {
                 chatNotice.value = { text: `${outcome.error} Try again later, or pick another model.`, needsKey: false, canRetry: true };
                 return null;
             }
+            rateLimitWaits++;
             const retry = await waitOutRateLimit(Math.ceil(outcome.retryAfterSeconds), outcome.error);
             if (!retry || stopRequested) {
                 return null;
             }
         }
-        return null;
     };
 
     // A reply as the conversation keeps it: which provider wrote it, and Gemini's own parts.
