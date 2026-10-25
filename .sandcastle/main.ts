@@ -16,6 +16,7 @@
 // Or add to package.json:
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.ts" }
 
+import { execFileSync } from "node:child_process";
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 import { z } from "zod";
@@ -64,6 +65,47 @@ const hooks = {
       { command: "npm ci", timeoutMs: NPM_CI_TIMEOUT_MS },
     ],
   },
+};
+
+// ---------------------------------------------------------------------------
+// Closing finished issues
+//
+// Done here on the host rather than by the merge agent: the sandbox's
+// GH_TOKEN may only be able to read issues, and an issue left open is planned
+// and implemented all over again in the next iteration.
+// ---------------------------------------------------------------------------
+
+// Whether branch's commits are all in the current branch, i.e. the merge
+// agent actually merged it.
+const isMergedIntoHead = (branch: string) => {
+  try {
+    execFileSync("git", ["merge-base", "--is-ancestor", branch, "HEAD"]);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Uses the host's own gh login. GH_TOKEN is dropped in case it's the sandbox's
+// read-only token.
+const closeIssue = (id: string) => {
+  const { GH_TOKEN, ...env } = process.env;
+  execFileSync("gh", ["issue", "close", id, "--comment", "Completed by Sandcastle"], { env, stdio: "inherit" });
+};
+
+const closeMergedIssues = (issues: { id: string; branch: string }[]) => {
+  for (const issue of issues) {
+    if (!isMergedIntoHead(issue.branch)) {
+      console.error(`  ✗ ${issue.branch} wasn't merged; leaving issue ${issue.id} open.`);
+      continue;
+    }
+
+    try {
+      closeIssue(issue.id);
+    } catch (error) {
+      console.error(`  ✗ Could not close issue ${issue.id}: ${error}`);
+    }
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -197,7 +239,8 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // resolving any conflicts and running tests to confirm everything still works.
   //
   // The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
-  // uses to know which branches to merge and which issues to close.
+  // uses to know which branches to merge and what they fix. The issues are
+  // closed afterwards on the host (closeMergedIssues).
   // -------------------------------------------------------------------------
   await sandcastle.run({
     hooks,
@@ -219,6 +262,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   });
 
   console.log("\nBranches merged.");
+  closeMergedIssues(completedIssues);
 }
 
 console.log("\nAll done.");

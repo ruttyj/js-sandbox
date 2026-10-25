@@ -15,13 +15,9 @@ After all branches are merged, make a single commit summarizing the merge.
 
 When resolving conflicts, follow `.sandcastle/CODING_STANDARDS.md`.
 
-# CLOSE ISSUES
+# ISSUES
 
-For each branch that was merged, close its issue using the following command:
-
-`gh issue close <ID> --comment "Completed by Sandcastle"`
-
-Here are all the issues:
+The branches fix these issues. Mention them in the merge commit. Don't close them: that's done after you finish.
 
 {{ISSUES}}
 
