@@ -15,7 +15,8 @@
     "migrate:rollback": "knex --knexfile server/db/knexfile.js migrate:rollback",
     "migrate:make": "knex --knexfile server/db/knexfile.js migrate:make",
     "test": "vitest run",
-    "sandcastle": "tsx .sandcastle/main.ts"
+    "sandcastle": "tsx .sandcastle/main.ts",
+    "sandcastle:dashboard": "tsx .sandcastle/dashboard/replay.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

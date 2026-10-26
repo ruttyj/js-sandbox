@@ -11,6 +11,13 @@
 // The outer loop repeats up to MAX_ITERATIONS times so that newly unblocked
 // issues are picked up after each round of merges.
 //
+// Every agent runs through the supervisor (./dashboard), which records what
+// it does and serves a live dashboard (the URL is printed at startup). From
+// there agents can be aborted, the run stopped after the current iteration,
+// and branches approved one by one before the merge phase (the merge gate).
+// See dashboard/index.ts for the environment variables that configure it, and
+// `npm run sandcastle:dashboard` to replay a finished run.
+//
 // Usage:
 //   npx tsx .sandcastle/main.ts
 // Or add to package.json:
@@ -20,6 +27,7 @@ import { execFileSync } from "node:child_process";
 import * as sandcastle from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 import { z } from "zod";
+import { startSupervision, type Supervisor } from "./dashboard/index.ts";
 
 // The planner emits its plan as JSON inside <plan> tags; Output.object extracts
 // and validates it against this schema. We use Zod here, but any Standard
@@ -38,6 +46,15 @@ const planSchema = z.object({
 // Maximum number of plan→execute→merge cycles before stopping.
 // Raise this if your backlog is large; lower it for a quick smoke-test run.
 const MAX_ITERATIONS = 4;
+
+// Opus throughout: planning benefits from deeper dependency reasoning, and
+// implementation and conflict resolution from the stronger model too.
+const PLANNER_MODEL = "claude-opus-5-5";
+const IMPLEMENTER_MODEL = "claude-opus-5-5";
+const MERGER_MODEL = "claude-opus-5-5";
+
+// Give each implementer plenty of room to implement and iterate on tests.
+const IMPLEMENTER_MAX_ITERATIONS = 100;
 
 // Hooks run inside the sandbox before the agent starts each iteration.
 // node_modules isn't copied in from the host: the host is Windows, where
@@ -68,6 +85,22 @@ const hooks = {
 };
 
 // ---------------------------------------------------------------------------
+// Reporting
+//
+// Progress goes to the console as before, and to the dashboard's run log.
+// ---------------------------------------------------------------------------
+
+const report = (supervisor: Supervisor, message: string) => {
+  console.log(message);
+  supervisor.log("info", message.trim());
+};
+
+const reportError = (supervisor: Supervisor, message: string) => {
+  console.error(`  ✗ ${message}`);
+  supervisor.log("error", message);
+};
+
+// ---------------------------------------------------------------------------
 // Closing finished issues
 //
 // Done here on the host rather than by the merge agent: the sandbox's
@@ -93,90 +126,95 @@ const closeIssue = (id: string) => {
   execFileSync("gh", ["issue", "close", id, "--comment", "Completed by Sandcastle"], { env, stdio: "inherit" });
 };
 
-const closeMergedIssues = (issues: { id: string; branch: string }[]) => {
+const closeMergedIssues = (issues: { id: string; branch: string }[], supervisor: Supervisor) => {
   for (const issue of issues) {
     if (!isMergedIntoHead(issue.branch)) {
-      console.error(`  ✗ ${issue.branch} wasn't merged; leaving issue ${issue.id} open.`);
+      reportError(supervisor, `${issue.branch} wasn't merged; leaving issue ${issue.id} open.`);
       continue;
     }
 
     try {
       closeIssue(issue.id);
+      supervisor.log("info", `Closed issue #${issue.id}.`);
     } catch (error) {
-      console.error(`  ✗ Could not close issue ${issue.id}: ${error}`);
+      reportError(supervisor, `Could not close issue ${issue.id}: ${error}`);
     }
   }
 };
 
 // ---------------------------------------------------------------------------
-// Main loop
+// Phase 1: Plan
+//
+// The planning agent reads the open issue list, builds a dependency graph,
+// and selects the issues that can be worked in parallel right now (i.e., no
+// blocking dependencies on other open issues).
+//
+// It outputs a <plan> JSON block — Output.object parses and validates it.
 // ---------------------------------------------------------------------------
 
-for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
-  console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
+type PlannedIssue = z.infer<typeof planSchema>["issues"][number];
 
-  // -------------------------------------------------------------------------
-  // Phase 1: Plan
-  //
-  // The planning agent (opus, for deeper reasoning) reads the open issue list,
-  // builds a dependency graph, and selects the issues that can be worked in
-  // parallel right now (i.e., no blocking dependencies on other open issues).
-  //
-  // It outputs a <plan> JSON block — Output.object parses and validates it.
-  // -------------------------------------------------------------------------
-  // No hooks: the planner only reads issues, and it runs against the real
-  // project directory (see the note on hooks above).
-  const plan = await sandcastle.run({
-    sandbox: docker(),
-    name: "planner",
-    // One iteration is enough: the planner just needs to read and reason,
-    // not write code. (Structured output requires maxIterations: 1.)
-    maxIterations: 1,
-    // Opus for planning: dependency analysis benefits from deeper reasoning.
-    agent: sandcastle.claudeCode("claude-opus-5-5"),
-    promptFile: "./.sandcastle/plan-prompt.md",
-    // Extract and validate the <plan> JSON into a typed object. Throws
-    // StructuredOutputError if the tag is missing, the JSON is malformed, or
-    // validation fails — which aborts the loop.
-    output: sandcastle.Output.object({ tag: "plan", schema: planSchema }),
-  });
+const planIssues = async (supervisor: Supervisor, iteration: number): Promise<PlannedIssue[]> => {
+  supervisor.setPhase("plan", iteration);
 
-  const issues = plan.output.issues;
-
-  if (issues.length === 0) {
-    // No unblocked work — either everything is done or everything is blocked.
-    console.log("No unblocked issues to work on. Exiting.");
-    break;
-  }
-
-  console.log(
-    `Planning complete. ${issues.length} issue(s) to work in parallel:`,
-  );
-  for (const issue of issues) {
-    console.log(`  ${issue.id}: ${issue.title} → ${issue.branch}`);
-  }
-
-  // -------------------------------------------------------------------------
-  // Phase 2: Execute
-  //
-  // Spawn one sonnet agent per issue, all running concurrently.
-  // Each agent works on its own branch so there are no conflicts during
-  // execution — merging happens in Phase 3.
-  //
-  // Promise.allSettled means one failing agent doesn't cancel the others.
-  // -------------------------------------------------------------------------
-  const settled = await Promise.allSettled(
-    issues.map((issue) =>
+  const plan = await supervisor.runAgent(
+    { key: "planner", role: "planner", title: "Plan the next issues", iteration, model: PLANNER_MODEL, maxTurns: 1 },
+    (instrumentation) =>
+      // No hooks: the planner only reads issues, and it runs against the real
+      // project directory (see the note on hooks above).
       sandcastle.run({
-        hooks,
-        // Each agent starts on its own branch via branchStrategy on run().
+        ...instrumentation,
         sandbox: docker(),
+        name: "planner",
+        // One iteration is enough: the planner just needs to read and reason,
+        // not write code. (Structured output requires maxIterations: 1.)
+        maxIterations: 1,
+        agent: sandcastle.claudeCode(PLANNER_MODEL),
+        promptFile: "./.sandcastle/plan-prompt.md",
+        // Extract and validate the <plan> JSON into a typed object. Throws
+        // StructuredOutputError if the tag is missing, the JSON is malformed,
+        // or validation fails — which aborts the loop.
+        output: sandcastle.Output.object({ tag: "plan", schema: planSchema }),
+      }),
+  );
+
+  supervisor.recordPlan(iteration, plan.output.issues);
+  return plan.output.issues;
+};
+
+// ---------------------------------------------------------------------------
+// Phase 2: Execute
+//
+// Spawn one agent per issue, all running concurrently. Each agent works on
+// its own branch so there are no conflicts during execution — merging
+// happens in Phase 3.
+//
+// Promise.allSettled means one failing (or aborted) agent doesn't cancel the
+// others.
+// ---------------------------------------------------------------------------
+
+const implementIssue = (supervisor: Supervisor, iteration: number, issue: PlannedIssue) => {
+  return supervisor.runAgent(
+    {
+      key: `issue-${issue.id}`,
+      role: "implementer",
+      title: issue.title,
+      iteration,
+      model: IMPLEMENTER_MODEL,
+      maxTurns: IMPLEMENTER_MAX_ITERATIONS,
+      issue: { id: issue.id, title: issue.title },
+      branch: issue.branch,
+    },
+    (instrumentation) =>
+      sandcastle.run({
+        ...instrumentation,
+        hooks,
+        sandbox: docker(),
+        // Each agent starts on its own branch via branchStrategy on run().
         branchStrategy: { type: "branch", branch: issue.branch },
         name: "implementer",
-        // Give each agent plenty of room to implement and iterate on tests.
-        maxIterations: 100,
-        // Sonnet for execution: fast and capable enough for typical issue work.
-        agent: sandcastle.claudeCode("claude-opus-5-5"),
+        maxIterations: IMPLEMENTER_MAX_ITERATIONS,
+        agent: sandcastle.claudeCode(IMPLEMENTER_MODEL),
         promptFile: "./.sandcastle/implement-prompt.md",
         // Prompt arguments substitute {{TASK_ID}}, {{ISSUE_TITLE}},
         // and {{BRANCH}} placeholders in implement-prompt.md before the
@@ -187,82 +225,159 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
           BRANCH: issue.branch,
         },
       }),
-    ),
   );
+};
 
-  // Log any agents that threw (network error, sandbox crash, etc.).
+// Returns the issues whose agents produced commits. An agent that ran
+// successfully but made no commits has nothing to merge.
+const implementIssues = async (
+  supervisor: Supervisor,
+  iteration: number,
+  issues: PlannedIssue[],
+): Promise<PlannedIssue[]> => {
+  supervisor.setPhase("execute", iteration);
+  const settled = await Promise.allSettled(issues.map((issue) => implementIssue(supervisor, iteration, issue)));
+
+  const completedIssues: PlannedIssue[] = [];
   for (const [i, outcome] of settled.entries()) {
+    const issue = issues[i]!;
+
+    // Log any agents that threw (network error, sandbox crash, abort, etc.).
     if (outcome.status === "rejected") {
-      console.error(
-        `  ✗ ${issues[i]!.id} (${issues[i]!.branch}) failed: ${outcome.reason}`,
-      );
+      reportError(supervisor, `${issue.id} (${issue.branch}) failed: ${outcome.reason}`);
+      continue;
+    }
+
+    if (outcome.value.commits.length > 0) {
+      completedIssues.push(issue);
     }
   }
+  return completedIssues;
+};
 
-  // Only pass branches that actually produced commits to the merge phase.
-  // An agent that ran successfully but made no commits has nothing to merge.
-  const completedIssues = settled
-    .map((outcome, i) => ({ outcome, issue: issues[i]! }))
-    .filter(
-      (
-        entry,
-      ): entry is {
-        outcome: PromiseFulfilledResult<
-          Awaited<ReturnType<typeof sandcastle.run>>
-        >;
-        issue: (typeof issues)[number];
-      } =>
-        entry.outcome.status === "fulfilled" &&
-        entry.outcome.value.commits.length > 0,
-    )
-    .map((entry) => entry.issue);
+// ---------------------------------------------------------------------------
+// Phase 3: Merge
+//
+// One agent merges all completed branches into the current branch, resolving
+// any conflicts and running tests to confirm everything still works.
+//
+// The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
+// uses to know which branches to merge and what they fix. The issues are
+// closed afterwards on the host (closeMergedIssues).
+// ---------------------------------------------------------------------------
 
-  const completedBranches = completedIssues.map((i) => i.branch);
+const mergeIssues = async (supervisor: Supervisor, iteration: number, issues: PlannedIssue[]) => {
+  supervisor.setPhase("merge", iteration);
 
-  console.log(
-    `\nExecution complete. ${completedBranches.length} branch(es) with commits:`,
+  await supervisor.runAgent(
+    { key: "merger", role: "merger", title: "Merge completed branches", iteration, model: MERGER_MODEL, maxTurns: 1 },
+    (instrumentation) =>
+      sandcastle.run({
+        ...instrumentation,
+        hooks,
+        sandbox: docker(),
+        // Merge in a worktree so the npm ci hook can't touch the host's
+        // node_modules; the result is merged back into the current branch.
+        branchStrategy: { type: "merge-to-head" },
+        name: "merger",
+        maxIterations: 1,
+        agent: sandcastle.claudeCode(MERGER_MODEL),
+        promptFile: "./.sandcastle/merge-prompt.md",
+        promptArgs: {
+          // A markdown list of branch names, one per line.
+          BRANCHES: issues.map((issue) => `- ${issue.branch}`).join("\n"),
+          // A markdown list of issue IDs and titles, one per line.
+          ISSUES: issues.map((issue) => `- ${issue.id}: ${issue.title}`).join("\n"),
+        },
+      }),
   );
-  for (const branch of completedBranches) {
-    console.log(`  ${branch}`);
+};
+
+// ---------------------------------------------------------------------------
+// Main loop
+// ---------------------------------------------------------------------------
+
+// With the merge gate on, waits for the dashboard to approve branches and
+// returns the approved issues; otherwise returns them all. A rejected
+// branch's issue stays open, so it is planned again next iteration.
+const approveIssues = async (supervisor: Supervisor, iteration: number, issues: PlannedIssue[]) => {
+  const candidates = issues.map((issue) => ({ branch: issue.branch, issue: { id: issue.id, title: issue.title } }));
+  const approvedBranches = await supervisor.reviewBeforeMerge(iteration, candidates);
+  return issues.filter((issue) => approvedBranches.includes(issue.branch));
+};
+
+const runIteration = async (supervisor: Supervisor, iteration: number): Promise<"continue" | "finished"> => {
+  const issues = await planIssues(supervisor, iteration);
+
+  if (issues.length === 0) {
+    // No unblocked work — either everything is done or everything is blocked.
+    report(supervisor, "No unblocked issues to work on. Exiting.");
+    return "finished";
   }
 
-  if (completedBranches.length === 0) {
+  report(supervisor, `Planning complete. ${issues.length} issue(s) to work in parallel:`);
+  for (const issue of issues) {
+    console.log(`  ${issue.id}: ${issue.title} → ${issue.branch}`);
+  }
+
+  const completedIssues = await implementIssues(supervisor, iteration, issues);
+  report(supervisor, `\nExecution complete. ${completedIssues.length} branch(es) with commits:`);
+  for (const issue of completedIssues) {
+    console.log(`  ${issue.branch}`);
+  }
+
+  if (completedIssues.length === 0) {
     // All agents ran but none made commits — nothing to merge this cycle.
-    console.log("No commits produced. Nothing to merge.");
-    continue;
+    report(supervisor, "No commits produced. Nothing to merge.");
+    return "continue";
   }
 
-  // -------------------------------------------------------------------------
-  // Phase 3: Merge
-  //
-  // One sonnet agent merges all completed branches into the current branch,
-  // resolving any conflicts and running tests to confirm everything still works.
-  //
-  // The {{BRANCHES}} and {{ISSUES}} prompt arguments are lists that the agent
-  // uses to know which branches to merge and what they fix. The issues are
-  // closed afterwards on the host (closeMergedIssues).
-  // -------------------------------------------------------------------------
-  await sandcastle.run({
-    hooks,
-    sandbox: docker(),
-    // Merge in a worktree so the npm ci hook can't touch the host's
-    // node_modules; the result is merged back into the current branch.
-    branchStrategy: { type: "merge-to-head" },
-    name: "merger",
-    maxIterations: 1,
-    // Sonnet is sufficient for merge conflict resolution.
-    agent: sandcastle.claudeCode("claude-opus-5-5"),
-    promptFile: "./.sandcastle/merge-prompt.md",
-    promptArgs: {
-      // A markdown list of branch names, one per line.
-      BRANCHES: completedBranches.map((b) => `- ${b}`).join("\n"),
-      // A markdown list of issue IDs and titles, one per line.
-      ISSUES: completedIssues.map((i) => `- ${i.id}: ${i.title}`).join("\n"),
-    },
-  });
+  const approvedIssues = await approveIssues(supervisor, iteration, completedIssues);
+  if (approvedIssues.length === 0) {
+    report(supervisor, "No branches approved. Nothing to merge.");
+    return "continue";
+  }
 
-  console.log("\nBranches merged.");
-  closeMergedIssues(completedIssues);
+  await mergeIssues(supervisor, iteration, approvedIssues);
+  report(supervisor, "\nBranches merged.");
+  closeMergedIssues(approvedIssues, supervisor);
+  return "continue";
+};
+
+const runLoop = async (supervisor: Supervisor) => {
+  for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+    if (supervisor.stopRequested) {
+      report(supervisor, "\nStopped from the dashboard.");
+      return;
+    }
+
+    console.log(`\n=== Iteration ${iteration}/${MAX_ITERATIONS} ===\n`);
+    const outcome = await runIteration(supervisor, iteration);
+    if (outcome === "finished") {
+      return;
+    }
+  }
+};
+
+const { supervisor, server } = await startSupervision({ repoDir: process.cwd(), maxIterations: MAX_ITERATIONS });
+
+try {
+  await runLoop(supervisor);
+  supervisor.endRun();
+  console.log("\nAll done.");
+} catch (error) {
+  supervisor.endRun(error);
+
+  // Without a dashboard, fail as before. With one, keep it up so the failure
+  // can be looked into there.
+  if (!server) {
+    throw error;
+  }
+  console.error(error);
+  process.exitCode = 1;
 }
 
-console.log("\nAll done.");
+// The open server keeps the process alive until Ctrl+C.
+if (server) {
+  console.log(`\nThe dashboard stays open for review at ${server.url} — press Ctrl+C to exit.`);
+}
